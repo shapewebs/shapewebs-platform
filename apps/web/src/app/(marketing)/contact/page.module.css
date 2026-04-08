@@ -1,0 +1,31 @@
+.pageK4m2q8 {
+  width: 100%;
+  display: grid;
+  gap: 24px;
+}
+
+.headerP7m3q1 {
+  width: min(100% - 32px, var(--system-max-width));
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.headerP7m3q1 h1 {
+  font-size: clamp(2rem, 1.35rem + 2vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: var(--font-weight-medium);
+}
+
+.headerP7m3q1 p {
+  color: rgba(var(--color-text-secondary), 1);
+  line-height: 1.6;
+  max-width: 64ch;
+}
+
+.eyebrowT4m8q2 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(var(--color-text-tertiary), 1);
+}

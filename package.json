@@ -1,17 +1,20 @@
 {
-  "name": "shapewebs_1.1",
+  "name": "shapewebs-platform",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.17.1",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.2.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@shapewebs/web",
+    "dev:admin": "turbo run dev --filter=@shapewebs/admin",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf .turbo",
+    "supabase:status": "pnpm dlx supabase@2.88.1 status",
+    "supabase:start": "pnpm dlx supabase@2.88.1 start",
+    "supabase:reset": "pnpm dlx supabase@2.88.1 db reset",
+    "supabase:stop": "pnpm dlx supabase@2.88.1 stop"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -19,6 +22,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
-    "typescript": "^5"
+    "turbo": "^2.5.2",
+    "typescript": "^5",
+    "zod": "^4.1.5"
   }
 }

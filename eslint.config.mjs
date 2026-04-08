@@ -2,16 +2,38 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+const nextRootSettings = {
+  next: {
+    rootDir: ["apps/*/"],
+  },
+};
+
+function withWorkspaceNextRoots(configs) {
+  return configs.map((config) => ({
+    ...config,
+    settings: {
+      ...config.settings,
+      ...nextRootSettings,
+    },
+  }));
+}
+
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
+  ...withWorkspaceNextRoots(nextVitals),
+  ...withWorkspaceNextRoots(nextTs),
+  {
+    rules: {
+      "@next/next/no-html-link-for-pages": "off",
+    },
+  },
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
+    "**/.next/**",
+    ".turbo/**",
     "out/**",
     "build/**",
-    "next-env.d.ts",
+    "dist/**",
+    "apps/*/next-env.d.ts",
   ]),
 ]);
 

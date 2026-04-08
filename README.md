@@ -1,34 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shapewebs Platform
 
-## Getting Started
+Shapewebs is now structured as the foundation of a custom CMS-powered website platform:
 
-First, run the development server:
+- `apps/web` is the public site for `shapewebs.com`
+- `apps/admin` is the private CMS surface for `admin.shapewebs.com`
+- `packages/*` contains shared platform code
+- `supabase/` contains migrations, seeds, and database security foundations
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+- Next.js 16.2.2 with the App Router
+- React 19.2.4
+- TypeScript
+- pnpm workspaces + Turborepo
+- Supabase-oriented architecture for Auth, Postgres, Storage, and RLS
+- Global foundation CSS plus component-scoped CSS Modules
+
+## Workspace Layout
+
+```text
+apps/
+  web/
+  admin/
+packages/
+  config/
+  content-schema/
+  db/
+  i18n/
+  observability/
+  ui/
+  validation/
+supabase/
+docs/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+pnpm dev:web
+pnpm dev:admin
+pnpm build
+pnpm lint
+pnpm typecheck
+```
 
-## Learn More
+## Setup Notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Copy `.env.example` values into `apps/web/.env.local` and `apps/admin/.env.local`.
+- Read [docs/runbooks/github-repository-setup.md](/Users/lukasthomsen/Desktop/shapewebs_1.1/docs/runbooks/github-repository-setup.md) before creating the GitHub repository and importing the monorepo into Vercel.
+- Read [docs/runbooks/platform-setup.md](/Users/lukasthomsen/Desktop/shapewebs_1.1/docs/runbooks/platform-setup.md) for the recommended hosted setup flow.
+- Read [supabase/seed/bootstrap_owner.sql.example](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/seed/bootstrap_owner.sql.example) after creating your first Supabase auth user.
+- Read `PROJECT_STATUS.md` before making large changes.
+- Read `AGENTS.md` for project-specific coding-agent guidance.

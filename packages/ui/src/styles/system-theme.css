@@ -1,0 +1,158 @@
+:root {
+  --sw-ui-dvh: 1dvh;
+  --sw-ui-header-top: 16px;
+  --sw-ui-header-height: 48px;
+  --sw-ui-header-radius: 16px;
+  --sw-ui-system-padding: 24px;
+  --sw-ui-system-padding-default: 96px var(--sw-ui-system-padding) 0;
+  --sw-ui-system-max-width: 1024px;
+  --sw-ui-layer-max: 10000;
+  --sw-ui-layer-tooltip: 20000;
+  --sw-ui-layer-header: 1000;
+  --sw-ui-layer-overlay: 900;
+  --sw-ui-layer-dialog: 700;
+  --sw-ui-layer-dialog-overlay: 600;
+  --sw-ui-layer-popover: 500;
+  --sw-ui-layer-scrollbar: 400;
+  --sw-ui-layer-footer: 300;
+  --sw-ui-radius-rounded: 9999px;
+  --sw-ui-font-monospace: ui-monospace, "SF Mono", "Menlo", monospace;
+  --sw-ui-font-regular: "Avenir Next", "Segoe UI", sans-serif;
+  --sw-ui-font-weight-light: 340;
+  --sw-ui-font-weight-normal: 400;
+  --sw-ui-font-weight-medium: 460;
+  --sw-ui-font-weight-semibold: 500;
+  --sw-ui-font-weight-bold: 540;
+  --sw-ui-color-blue: #007aff;
+  --sw-ui-color-red: #ec6a5e;
+  --sw-ui-color-green: #62c755;
+  --sw-ui-color-orange: #f4bf50;
+  --sw-ui-mask-on: #000;
+  --sw-ui-mask-off: transparent;
+  --sw-ui-font-size-small: clamp(
+    0.78125rem,
+    calc(0.72917rem + 0.13021vw),
+    0.8125rem
+  );
+  --sw-ui-font-size-small-plus: clamp(
+    0.78125rem,
+    calc(0.72917rem + 0.13021vw),
+    0.8125rem
+  );
+  --sw-ui-font-size-regular: clamp(
+    0.84375rem,
+    calc(0.79167rem + 0.13021vw),
+    0.875rem
+  );
+  --sw-ui-font-size-regular-plus: clamp(
+    0.875rem,
+    calc(0.77083rem + 0.26042vw),
+    0.9375rem
+  );
+  --sw-ui-font-size-large: clamp(1rem, calc(0.79167rem + 0.52083vw), 1.125rem);
+  --sw-ui-font-size-large-plus: clamp(
+    1.125rem,
+    calc(0.9375rem + 0.46875vw),
+    1.3125rem
+  );
+  --sw-ui-font-size-title-4: clamp(1rem, calc(0.75rem + 1.25vw), 1.5rem);
+  --sw-ui-font-size-title-3: clamp(1.5rem, calc(0.5rem + 3.125vw), 2.5rem);
+  --sw-ui-font-size-title-2: clamp(2rem, calc(-0.5rem + 6.25vw), 3.5rem);
+  --sw-ui-font-size-title-1: clamp(
+    2.5rem,
+    calc(-0.41667rem + 7.29167vw),
+    4.25rem
+  );
+  --sw-ui-ease-out-quad: cubic-bezier(0.26, 0.49, 0.42, 0.95);
+  --sw-ui-ease-in-quad: cubic-bezier(0.51, 0.06, 0.66, 0.19);
+  --sw-ui-shadow-stack-low: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --sw-ui-shadow-stack-medium: 0 5px 15px rgba(0, 0, 0, 0.1);
+  --sw-ui-shadow-stack-high: 0 10px 30px rgba(0, 0, 0, 0.15);
+  --sw-ui-icon-size-default: 16px;
+  --sw-ui-color-bg-selection: 114 114 255;
+  --sw-ui-color-text-selection: 255 255 255;
+  --sw-ui-color-button-translucent: 0 0 0 / 0.03;
+  --sw-ui-color-bg-header: 255 255 255;
+  --sw-ui-color-bg-header-active: 246 246 246;
+  --sw-ui-color-border-header: 13 13 13 / 0.08;
+  --sw-ui-color-bg-primary: 255 255 255;
+  --sw-ui-color-bg-secondary: 249 248 249;
+  --sw-ui-color-bg-tertiary: 244 243 244;
+  --sw-ui-color-bg-quaternary: 238 237 239;
+  --sw-ui-color-bg-quinary: 233 232 234;
+  --sw-ui-color-primary-inverted: 25 25 27;
+  --sw-ui-color-secondary-inverted: 12 12 12;
+  --sw-ui-color-border-primary: 233 232 234;
+  --sw-ui-color-border-secondary: 228 227 228;
+  --sw-ui-color-border-tertiary: 220 219 221;
+  --sw-ui-color-toggle: 189 192 197;
+  --sw-ui-color-text-primary: 40 42 48;
+  --sw-ui-color-text-secondary: 84 90 99;
+  --sw-ui-color-text-tertiary: 134 132 141;
+  --sw-ui-color-text-quaternary: 89 90 92;
+  --sw-ui-color-overlay-primary: 255 255 255 / 0.6;
+  --sw-ui-color-link-primary: 0 122 255;
+  --sw-ui-color-link-hover: 66 81 222;
+  --sw-ui-color-bg-brand: 100 103 197;
+  --sw-ui-color-brand-text: 255 255 255;
+  --sw-ui-nav-font-size: 13px;
+  --sw-ui-nav-icon-size: 13px;
+  --sw-ui-header-icon-size: 16px;
+  --sw-ui-nav-item-height: 32px;
+  --sw-ui-nav-padding-inline: 12px;
+  --sw-ui-nav-radius: 8px;
+  --sw-ui-nav-gap: 0.4rem;
+  --sw-ui-nav-logo-height: 16px;
+}
+
+.dark {
+  --sw-ui-color-button-translucent: 255 255 255 / 0.06;
+  --sw-ui-color-bg-header: 9 9 9;
+  --sw-ui-color-bg-header-active: 13 13 13;
+  --sw-ui-color-border-header: 242 242 242 / 0.08;
+  --sw-ui-color-bg-primary: 8 9 10;
+  --sw-ui-color-bg-secondary: 16 17 19;
+  --sw-ui-color-bg-tertiary: 28 28 31;
+  --sw-ui-color-bg-quaternary: 35 35 38;
+  --sw-ui-color-bg-quinary: 40 40 44;
+  --sw-ui-color-primary-inverted: 228 230 230;
+  --sw-ui-color-secondary-inverted: 243 243 243;
+  --sw-ui-color-border-primary: 35 37 42;
+  --sw-ui-color-border-secondary: 52 52 58;
+  --sw-ui-color-border-tertiary: 62 62 68;
+  --sw-ui-color-toggle: 92 102 109;
+  --sw-ui-color-text-primary: 247 248 248;
+  --sw-ui-color-text-secondary: 208 214 216;
+  --sw-ui-color-text-tertiary: 138 143 152;
+  --sw-ui-color-text-quaternary: 89 90 92;
+  --sw-ui-color-overlay-primary: 0 0 0 / 0.6;
+  --sw-ui-color-link-primary: 0 122 255;
+  --sw-ui-color-link-hover: 66 81 222;
+  --sw-ui-color-bg-brand: 100 103 197;
+  --sw-ui-color-brand-text: 255 255 255;
+}
+
+body,
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: var(--sw-ui-font-regular);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--sw-ui-font-monospace);
+}
+
+svg {
+  width: var(--sw-ui-icon-size-default);
+  height: var(--sw-ui-icon-size-default);
+}
+
+::selection {
+  background-color: rgb(var(--sw-ui-color-bg-selection) / 1);
+  color: rgb(var(--sw-ui-color-text-selection) / 1);
+}

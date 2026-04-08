@@ -1,0 +1,57 @@
+.rootQ8n2m5 {
+  padding: 48px 24px 64px;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+}
+
+.headerM3v7k1 {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.eyebrowN5q2t8 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(var(--color-text-tertiary), 1);
+}
+
+.titleB6p8k3 {
+  font-size: clamp(2rem, 1.35rem + 1.8vw, 3rem);
+  line-height: 1.05;
+  font-weight: var(--font-weight-medium);
+}
+
+.copyT4m9v1 {
+  max-width: 64ch;
+  color: rgba(var(--color-text-secondary), 1);
+  line-height: 1.6;
+}
+
+.gridL9p4r2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.cardG2m7k4 {
+  min-height: 160px;
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  padding: 18px;
+  background: rgba(var(--color-bg-secondary), 1);
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.cardG2m7k4 h2 {
+  font-size: 15px;
+  font-weight: var(--font-weight-medium);
+}
+
+.cardG2m7k4 p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(var(--color-text-secondary), 1);
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@shapewebs/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@shapewebs/config": "workspace:*",
+    "@shapewebs/content-schema": "workspace:*",
+    "@shapewebs/db": "workspace:*",
+    "@shapewebs/i18n": "workspace:*",
+    "@shapewebs/observability": "workspace:*",
+    "@shapewebs/ui": "workspace:*",
+    "@shapewebs/validation": "workspace:*",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.56.0",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.1.5"
+  }
+}

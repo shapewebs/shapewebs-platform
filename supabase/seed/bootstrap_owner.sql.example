@@ -1,0 +1,28 @@
+-- Replace the values below before running this in a hosted Supabase project.
+-- Run this after:
+-- 1. migrations have been pushed
+-- 2. your auth user has been created in Authentication -> Users
+
+insert into cms.admin_profiles (auth_user_id, display_name, status, default_locale)
+select
+  id,
+  'Your Name',
+  'active',
+  'en'
+from auth.users
+where email = 'you@example.com'
+on conflict (auth_user_id) do update
+set
+  display_name = excluded.display_name,
+  status = 'active',
+  default_locale = excluded.default_locale;
+
+insert into cms.user_role_assignments (profile_id, role_id)
+select
+  ap.id,
+  r.id
+from cms.admin_profiles ap
+join cms.roles r on r.code = 'owner'
+join auth.users u on u.id = ap.auth_user_id
+where u.email = 'you@example.com'
+on conflict (profile_id, role_id) do nothing;

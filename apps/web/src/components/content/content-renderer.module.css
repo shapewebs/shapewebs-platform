@@ -1,0 +1,61 @@
+.rootN6m2q8 {
+  display: grid;
+  gap: 28px;
+}
+
+.heroT2m9q3,
+.sectionM8q2p5 {
+  display: grid;
+  gap: 14px;
+}
+
+.heroT2m9q3 h2,
+.sectionM8q2p5 h2 {
+  font-size: clamp(1.6rem, 1.1rem + 1.6vw, 2.4rem);
+  line-height: 1.1;
+  font-weight: var(--font-weight-medium);
+}
+
+.eyebrowK5m1q7 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(var(--color-text-tertiary), 1);
+}
+
+.bodyP7m3q1,
+.paragraphB8m4q1,
+.captionR6m3q8 {
+  color: rgba(var(--color-text-secondary), 1);
+  line-height: 1.7;
+}
+
+.ctaLinkQ3m8r4 {
+  color: rgba(var(--color-text-primary), 1);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.ctaPanelV9m4q2,
+.faqItemH6m4q9,
+.imagePlaceholderC4m7p2 {
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  padding: 18px;
+}
+
+.faqListX5m2q7 {
+  display: grid;
+  gap: 12px;
+}
+
+.faqItemH6m4q9 h3 {
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.imagePlaceholderC4m7p2 {
+  color: rgba(var(--color-text-secondary), 1);
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+}

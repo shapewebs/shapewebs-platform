@@ -1,0 +1,67 @@
+.gridW6m2q3 {
+  width: min(100% - 32px, var(--system-max-width));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.panelP4m8v2 {
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.panelHeaderT5m1q4 {
+  display: grid;
+  gap: 10px;
+}
+
+.panelHeaderT5m1q4 h2 {
+  font-size: 1.4rem;
+  line-height: 1.15;
+  font-weight: var(--font-weight-medium);
+}
+
+.eyebrowR2m7q8 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(var(--color-text-tertiary), 1);
+}
+
+.formF9m3q2 {
+  display: grid;
+  gap: 14px;
+}
+
+.fieldQ8m1p6 {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(var(--color-text-secondary), 1);
+}
+
+.fieldQ8m1p6 input,
+.fieldQ8m1p6 textarea {
+  width: 100%;
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  background: rgba(var(--color-bg-primary), 1);
+  color: rgba(var(--color-text-primary), 1);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.successStateM3q7p4,
+.errorStateV8m2q1 {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(var(--color-text-secondary), 1);
+}
+
+@media (max-width: 900px) {
+  .gridW6m2q3 {
+    grid-template-columns: 1fr;
+  }
+}

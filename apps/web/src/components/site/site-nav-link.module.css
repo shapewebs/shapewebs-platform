@@ -1,0 +1,90 @@
+.rootQ6t3m1 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sw-ui-nav-gap);
+  min-height: var(--sw-ui-nav-item-height);
+  border-radius: var(--sw-ui-nav-radius);
+  font-size: var(--sw-ui-nav-font-size);
+  font-weight: var(--sw-ui-font-weight-normal);
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 160ms var(--sw-ui-ease-out-quad),
+    border-color 160ms var(--sw-ui-ease-out-quad),
+    color 160ms var(--sw-ui-ease-out-quad),
+    box-shadow 160ms var(--sw-ui-ease-out-quad);
+}
+
+.rootQ6t3m1 :global(svg) {
+  width: var(--sw-ui-nav-icon-size);
+  height: var(--sw-ui-nav-icon-size);
+  flex: 0 0 auto;
+}
+
+.rootQ6t3m1 > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+}
+
+.headerV4m8k1 {
+  padding: 0 var(--sw-ui-nav-padding-inline);
+  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
+}
+
+.footerK7q2m5 {
+  min-height: auto;
+  padding: 0;
+  border-radius: 0;
+  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
+  justify-content: flex-start;
+}
+
+.footerK7q2m5:hover {
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+}
+
+.submenuR2p6v9 {
+  display: block;
+  min-width: 200px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.submenuR2p6v9:hover {
+  background: rgb(var(--sw-ui-color-button-translucent));
+}
+
+.submenuR2p6v9 > span:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.mobileP8k3n1 {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 8px 12px;
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  white-space: normal;
+}
+
+.mobileP8k3n1:hover {
+  background: rgb(var(--sw-ui-color-button-translucent));
+}
+
+.ctaF5w2q8 {
+  padding: 0 var(--sw-ui-nav-padding-inline);
+  border: 0.5px solid rgb(var(--sw-ui-color-border-secondary) / 1);
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  background: rgb(var(--sw-ui-color-bg-tertiary) / 1);
+  box-shadow: var(--sw-ui-shadow-stack-low);
+}
+
+.ctaF5w2q8:hover {
+  background: rgb(var(--sw-ui-color-bg-quaternary) / 1);
+}

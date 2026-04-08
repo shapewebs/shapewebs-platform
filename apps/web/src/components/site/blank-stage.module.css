@@ -1,0 +1,30 @@
+.pageContainerX9f4j {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pageContentL7p2q {
+  width: 100%;
+  max-width: var(--sw-ui-system-max-width);
+  min-height: clamp(24rem, 62vh, 44rem);
+}
+
+.srOnlyA6v2n9 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .pageContentL7p2q {
+    min-height: clamp(18rem, 56vh, 30rem);
+  }
+}

@@ -1,0 +1,6 @@
+-- Smoke-test notes for future CI:
+-- 1. Anonymous role can select published content and cannot select drafts.
+-- 2. Anonymous role can insert into ops.contact_submissions and cannot update it.
+-- 3. Authenticated editor can create content revisions and media assets.
+-- 4. Authenticated reviewer can read drafts but cannot manage roles/settings.
+-- 5. Authenticated owner can read audit logs and manage role assignments.

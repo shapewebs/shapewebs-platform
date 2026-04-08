@@ -1,0 +1,17 @@
+.shellG6p2v8 {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  padding-top: 64px;
+}
+
+.mainH3k8n1 {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
