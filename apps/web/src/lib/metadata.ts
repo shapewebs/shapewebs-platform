@@ -22,7 +22,7 @@ function normalizePath(path = "/") {
 }
 
 function buildAbsoluteTitle(title: string) {
-  return title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
+  return title === siteConfig.name ? title : `${siteConfig.name} | ${title}`;
 }
 
 function mergeKeywords(keywords?: string[]) {
