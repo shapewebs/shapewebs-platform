@@ -80,11 +80,23 @@ export default function ReadmePage() {
                 <div className={styles.demoGrid}>
                   <div className={styles.demoRow}>
                     <p className={styles.demoLabel}>Button</p>
-                    <div className={styles.buttonStack}>
-                      <Buttons.Button kind="primary">Primary</Buttons.Button>
-                      <Buttons.Button kind="secondary">Secondary</Buttons.Button>
-                      <Buttons.Button kind="tertiary">Tertiary</Buttons.Button>
-                      <Buttons.Button kind="ghost">Ghost</Buttons.Button>
+                    <div className={styles.variantGrid}>
+                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                        <Buttons.Button kind="primary">Primary</Buttons.Button>
+                        <p className={styles.variantLabel}>kind="primary"</p>
+                      </div>
+                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                        <Buttons.Button kind="secondary">Secondary</Buttons.Button>
+                        <p className={styles.variantLabel}>kind="secondary"</p>
+                      </div>
+                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                        <Buttons.Button kind="tertiary">Tertiary</Buttons.Button>
+                        <p className={styles.variantLabel}>kind="tertiary"</p>
+                      </div>
+                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                        <Buttons.Button kind="ghost">Ghost</Buttons.Button>
+                        <p className={styles.variantLabel}>kind="ghost"</p>
+                      </div>
                     </div>
                   </div>
 
@@ -105,7 +117,12 @@ export default function ReadmePage() {
 
                   <div className={styles.demoRow}>
                     <p className={styles.demoLabel}>CloseButton</p>
-                    <Buttons.CloseButton />
+                    <div className={styles.variantGrid}>
+                      <div className={styles.variantItem}>
+                        <Buttons.CloseButton />
+                        <p className={styles.variantLabel}>default</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className={styles.demoRow}>
@@ -138,33 +155,63 @@ export default function ReadmePage() {
                 <div className={styles.demoGrid}>
                   <div className={styles.demoRow}>
                     <p className={styles.demoLabel}>Basic</p>
-                    <div className={styles.demoContent}>
-                      <div className={styles.spinnerCurrent}>
-                        <Feedback.Spinner />
+                    <div className={styles.variantGrid}>
+                      <div className={styles.variantItem}>
+                        <div className={styles.spinnerCurrent}>
+                          <Feedback.Spinner />
+                        </div>
+                        <p className={styles.variantLabel}>default</p>
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.demoRow}>
                     <p className={styles.demoLabel}>Colors</p>
-                    <div className={styles.demoContent}>
-                      <div className={styles.spinnerCurrent}>
-                        <Feedback.Spinner color="current" />
+                    <div className={styles.variantGrid}>
+                      <div className={styles.variantItem}>
+                        <div className={styles.spinnerCurrent}>
+                          <Feedback.Spinner color="current" />
+                        </div>
+                        <p className={styles.variantLabel}>color="current"</p>
                       </div>
-                      <Feedback.Spinner color="accent" />
-                      <Feedback.Spinner color="success" />
-                      <Feedback.Spinner color="warning" />
-                      <Feedback.Spinner color="danger" />
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner color="accent" />
+                        <p className={styles.variantLabel}>color="accent"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner color="success" />
+                        <p className={styles.variantLabel}>color="success"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner color="warning" />
+                        <p className={styles.variantLabel}>color="warning"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner color="danger" />
+                        <p className={styles.variantLabel}>color="danger"</p>
+                      </div>
                     </div>
                   </div>
 
                   <div className={styles.demoRow}>
                     <p className={styles.demoLabel}>Sizes</p>
-                    <div className={styles.demoContent}>
-                      <Feedback.Spinner size="sm" color="accent" />
-                      <Feedback.Spinner size="md" color="accent" />
-                      <Feedback.Spinner size="lg" color="accent" />
-                      <Feedback.Spinner size="xl" color="accent" />
+                    <div className={styles.variantGrid}>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner size="sm" color="accent" />
+                        <p className={styles.variantLabel}>size="sm"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner />
+                        <p className={styles.variantLabel}>size="md"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner size="lg" color="accent" />
+                        <p className={styles.variantLabel}>size="lg"</p>
+                      </div>
+                      <div className={styles.variantItem}>
+                        <Feedback.Spinner size="xl" color="accent" />
+                        <p className={styles.variantLabel}>size="xl"</p>
+                      </div>
                     </div>
                   </div>
                 </div>
