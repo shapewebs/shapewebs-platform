@@ -15,7 +15,7 @@
 
 ## Current Status
 
-- Styled now: `Button`, `ButtonGroup`, `CloseButton`, `ToggleButton`, `ToggleButtonGroup`, `Navigation.Link`
+- Styled now: `Button`, `ButtonGroup`, `CloseButton`, `ToggleButton`, `ToggleButtonGroup`, `Navigation.Link`, `Feedback.Spinner`
 - Scaffolded only: every other listed component. The file structure and CSS Modules exist, but behavior and styling still need to be built.
 
 ## Registry

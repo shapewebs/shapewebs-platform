@@ -42,7 +42,7 @@ export const componentRegistry = {
     ProgressBar: "scaffolded",
     ProgressCircle: "scaffolded",
     Skeleton: "scaffolded",
-    Spinner: "scaffolded",
+    Spinner: "styled",
   },
   forms: {
     Checkbox: "scaffolded",

@@ -33,6 +33,10 @@
   --sw-ui-color-link-hover: 0 93 204;
   --sw-ui-color-bg-brand: 0 122 255;
   --sw-ui-color-brand-text: 255 255 255;
+  --sw-ui-color-feedback-accent: 0 122 255;
+  --sw-ui-color-feedback-success: 70 185 112;
+  --sw-ui-color-feedback-warning: 237 167 54;
+  --sw-ui-color-feedback-danger: 225 85 85;
 }
 
 html {
@@ -68,4 +72,8 @@ body {
   --sw-ui-color-link-hover: 124 183 255;
   --sw-ui-color-bg-brand: 0 122 255;
   --sw-ui-color-brand-text: 255 255 255;
+  --sw-ui-color-feedback-accent: 94 164 255;
+  --sw-ui-color-feedback-success: 101 209 124;
+  --sw-ui-color-feedback-warning: 255 193 92;
+  --sw-ui-color-feedback-danger: 255 130 130;
 }

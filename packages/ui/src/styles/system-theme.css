@@ -95,6 +95,10 @@
   --sw-ui-color-link-hover: 66 81 222;
   --sw-ui-color-bg-brand: 100 103 197;
   --sw-ui-color-brand-text: 255 255 255;
+  --sw-ui-color-feedback-accent: 0 122 255;
+  --sw-ui-color-feedback-success: 98 199 85;
+  --sw-ui-color-feedback-warning: 244 191 80;
+  --sw-ui-color-feedback-danger: 236 106 94;
   --sw-ui-nav-font-size: 13px;
   --sw-ui-nav-icon-size: 13px;
   --sw-ui-header-icon-size: 16px;
@@ -130,6 +134,10 @@
   --sw-ui-color-link-hover: 66 81 222;
   --sw-ui-color-bg-brand: 100 103 197;
   --sw-ui-color-brand-text: 255 255 255;
+  --sw-ui-color-feedback-accent: 94 164 255;
+  --sw-ui-color-feedback-success: 116 214 125;
+  --sw-ui-color-feedback-warning: 255 199 92;
+  --sw-ui-color-feedback-danger: 255 126 116;
 }
 
 body,

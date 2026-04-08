@@ -1,1 +1,75 @@
-.root {}
+.root {
+  --spinner-size: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  color: currentColor;
+  flex: 0 0 auto;
+}
+
+.icon {
+  width: 100%;
+  height: 100%;
+  animation: spinner-rotate 0.85s linear infinite;
+  transform-origin: center;
+}
+
+.sizeSm {
+  --spinner-size: 1rem;
+}
+
+.sizeMd {
+  --spinner-size: 1.5rem;
+}
+
+.sizeLg {
+  --spinner-size: 2rem;
+}
+
+.sizeXl {
+  --spinner-size: 2.75rem;
+}
+
+.colorCurrent {
+  color: currentColor;
+}
+
+.colorAccent {
+  color: rgb(var(--sw-ui-color-feedback-accent) / 1);
+}
+
+.colorSuccess {
+  color: rgb(var(--sw-ui-color-feedback-success) / 1);
+}
+
+.colorWarning {
+  color: rgb(var(--sw-ui-color-feedback-warning) / 1);
+}
+
+.colorDanger {
+  color: rgb(var(--sw-ui-color-feedback-danger) / 1);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
