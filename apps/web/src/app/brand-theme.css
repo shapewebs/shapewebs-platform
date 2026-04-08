@@ -6,10 +6,10 @@
   --sw-site-color-accent-fog: #f6faff;
   --sw-site-color-accent-mist: #eaf3ff;
   --sw-ui-system-max-width: 1080px;
-  --sw-ui-nav-logo-height: 20px;
+  --sw-ui-nav-logo-height: 16px;
   --sw-ui-color-bg-selection: 0 122 255;
   --sw-ui-color-text-selection: 255 255 255;
-  --sw-ui-color-button-translucent: 0 122 255 / 0.06;
+  --sw-ui-color-button-translucent: 246 249 253;
   --sw-ui-color-bg-header: 248 250 255;
   --sw-ui-color-bg-header-active: 241 246 255;
   --sw-ui-color-border-header: 8 9 10 / 0.08;
@@ -44,7 +44,7 @@ body {
 }
 
 .dark {
-  --sw-ui-color-button-translucent: 255 255 255 / 0.08;
+  --sw-ui-color-button-translucent: 12 15 20;
   --sw-ui-color-bg-header: 9 11 16;
   --sw-ui-color-bg-header-active: 13 17 23;
   --sw-ui-color-border-header: 242 247 255 / 0.08;

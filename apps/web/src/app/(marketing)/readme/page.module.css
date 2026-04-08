@@ -1,0 +1,80 @@
+.page {
+  width: 100%;
+  display: grid;
+  gap: 32px;
+}
+
+.intro {
+  width: min(100% - 32px, var(--sw-ui-system-max-width));
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.2rem, 1.55rem + 2vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+
+.body {
+  margin: 0;
+  max-width: 64ch;
+  line-height: 1.7;
+  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+}
+
+.group {
+  display: grid;
+  gap: 20px;
+}
+
+.sectionHeader {
+  width: min(100% - 32px, var(--sw-ui-system-max-width));
+  margin: 0 auto;
+  display: grid;
+  gap: 8px;
+}
+
+.sectionLabel {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2.2rem);
+  line-height: 1.08;
+}
+
+.sectionBody {
+  margin: 0;
+  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  line-height: 1.65;
+}
+
+.cardGrid {
+  width: min(100% - 32px, var(--sw-ui-system-max-width));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 860px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}
