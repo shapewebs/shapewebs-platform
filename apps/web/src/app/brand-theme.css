@@ -36,13 +36,11 @@
 }
 
 html {
-  background: var(--sw-site-color-paper);
+  background: rgb(var(--sw-ui-color-bg-primary) / 1);
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgb(0 122 255 / 0.08), transparent 34%),
-    linear-gradient(180deg, rgb(249 251 255 / 1), rgb(246 249 253 / 1) 40%, rgb(251 251 251 / 1));
+  background: rgb(var(--sw-ui-color-bg-primary) / 1);
 }
 
 .dark {
