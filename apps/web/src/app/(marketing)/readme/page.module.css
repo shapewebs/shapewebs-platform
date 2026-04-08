@@ -86,7 +86,11 @@
 
 .demoRow {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  gap: 10px;
+}
+
+.demoCard {
+  display: grid;
   gap: 16px;
   align-items: center;
   padding: 14px 16px;
@@ -99,13 +103,6 @@
   margin: 0;
   color: rgb(var(--sw-ui-color-text-tertiary) / 1);
   font-size: 0.875rem;
-}
-
-.demoContent {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
 }
 
 .variantGrid {
@@ -176,7 +173,7 @@
 }
 
 @media (max-width: 720px) {
-  .demoRow {
-    grid-template-columns: 1fr;
+  .demoCard {
+    padding: 12px 14px;
   }
 }

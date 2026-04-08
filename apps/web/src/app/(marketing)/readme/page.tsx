@@ -79,67 +79,77 @@ export default function ReadmePage() {
                 <h3 className={styles.componentTitle}>Button family</h3>
                 <div className={styles.demoGrid}>
                   <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>Button</p>
-                    <div className={styles.variantGrid}>
-                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
-                        <Buttons.Button kind="primary">Primary</Buttons.Button>
-                        <p className={styles.variantLabel}>kind="primary"</p>
-                      </div>
-                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
-                        <Buttons.Button kind="secondary">Secondary</Buttons.Button>
-                        <p className={styles.variantLabel}>kind="secondary"</p>
-                      </div>
-                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
-                        <Buttons.Button kind="tertiary">Tertiary</Buttons.Button>
-                        <p className={styles.variantLabel}>kind="tertiary"</p>
-                      </div>
-                      <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
-                        <Buttons.Button kind="ghost">Ghost</Buttons.Button>
-                        <p className={styles.variantLabel}>kind="ghost"</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>ButtonGroup</p>
-                    <Buttons.ButtonGroup className={styles.buttonStack}>
-                      <Buttons.Button kind="secondary" size="small">
-                        First
-                      </Buttons.Button>
-                      <Buttons.Button kind="secondary" size="small">
-                        Second
-                      </Buttons.Button>
-                      <Buttons.Button kind="secondary" size="small">
-                        Third
-                      </Buttons.Button>
-                    </Buttons.ButtonGroup>
-                  </div>
-
-                  <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>CloseButton</p>
-                    <div className={styles.variantGrid}>
-                      <div className={styles.variantItem}>
-                        <Buttons.CloseButton />
-                        <p className={styles.variantLabel}>default</p>
+                    <p className={styles.demoLabel}>kind</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.variantGrid}>
+                        <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                          <Buttons.Button kind="primary">Primary</Buttons.Button>
+                          <p className={styles.variantLabel}>kind="primary"</p>
+                        </div>
+                        <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                          <Buttons.Button kind="secondary">Secondary</Buttons.Button>
+                          <p className={styles.variantLabel}>kind="secondary"</p>
+                        </div>
+                        <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                          <Buttons.Button kind="tertiary">Tertiary</Buttons.Button>
+                          <p className={styles.variantLabel}>kind="tertiary"</p>
+                        </div>
+                        <div className={`${styles.variantItem} ${styles.variantItemWide}`}>
+                          <Buttons.Button kind="ghost">Ghost</Buttons.Button>
+                          <p className={styles.variantLabel}>kind="ghost"</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>ToggleButton</p>
-                    <div className={styles.toggleStack}>
-                      <Buttons.ToggleButton defaultChecked label="Notifications" />
-                      <Buttons.ToggleButton label="Maintenance mode" />
+                    <p className={styles.demoLabel}>group</p>
+                    <div className={styles.demoCard}>
+                      <Buttons.ButtonGroup className={styles.buttonStack}>
+                        <Buttons.Button kind="secondary" size="small">
+                          First
+                        </Buttons.Button>
+                        <Buttons.Button kind="secondary" size="small">
+                          Second
+                        </Buttons.Button>
+                        <Buttons.Button kind="secondary" size="small">
+                          Third
+                        </Buttons.Button>
+                      </Buttons.ButtonGroup>
                     </div>
                   </div>
 
                   <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>ToggleButtonGroup</p>
-                    <Buttons.ToggleButtonGroup className={styles.toggleStack}>
-                      <Buttons.ToggleButton defaultChecked label="Email" />
-                      <Buttons.ToggleButton label="SMS" />
-                      <Buttons.ToggleButton label="Push" />
-                    </Buttons.ToggleButtonGroup>
+                    <p className={styles.demoLabel}>close</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.variantGrid}>
+                        <div className={styles.variantItem}>
+                          <Buttons.CloseButton />
+                          <p className={styles.variantLabel}>default</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.demoRow}>
+                    <p className={styles.demoLabel}>toggle</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.toggleStack}>
+                        <Buttons.ToggleButton defaultChecked label="Notifications" />
+                        <Buttons.ToggleButton label="Maintenance mode" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.demoRow}>
+                    <p className={styles.demoLabel}>toggle-group</p>
+                    <div className={styles.demoCard}>
+                      <Buttons.ToggleButtonGroup className={styles.toggleStack}>
+                        <Buttons.ToggleButton defaultChecked label="Email" />
+                        <Buttons.ToggleButton label="SMS" />
+                        <Buttons.ToggleButton label="Push" />
+                      </Buttons.ToggleButtonGroup>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -154,63 +164,69 @@ export default function ReadmePage() {
                 </p>
                 <div className={styles.demoGrid}>
                   <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>Basic</p>
-                    <div className={styles.variantGrid}>
-                      <div className={styles.variantItem}>
-                        <div className={styles.spinnerCurrent}>
+                    <p className={styles.demoLabel}>basic</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.variantGrid}>
+                        <div className={styles.variantItem}>
+                          <div className={styles.spinnerCurrent}>
+                            <Feedback.Spinner />
+                          </div>
+                          <p className={styles.variantLabel}>default</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.demoRow}>
+                    <p className={styles.demoLabel}>color</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.variantGrid}>
+                        <div className={styles.variantItem}>
+                          <div className={styles.spinnerCurrent}>
+                            <Feedback.Spinner color="current" />
+                          </div>
+                          <p className={styles.variantLabel}>current</p>
+                        </div>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner color="accent" />
+                          <p className={styles.variantLabel}>accent</p>
+                        </div>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner color="success" />
+                          <p className={styles.variantLabel}>success</p>
+                        </div>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner color="warning" />
+                          <p className={styles.variantLabel}>warning</p>
+                        </div>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner color="danger" />
+                          <p className={styles.variantLabel}>danger</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.demoRow}>
+                    <p className={styles.demoLabel}>size</p>
+                    <div className={styles.demoCard}>
+                      <div className={styles.variantGrid}>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner size="sm" color="accent" />
+                          <p className={styles.variantLabel}>sm</p>
+                        </div>
+                        <div className={styles.variantItem}>
                           <Feedback.Spinner />
+                          <p className={styles.variantLabel}>md</p>
                         </div>
-                        <p className={styles.variantLabel}>default</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>Colors</p>
-                    <div className={styles.variantGrid}>
-                      <div className={styles.variantItem}>
-                        <div className={styles.spinnerCurrent}>
-                          <Feedback.Spinner color="current" />
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner size="lg" color="accent" />
+                          <p className={styles.variantLabel}>lg</p>
                         </div>
-                        <p className={styles.variantLabel}>color="current"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner color="accent" />
-                        <p className={styles.variantLabel}>color="accent"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner color="success" />
-                        <p className={styles.variantLabel}>color="success"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner color="warning" />
-                        <p className={styles.variantLabel}>color="warning"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner color="danger" />
-                        <p className={styles.variantLabel}>color="danger"</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.demoRow}>
-                    <p className={styles.demoLabel}>Sizes</p>
-                    <div className={styles.variantGrid}>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner size="sm" color="accent" />
-                        <p className={styles.variantLabel}>size="sm"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner />
-                        <p className={styles.variantLabel}>size="md"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner size="lg" color="accent" />
-                        <p className={styles.variantLabel}>size="lg"</p>
-                      </div>
-                      <div className={styles.variantItem}>
-                        <Feedback.Spinner size="xl" color="accent" />
-                        <p className={styles.variantLabel}>size="xl"</p>
+                        <div className={styles.variantItem}>
+                          <Feedback.Spinner size="xl" color="accent" />
+                          <p className={styles.variantLabel}>xl</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -222,9 +238,11 @@ export default function ReadmePage() {
               <div className={styles.componentBlock}>
                 <h3 className={styles.componentTitle}>Link</h3>
                 <div className={styles.demoRow}>
-                  <p className={styles.demoLabel}>Navigation.Link</p>
-                  <div className={styles.navigationPreview}>
-                    <Navigation.Link href="/contact">Open contact route</Navigation.Link>
+                  <p className={styles.demoLabel}>default</p>
+                  <div className={styles.demoCard}>
+                    <div className={styles.navigationPreview}>
+                      <Navigation.Link href="/contact">Open contact route</Navigation.Link>
+                    </div>
                   </div>
                 </div>
               </div>
