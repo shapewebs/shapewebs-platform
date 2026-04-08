@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BlankStage } from "@/components/site/blank-stage";
 import { ContentPage } from "@/components/content/content-page";
 import { buildDocumentMetadata, getResolvedGenericPage } from "@/lib/content";
+import { buildPageMetadata } from "@/lib/metadata";
 
 function formatSlugLabel(slug: string[]) {
   const lastSegment = slug.at(-1) ?? "page";
@@ -38,10 +39,12 @@ export async function generateMetadata(
     return buildDocumentMetadata(document);
   }
 
-  return {
+  return buildPageMetadata({
     title: formatSlugLabel(slug),
-    description: `Placeholder page for ${formatSlugLabel(slug)} on Shapewebs.`,
-  };
+    description: `${formatSlugLabel(slug)} is not published yet on Shapewebs.`,
+    path: `/${slug.join("/")}`,
+    noIndex: true,
+  });
 }
 
 export default async function CatchAllPage(props: CatchAllPageProps) {

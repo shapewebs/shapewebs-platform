@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { InquiryForms } from "@/components/forms/inquiry-forms";
+import { buildPageMetadata } from "@/lib/metadata";
 import styles from "./page.module.css";
 
-export const metadata: Metadata = {
-  title: "Contact",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Contact Shapewebs",
   description:
-    "Start a project conversation with Shapewebs about a custom portfolio, business, or brand website.",
-};
+    "Start a project conversation with Shapewebs about a beautiful, fast website built with intention.",
+  path: "/contact",
+  keywords: ["contact Shapewebs", "website inquiry", "project inquiry"],
+});
 
 export default function ContactPage() {
   return (

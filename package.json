@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "pnpm@10.17.1",
   "scripts": {
-    "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=@shapewebs/web",
-    "dev:admin": "turbo run dev --filter=@shapewebs/admin",
+    "dev": "node tooling/scripts/run-turbo-dev.mjs",
+    "dev:web": "node tooling/scripts/run-turbo-dev.mjs --filter=@shapewebs/web",
+    "dev:admin": "node tooling/scripts/run-turbo-dev.mjs --filter=@shapewebs/admin",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

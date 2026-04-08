@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 5.625 180 169.087" width="180px" height="169.087px">
+  <path style="paint-order: fill; fill-rule: nonzero; fill: rgb(251, 251, 251);" d="M 162 5.625 L 89.38 174.712 L 0 174.712 L 0 78.091 C 0 29.78 22.345 5.625 67.034 5.625 L 162 5.625 Z" transform="matrix(1, 0, 0, 1, 0, -7.105427357601002e-15)"/>
+  <ellipse style="fill: rgb(251, 251, 251);" cx="150" cy="144.518" rx="30" ry="30.194" transform="matrix(1, 0, 0, 1, 0, -7.105427357601002e-15)"/>
+</svg>

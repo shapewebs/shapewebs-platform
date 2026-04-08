@@ -24,6 +24,10 @@ export async function generateMetadata(
 
   return {
     ...(document ? buildDocumentMetadata(document) : {}),
+    robots: {
+      index: false,
+      follow: true,
+    },
   };
 }
 

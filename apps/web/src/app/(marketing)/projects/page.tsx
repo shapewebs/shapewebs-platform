@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDocumentPath, getResolvedContentList } from "@/lib/content";
+import { buildPageMetadata } from "@/lib/metadata";
 import styles from "../blog/page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Projects",
-  description: "Selected website projects and case studies from Shapewebs.",
-};
+  description:
+    "Selected website projects and case studies from Shapewebs, focused on presentation, clarity, and trust-building.",
+  path: "/projects",
+  keywords: ["Shapewebs projects", "website case studies", "portfolio websites"],
+});
 
 export default async function ProjectsIndexPage() {
   const projects = await getResolvedContentList("project");

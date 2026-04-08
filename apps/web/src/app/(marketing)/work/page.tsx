@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDocumentPath, getResolvedContentList } from "@/lib/content";
+import { buildPageMetadata } from "@/lib/metadata";
 import styles from "../blog/page.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Work",
   description:
-    "Browse early Shapewebs portfolio entries and project directions for client-facing website design.",
-};
+    "Portfolio-style browsing for Shapewebs project work and early case-study directions.",
+  path: "/work",
+  noIndex: true,
+  keywords: ["Shapewebs work", "website work"],
+});
 
 export default async function WorkPage() {
   const projects = await getResolvedContentList("project");

@@ -10,6 +10,7 @@ import {
   type PublishedDocument,
 } from "@shapewebs/db";
 import { getWebServerSupabaseClient } from "./supabase";
+import { buildPageMetadata, getAbsoluteSiteUrl } from "./metadata";
 
 export const previewCookieNames = {
   documentId: "sw-preview-document-id",
@@ -52,17 +53,23 @@ export function getDocumentPath(document: PublishedDocument) {
 
 export function buildDocumentMetadata(document: PublishedDocument) {
   const pathname = getDocumentPath(document);
-  const canonical = `${getPublicSiteOrigin()}${joinPath(document.localeCode, pathname)}`;
+  const localizedPath = joinPath(document.localeCode, pathname);
+  const canonical = getAbsoluteSiteUrl(localizedPath);
 
   return {
-    title: document.seo.metaTitle ?? document.title,
-    description: document.seo.metaDescription ?? document.summary ?? siteConfig.description,
+    ...buildPageMetadata({
+      title: document.seo.metaTitle ?? document.title,
+      description: document.seo.metaDescription ?? document.summary ?? siteConfig.description,
+      path: localizedPath,
+      noIndex: !document.seo.robotsIndex,
+      type: document.contentType === "post" ? "article" : "website",
+    }),
     alternates: {
       canonical,
       languages: {
-        en: `${getPublicSiteOrigin()}${pathname}`,
-        "da-DK": `${getPublicSiteOrigin()}${joinPath("da-DK", pathname)}`,
-        "x-default": `${getPublicSiteOrigin()}${pathname}`,
+        en: getAbsoluteSiteUrl(pathname),
+        "da-DK": getAbsoluteSiteUrl(joinPath("da-DK", pathname)),
+        "x-default": getAbsoluteSiteUrl(pathname),
       },
     },
     robots: {

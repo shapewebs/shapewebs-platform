@@ -104,12 +104,16 @@ type SiteThemeToggleProps = {
 };
 
 export function SiteThemeToggle({ className }: SiteThemeToggleProps) {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => getStoredTheme());
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const systemPrefersDark = useSyncExternalStore(
     subscribeToSystemTheme,
     getSystemThemeSnapshot,
     () => false,
   );
+
+  useEffect(() => {
+    setThemeMode(getStoredTheme());
+  }, []);
 
   const resolvedTheme = useMemo<ResolvedTheme>(() => {
     if (themeMode === "system") {

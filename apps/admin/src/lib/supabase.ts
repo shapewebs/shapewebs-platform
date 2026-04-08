@@ -19,11 +19,6 @@ export async function createAdminCookieAdapter(): Promise<SupabaseCookieAdapter>
         value: cookie.value,
       }));
     },
-    setAll(cookiesToSet) {
-      cookiesToSet.forEach((cookie) => {
-        cookieStore.set(cookie.name, cookie.value, cookie.options);
-      });
-    },
   };
 }
 

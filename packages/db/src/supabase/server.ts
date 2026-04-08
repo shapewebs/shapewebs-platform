@@ -17,14 +17,20 @@ export function createServerSupabaseClient(cookieAdapter: SupabaseCookieAdapter)
     config.supabaseUrl,
     config.supabaseAnonKey,
     {
-      cookies: {
-        getAll() {
-          return cookieAdapter.getAll();
-        },
-        setAll(cookiesToSet: SupabaseCookie[]) {
-          cookieAdapter.setAll?.(cookiesToSet);
-        },
-      },
+      cookies: cookieAdapter.setAll
+        ? {
+            getAll() {
+              return cookieAdapter.getAll();
+            },
+            setAll(cookiesToSet: SupabaseCookie[]) {
+              cookieAdapter.setAll?.(cookiesToSet);
+            },
+          }
+        : {
+            getAll() {
+              return cookieAdapter.getAll();
+            },
+          },
     },
   );
 }

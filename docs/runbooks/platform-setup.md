@@ -151,6 +151,11 @@ If `cms` and `ops` are not exposed, login can appear to work but the admin app w
 
 Create two Vercel projects from the same Git repository.
 
+When Vercel asks for GitHub access:
+
+- install the Vercel GitHub app on **Only select repositories**
+- grant it access only to `shapewebs-platform`
+
 ### Project 1
 
 - Name: `shapewebs-web`
@@ -162,6 +167,96 @@ Create two Vercel projects from the same Git repository.
 - Root directory: `apps/admin`
 
 Keep both projects in the same Vercel team.
+
+Recommended import behavior:
+
+- Framework preset: `Next.js`
+- Root Directory: set per app as above
+- Build/Install commands: leave default unless Vercel fails to infer the monorepo correctly
+
+Fallback commands if Vercel does not infer them correctly:
+
+### `shapewebs-web`
+
+- Install Command: `pnpm install --frozen-lockfile`
+- Build Command: `pnpm --filter @shapewebs/web build`
+
+### `shapewebs-admin`
+
+- Install Command: `pnpm install --frozen-lockfile`
+- Build Command: `pnpm --filter @shapewebs/admin build`
+
+## 3.5. Set Vercel environment variables
+
+Use:
+
+- **Production** environment variables for the live domains and `shapewebs-prod`
+- **Preview** environment variables for Vercel preview deployments and `shapewebs-staging`
+- local `.env.local` files for local development
+
+Do not point Vercel **Preview** deployments at production Supabase.
+
+### `shapewebs-web` production envs
+
+- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
+- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
+- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-prod project URL>`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-prod publishable key>`
+- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-prod secret key>`
+- `PREVIEW_TOKEN_SECRET=<production preview secret>`
+- `REVALIDATION_WEBHOOK_SECRET=<production revalidation secret>`
+
+Optional until enabled:
+
+- `TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
+- `RESEND_API_KEY`
+- `SENTRY_DSN`
+- `SENTRY_AUTH_TOKEN`
+
+### `shapewebs-admin` production envs
+
+- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
+- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
+- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-prod project URL>`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-prod publishable key>`
+- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-prod secret key>`
+- `PREVIEW_TOKEN_SECRET=<production preview secret>`
+- `REVALIDATION_WEBHOOK_SECRET=<production revalidation secret>`
+
+Optional until enabled:
+
+- `TURNSTILE_SECRET_KEY`
+- `RESEND_API_KEY`
+- `SENTRY_DSN`
+- `SENTRY_AUTH_TOKEN`
+
+### `shapewebs-web` preview envs
+
+- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
+- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
+- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-staging project URL>`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-staging publishable key>`
+- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-staging secret key>`
+- `PREVIEW_TOKEN_SECRET=<staging preview secret>`
+- `REVALIDATION_WEBHOOK_SECRET=<staging revalidation secret>`
+
+### `shapewebs-admin` preview envs
+
+- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
+- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
+- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-staging project URL>`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-staging publishable key>`
+- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-staging secret key>`
+- `PREVIEW_TOKEN_SECRET=<staging preview secret>`
+- `REVALIDATION_WEBHOOK_SECRET=<staging revalidation secret>`
+
+Important:
+
+- the current app expects fixed site/admin origins for preview handoff and metadata
+- Vercel preview deployments are therefore for build and UI verification first
+- cross-app editorial preview is most reliable on the production domains today
+- later, add dedicated staging domains if you want fully correct hosted staging preview flows
 
 ## 4. Add production domains in Vercel
 
