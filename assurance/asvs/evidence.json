@@ -337,14 +337,22 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/admin/next.config.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-3.2.1",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/components/content/content-renderer.tsx",
+        "packages/email/src/lead-template.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
       "id": "v5.0.0-3.2.2",
       "owner": "Shapewebs owner"
     },
@@ -373,50 +381,89 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-3.4.1",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/auth-environment.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "tests/unit/admin-auth-environment.test.ts"
+      ],
       "id": "v5.0.0-3.4.2",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "accepted_risk",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts",
+        "tests/e2e/security.spec.ts",
+        "docs/security/asvs-matrix.md"
+      ],
+      "expiresOn": "2026-10-24",
       "id": "v5.0.0-3.4.3",
+      "notes": "Admin HTML uses a per-response nonce and admin APIs deny all resource loading. The static public site retains script-src 'unsafe-inline' to preserve CDN rendering; arbitrary HTML and marketing scripts are prohibited, structured content is escaped, remaining directives are restrictive, and the risk is reviewed at every Next.js upgrade and before launch.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/web/next.config.ts",
+        "apps/admin/next.config.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-3.4.4",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts"
+      ],
       "id": "v5.0.0-3.4.5",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/admin/next.config.ts",
+        "apps/admin/src/proxy.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-3.4.6",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "tests/unit/admin-auth-environment.test.ts"
+      ],
       "id": "v5.0.0-3.5.1",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "apps/web/src/lib/forms.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-3.5.2",
       "owner": "Shapewebs owner"
     },
@@ -427,32 +474,52 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "docs/foundation/architecture.md",
+        "docs/audits/staging-runtime-verification-2026-07-24.md",
+        "apps/web/next.config.ts",
+        "apps/admin/next.config.ts"
+      ],
       "id": "v5.0.0-3.5.4",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-3.5.5",
+      "notes": "Shapewebs does not use the browser postMessage interface.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "package.json",
+        "pnpm-lock.yaml",
+        ".github/workflows/security.yml"
+      ],
       "id": "v5.0.0-3.7.1",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/redirect.ts",
+        "packages/content-schema/src/index.ts",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
       "id": "v5.0.0-3.7.2",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/admin/src/proxy.ts",
+        "tests/e2e/security.spec.ts"
+      ],
       "id": "v5.0.0-4.1.1",
       "owner": "Shapewebs owner"
     },
@@ -463,8 +530,12 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/request-identity.ts",
+        "apps/web/src/lib/forms.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
       "id": "v5.0.0-4.1.3",
       "owner": "Shapewebs owner"
     },
@@ -475,39 +546,45 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.3.1",
+      "notes": "Shapewebs exposes no GraphQL endpoint and accepts no client-defined data-layer query expression.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.3.2",
+      "notes": "Shapewebs exposes no GraphQL endpoint or introspection service.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.4.1",
+      "notes": "Shapewebs has no application WebSocket connections.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.4.2",
+      "notes": "Shapewebs has no WebSocket handshake endpoint.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.4.3",
+      "notes": "Shapewebs has no dedicated WebSocket session token.",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
+      "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-4.4.4",
+      "notes": "Shapewebs has no HTTPS-to-WebSocket session transition.",
       "owner": "Shapewebs owner"
     },
     {

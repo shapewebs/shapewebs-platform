@@ -36,14 +36,15 @@ The final local evidence is recorded after the canonical commands run:
 
 | Command/evidence                              | Result                                                   |
 | --------------------------------------------- | -------------------------------------------------------- |
-| `corepack pnpm verify`                        | Passed: 50 tests; 100% statements/lines, 96.62% branches |
+| `corepack pnpm verify`                        | Passed: 57 tests; 100% statements/lines, 96.62% branches |
 | webpack builds for both applications          | Passed                                                   |
 | Turbopack builds for both applications        | Passed                                                   |
 | Playwright Chromium critical/security/a11y    | 9/9 passed                                               |
 | Lighthouse CI, three-run assertions           | Passed                                                   |
 | `corepack pnpm clean:artifacts`               | Seven known paths removed; no tracked generated drift    |
 | Disposable Neon lifecycle on current worktree | Passed locally: migrate/RLS/rollback/restore/cleanup     |
-| k6 and ZAP against exact protected staging    | Blocked until fixed staging variables exist              |
+| k6 against exact protected staging            | Passed in GitHub run `30097779661`                       |
+| ZAP against exact protected staging           | Bind-mount access fix pending approval                   |
 
 During verification, the Turborepo parent remained alive after both Next.js
 builds had reported success. The canonical root `build` command now invokes

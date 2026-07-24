@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import {
+  buildAdminApiContentSecurityPolicy,
   buildAdminSecurityHeaders,
   workspaceTranspilePackages,
 } from "@shapewebs/config";
@@ -14,6 +15,15 @@ const nextConfig: NextConfig = {
         headers: buildAdminSecurityHeaders({
           includeContentSecurityPolicy: false,
         }),
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: buildAdminApiContentSecurityPolicy(),
+          },
+        ],
       },
     ];
   },

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
 import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
+import { getClientIp } from "../../apps/web/src/lib/request-identity";
 import { getOptionalExactHttpsOrigin } from "../../monitoring/lib/environment";
 import {
   escapeEmailHtml,
@@ -14,6 +15,30 @@ import { contactFormSchema } from "../../packages/validation/src/index";
 import { readBoundedText } from "../../packages/validation/src/http";
 
 describe("reliability and provider boundaries", () => {
+  it("trusts only the Vercel-owned forwarding header in production", () => {
+    const headers = new Headers({
+      "x-forwarded-for": "198.51.100.20",
+      "x-real-ip": "198.51.100.21",
+      "x-vercel-forwarded-for": "203.0.113.10, 203.0.113.11",
+    });
+
+    expect(getClientIp(headers, { NODE_ENV: "production", VERCEL: "1" })).toBe(
+      "203.0.113.10",
+    );
+    expect(getClientIp(headers, { NODE_ENV: "production" })).toBe("unknown");
+    expect(
+      getClientIp(
+        new Headers({
+          "x-vercel-forwarded-for": "not-an-ip",
+        }),
+        { NODE_ENV: "production", VERCEL: "1" },
+      ),
+    ).toBe("unknown");
+    expect(getClientIp(headers, { NODE_ENV: "development" })).toBe(
+      "198.51.100.20",
+    );
+  });
+
   it("requires explicit lead privacy acknowledgement", () => {
     const input = {
       consentAccepted: false,

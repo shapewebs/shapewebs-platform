@@ -13,6 +13,7 @@ import {
 } from "@shapewebs/validation";
 
 export { consumeRateLimit } from "./rate-limit";
+export { getClientIp } from "./request-identity";
 
 const maximumRequestBytes = 16 * 1_024;
 const uuidPattern =
@@ -65,15 +66,6 @@ export function createLeadResponse(
 
 function getHashedIdentifier(value: string) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-export function getClientIp(headers: Headers) {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() ?? "unknown";
-  }
-
-  return headers.get("x-real-ip") ?? "unknown";
 }
 
 export function getIdempotencyKey(headers: Headers): string | null {

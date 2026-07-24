@@ -28,8 +28,9 @@ connected to production data, or promoted to the production domains.
   are version controlled.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
-  requirements. The first encoding/validation review has 35 path-validated
-  dispositions and 218 explicitly unreviewed requirements; structural
+  requirements. Encoding, validation, browser-security, API and transport
+  review has 57 path-validated dispositions and 196 explicitly unreviewed
+  requirements; structural
   verification is canonical, and the production gate remains fail-closed until
   every requirement is reviewed.
 - `pnpm verify` is the canonical local/CI gate. `pnpm verify:release` adds dual
@@ -136,8 +137,7 @@ These are intentionally not guessed or provisioned:
 
 - first-owner Google email and Google OAuth client ID/secret;
 - Checkly account/API credentials and an alert channel;
-- a k6 runtime-compatibility fix and a complete green protected-staging k6/ZAP
-  run;
+- a complete green protected-staging ZAP run;
 - production Turnstile site/secret keys and the exact production hostname;
 - Resend API key, webhook signing secret, sending/recipient addresses, and
   webhook registration;
@@ -153,9 +153,10 @@ These are intentionally not guessed or provisioned:
 
 The `staging` Preview branch now has isolated Neon, URL, application-secret,
 Turnstile and synthetic-retention variables. The GitHub staging-assurance
-credential is valid and reaches k6; the current k6 script then stops because
-its runtime does not expose the browser `URL` constructor, so ZAP has not yet
-run. Google OAuth, Resend and Checkly remain unconfigured. Production
+credential is valid, and run `30097779661` passed the k6 staging thresholds.
+ZAP then failed before scanning because its non-root container could not access
+the two ephemeral bind mounts; the narrowly scoped permission fix is pending
+approval. Google OAuth, Resend and Checkly remain unconfigured. Production
 database/auth/email variables remain intentionally unconfigured for the new
 path. Existing transitional Supabase production variables are not removed
 until the corresponding CMS and public-content paths have verified Neon
@@ -163,8 +164,8 @@ parity.
 
 ## Next implementation slices
 
-1. Obtain approval for the focused k6 runtime fix, promote the reviewed
-   candidate to fixed staging, and obtain a green k6/ZAP run.
+1. Obtain approval for the focused ZAP bind-mount fix and obtain a green
+   protected-staging ZAP run.
 2. Complete the real Turnstile lead/outbox journey from an attached in-app
    staging browser tab.
 3. Configure the account-specific Google, Resend, Checkly, and Vercel settings

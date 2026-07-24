@@ -79,9 +79,13 @@ Vercel transport returned the application `200` responses recorded above.
 
 The staging release gate is not green:
 
-- k6 stops before making requests because its JavaScript runtime does not
-  expose the browser `URL` constructor used by the checked-in smoke script;
-- ZAP is ordered after k6 and was therefore skipped;
+- GitHub run `30097779661` passed the k6 smoke thresholds after replacing the
+  unsupported browser `URL` constructor with a strict k6-compatible origin
+  parser;
+- ZAP then failed before scanning because its non-root container could neither
+  write the ephemeral report bind mount nor read the ephemeral secret-config
+  bind mount. The credential was not printed, and the temporary secret was
+  removed in `finally`;
 - the real Turnstile lead/outbox journey still requires an attached in-app
   staging browser tab;
 - migration `0006` and its retention route are verified on the candidate and
