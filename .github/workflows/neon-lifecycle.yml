@@ -2,7 +2,7 @@ name: Neon non-production lifecycle
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
   workflow_dispatch:
     inputs:
       confirm_project:
