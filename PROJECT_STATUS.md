@@ -26,6 +26,10 @@ connected to production data, or promoted to the production domains.
 - The threat model, ASVS matrix, data/processor register, SLOs, incident
   runbook, staging-assurance runbook, and deterministic code-hygiene contract
   are version controlled.
+- The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
+  SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
+  requirements; structural verification is canonical, and the production gate
+  remains fail-closed until every requirement is reviewed.
 - `pnpm verify` is the canonical local/CI gate. `pnpm verify:release` adds dual
   builds, Playwright, Lighthouse, k6, and ZAP. Release-only network tests refuse
   targets outside an exact staging allowlist.
@@ -142,6 +146,8 @@ These are intentionally not guessed or provisioned:
   production-only least-privilege credentials;
 - WAF/distributed rate limits, production monitoring alerts, provider DPAs,
   approved legal retention, and an incident/restore exercise.
+- requirement-level review and evidence disposition for all 253 target ASVS
+  5.0.0 controls.
 
 The `staging` Preview branch now has isolated Neon, URL, application-secret,
 Turnstile and synthetic-retention variables. The GitHub staging-assurance

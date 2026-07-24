@@ -6,9 +6,11 @@
   `accepted risk`
 - Review cadence: quarterly and at each release gate
 
-This matrix groups related ASVS requirements. The exact ASVS requirement IDs
-must be added when the official machine-readable 5.0 requirement catalog is
-checked into the assurance process.
+This matrix groups related ASVS requirements for engineering orientation. The
+exact, version-qualified requirement register and pinned official catalog index
+are maintained in `assurance/asvs`. The structural check runs in `pnpm verify`;
+the stricter production launch gate fails while any target requirement remains
+unreviewed.
 
 | Control area                                 | Target | Status      | Implementation/evidence                                                                                               | Owner        |
 | -------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -56,9 +58,9 @@ or review date, and evidence that the release gate reviewed it.
 ## Completion rule
 
 This grouped matrix is the live engineering summary, not a claim of
-certification. Before production, the official machine-readable ASVS 5.0
-catalog must be pinned to a reviewed version and every applicable requirement
-must link to one of:
+certification. The official stable ASVS 5.0.0 machine-readable catalog is
+pinned by release asset and SHA-256. Before production, every target requirement
+in `assurance/asvs/evidence.json` must link to one of:
 
 - implementation and automated evidence;
 - a named manual verification with a dated result;
