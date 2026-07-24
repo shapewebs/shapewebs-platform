@@ -474,7 +474,6 @@ async function readFixture() {
       order by user_id`,
     sql`select
         id,
-        command_id,
         organization_id,
         slug,
         name,
@@ -520,6 +519,7 @@ async function readFixture() {
       where id = ${fixture.contentRevisions[0].id}`,
     sql`select
         id,
+        command_id,
         organization_id,
         kind,
         status,
