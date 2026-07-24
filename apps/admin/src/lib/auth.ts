@@ -137,6 +137,7 @@ function toAdminSessionContext(
 }
 
 async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
+  const requestHeaders = await headers();
   const setupMode = isLocalAdminSetupMode();
 
   if (setupMode) {
@@ -159,7 +160,7 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   }
 
   const primarySession = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!primarySession) {
