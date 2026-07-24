@@ -54,11 +54,14 @@ connected to production data, or promoted to the production domains.
 - Public and admin health endpoints separate liveness from readiness and return
   stable, sanitized payloads.
 - Checkly monitoring-as-code defines two-minute public home/readiness checks,
-  optional protected staging admin readiness, a ten-minute synthetic lead
-  journey and daily marker-restricted cleanup. Web and admin monitoring use
+  protected staging admin readiness, a ten-minute synthetic lead journey and
+  daily marker-restricted cleanup. Web and admin monitoring use
   distinct encrypted Vercel bypass credentials. All five checks notify the
   confirmed Gmail inbox. The three staging schedules are active; public checks
   remain inactive until the foundation release passes their launch assertions.
+- Fixed non-secret staging origins are checked-in defaults, so a local Checkly
+  deployment always instantiates all five resources and missing shell variables
+  cannot delete the staging checks.
 - The protected GitHub `staging` branch is mapped to fixed
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
@@ -117,6 +120,12 @@ connected to production data, or promoted to the production domains.
   signatures returned application `400`. The exact synthetic lead, outbox and
   webhook rows were removed afterward, and no test recipient remains
   configured.
+- A second synthetic journey used Resend's safe bounce address. The worker
+  processed one event once, signed `email.sent` and `email.bounced` events
+  reached Neon, and the final monotonic delivery state was `email.bounced`.
+  Resend replayed the successful bounce webhook; attempt two received
+  `{"status":"duplicate"}` while Neon retained one bounce event. The exact
+  fixture and temporary recipient were then removed.
 - Outbox delivery uses bounded claiming, application and provider idempotency,
   safe retry/backoff, a terminal/manual-review state, and protection against
   replay after the provider idempotency window.
@@ -168,8 +177,8 @@ These are intentionally not guessed or provisioned:
 - first-owner Google email and Google OAuth client ID/secret;
 - production Turnstile site/secret keys and the exact production hostname;
 - a reachable external Resend notification recipient and production Resend
-  key/webhook configuration; staging delivery evidence is complete, while a
-  provider-level replay and bounced-event exercise remain useful follow-ups;
+  key/webhook configuration; staging delivery, bounce and provider replay
+  evidence is complete;
 - Vercel Pro or another trigger capable of meeting the 15-minute email
   objective. Hobby Cron is configured only once daily and cannot satisfy that
   SLO;
@@ -188,25 +197,29 @@ staging-assurance credential was rotated after evidence review found that ZAP
 internal logs echo replacer values; the affected artifact was deleted, all
 public-project bypass tokens were revoked, and a clean rerun proved that only
 redacted reports remain. A first Resend webhook bypass exposed by dashboard
-inspection was revoked before activation and replaced. Neon CLI then echoed the
-staging migrator connection string despite a requested JSON format; that
-non-production role password was reset immediately and the replacement
-connection was verified. No temporary local Keychain copy remains. Google
-OAuth remains unconfigured. Checkly is authenticated locally, its Gmail alert
-channel delivered the controlled failure and recovery, and the three protected
-staging schedules are active. Staging email delivery is disabled again until a
-reachable notification recipient is chosen. Production
-database/auth/email variables remain intentionally unconfigured for the new
-path. Existing transitional Supabase production variables are not removed
-until the corresponding CMS and public-content paths have verified Neon parity.
+inspection was revoked before activation and replaced. The provider replay
+later displayed the active endpoint again, so Resend was moved to another
+seven-event replacement before revocation. Neon CLI then echoed the staging
+migrator connection string despite a requested JSON format; that non-production
+role password was reset immediately and the replacement connection was
+verified. No temporary local Keychain copy remains. Google OAuth remains
+unconfigured. Checkly is authenticated locally, its Gmail alert channel
+delivered the controlled failure and recovery, and the three protected staging
+schedules are active. One operator deploy briefly recreated those three check
+objects after their then-optional origin variables were absent; commit
+`1b6924e` makes the fixed staging resources unconditional and a subsequent
+three-check session passed. Staging email delivery is disabled again until a
+reachable notification recipient is chosen. Production database/auth/email
+variables remain intentionally unconfigured for the new path. Existing
+transitional Supabase production variables are not removed until the
+corresponding CMS and public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
 1. Configure the owner Google identity/client and complete the Google-to-TOTP
    fail-closed staging journey.
-2. Choose a reachable external notification recipient, then exercise a
-   provider replay and safe bounced-event journey against the registered
-   staging webhook.
+2. Choose a reachable external notification recipient for ordinary staging
+   and later production notifications.
 3. Provision minute-level outbox scheduling and record the retention and
    outbox heartbeats.
 4. Replace the Supabase CMS paths one vertical slice at a time, then remove

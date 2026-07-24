@@ -2,8 +2,9 @@
 
 - Date: 24 July 2026
 - Environment: synthetic non-production staging
-- Status: control plane, protected-host assurance, Turnstile persistence and
-  outbound-provider acceptance verified; account-specific journeys pending
+- Status: control plane, protected-host assurance, Turnstile persistence,
+  outbound-provider acceptance, bounce and replay verified; Google OAuth and
+  production account configuration remain pending
 
 ## GitHub and Vercel
 
@@ -65,6 +66,11 @@ secret was neither printed nor written to the repository.
   events. Resend received `200` on the first attempt, Neon reached
   `email.delivered`, and the exact synthetic rows and temporary test recipient
   were removed afterward.
+- A separate safe `bounced@resend.dev` journey produced signed `email.sent` and
+  `email.bounced` events. Replaying the successful bounce event produced
+  `{"status":"duplicate"}` on attempt two while Neon retained one bounce event
+  and the monotonic `email.bounced` state. The exact fixture and recipient were
+  removed afterward.
 - ImprovMX was removed. Apex null MX, SPF `-all`, and DMARC quarantine now
   prevent inbound delivery and spoofing while Resend's outbound DKIM and
   `send` subdomain records remain.
@@ -83,7 +89,6 @@ Detailed evidence and explicit limitations are recorded in
 
 - Configure an authenticated scheduler for the POST-only retention route and
   record its first successful deletion after the six-day threshold.
-- Configure Google OAuth and Checkly.
-- Add a reachable external Resend recipient for ordinary notifications and
-  exercise provider replay plus a safe bounced-event journey before claiming
-  the complete staging launch gate.
+- Configure Google OAuth and complete the owner-to-TOTP journey.
+- Add a reachable external Resend recipient for ordinary notifications before
+  claiming the complete staging launch gate.

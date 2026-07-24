@@ -38,7 +38,7 @@ The final local evidence is recorded after the canonical commands run:
 
 | Command/evidence                              | Result                                                     |
 | --------------------------------------------- | ---------------------------------------------------------- |
-| `corepack pnpm verify`                        | Passed: 58 tests; 100% statements/lines, 96.62% branches   |
+| `corepack pnpm verify`                        | Passed: 64 tests; 100% statements/lines, 96.62% branches   |
 | webpack builds for both applications          | Passed                                                     |
 | Turbopack builds for both applications        | Passed                                                     |
 | Playwright Chromium critical/security/a11y    | 9/9 passed                                                 |
@@ -69,11 +69,12 @@ configuration below.
 ## External configuration gates
 
 - Google OAuth owner identity, client, secret, and exact fixed origins.
-- Checkly account/API credentials, alert channel, and controlled-failure test.
+- Non-interactive Checkly credentials if monitoring deployment later moves
+  from the authenticated local CLI session into CI.
 - Production Turnstile keys and exact expected hostname.
 - Reachable external Resend notification recipient and production
-  key/webhook configuration. Staging signed delivery passed; provider replay
-  and a safe bounced-event exercise remain follow-ups.
+  key/webhook configuration. Staging signed delivery, safe bounce and
+  provider-level replay/deduplication passed.
 - Minute-level protected outbox scheduling. The checked-in Hobby Cron schedule
   is daily and cannot meet the 15-minute SLO.
 - Paid production Neon/Vercel topology, production recovery rehearsal, WAF

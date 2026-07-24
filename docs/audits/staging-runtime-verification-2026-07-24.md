@@ -139,6 +139,23 @@ The exact second fixture was removed in one database transaction: two provider
 webhook rows, one outbox row, and one lead row. Its temporary Resend test
 recipient was removed and the fixed admin alias was redeployed without it.
 
+A third isolated journey used Resend's documented safe bounce address.
+Checkly session `019f950e-9d0e-4342-ac46-16d2b888dc41` committed one exact
+lead/outbox pair, and the worker processed it in one attempt. Resend message
+`c9bf7a75-f6cf-4b1f-b86d-b3dfabfae40c` produced signed `email.sent` and
+`email.bounced` events. Neon reached final monotonic delivery state
+`email.bounced`.
+
+The successful bounce webhook was manually replayed. Resend showed attempt
+count `2` for the same event ID and received
+`200 {"status":"duplicate"}` on the replay. Neon retained two lifecycle rows
+total and only one bounce row, proving event-ID deduplication under a real
+provider replay. The exact fixture was then removed in one transaction: two
+provider webhook rows, one outbox row and one lead row. The temporary bounce
+recipient was removed, staging was redeployed, readiness remained `200`, and
+the outbox endpoint returned fail-closed `service_unavailable` without a
+recipient.
+
 With explicit owner approval that inbound forwarding is not required,
 ImprovMX's two MX records and apex SPF include were removed. Vercel's
 authoritative nameservers and public resolvers then returned:
@@ -189,6 +206,12 @@ replaced. Only the replacement was registered. After verification, temporary
 local Keychain copies of the webhook bypass and rotated staging cron secret were
 deleted.
 
+The provider replay dashboard necessarily displayed the later active endpoint
+again. That bypass was likewise replaced in Resend and revoked in Vercel after
+the replay. The replacement remained isolated from Checkly and the Vercel
+system secret, all seven webhook subscriptions were preserved, and a separate
+post-rotation Checkly readiness run passed.
+
 Neon CLI `2.36.0` ignored `--output json` for `connection-string` and included
 the staging migrator URL in a parser error. The `shapewebs_migrator` password
 was reset immediately through the authenticated Neon API. A fresh direct
@@ -198,11 +221,10 @@ written to the repository.
 
 ## Explicitly incomplete evidence
 
-- Google OAuth, the owner-to-TOTP journey, Checkly alerts and the
-  controlled-failure exercise remain account-specific gates;
+- Google OAuth and the owner-to-TOTP journey remain account-specific gates;
 - a reachable external Resend notification recipient is still required for
-  ordinary staging notifications; staging signed-delivery evidence is complete,
-  while a provider replay and safe bounced-event exercise remain follow-ups;
+  ordinary staging notifications; staging signed delivery, safe bounce and
+  provider replay/deduplication evidence is complete;
 - minute-level scheduling and paid production Neon/Vercel topology remain
   launch gates;
 - no production application deployment or database was changed; the only

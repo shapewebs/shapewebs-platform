@@ -4,7 +4,7 @@
 
 - Date: 24 July 2026
 - Source branch: `codex/foundation`
-- Verified source commit: `7d611e8`
+- Verified source commit: `1b6924e`
 - Checkly account: `lukasthomsen@shapewebs.com`
 - Checkly plan during verification: Trial
 - Alert recipient: `shapewebs@gmail.com`
@@ -32,6 +32,13 @@ unused extra bypasses were revoked. No disclosed bypass remains active.
 The three temporary macOS Keychain copies used for the controlled exercise were
 deleted after Checkly stored the values as write-only secrets.
 
+During the later provider-replay verification, the Resend dashboard necessarily
+displayed the webhook endpoint containing its dedicated Vercel bypass. That
+bypass was replaced in Resend, subscribed to all seven events, and revoked in
+Vercel. A post-rotation Checkly admin-readiness run passed with the separate
+Checkly-only bypass. The temporary outbox-worker secret copy was also removed
+from the macOS Keychain.
+
 ## Managed resources
 
 Checkly project `Shapewebs platform` manages:
@@ -40,10 +47,10 @@ Checkly project `Shapewebs platform` manages:
 - public home check `62c28a3b-527c-48b4-b476-3975a379aebd`;
 - public readiness check `97e0ff23-6acf-4344-8abb-c4b4520a5311`;
 - staging admin readiness check
-  `ce4c74b6-383c-475d-b756-3c98c57eb603`;
-- staging lead browser check `25373197-423a-4e68-9b95-7b4dda51e666`;
+  `5b16d724-9871-4f60-b0c8-e59473b6c0fa`;
+- staging lead browser check `e3334c29-1ffe-43ec-81cd-6842ad68fe6c`;
 - staging synthetic-retention check
-  `ec3d6dbe-86e3-4d3a-b982-7808fba2a346`.
+  `a8e5b310-7657-4f2b-b4c6-fbba3dc13aee`.
 
 The unusable zero-subscription channel targeting
 `lukasthomsen@shapewebs.com` was removed after the Gmail channel delivered
@@ -116,6 +123,44 @@ The first scheduled post-enable cycle passed:
 - synthetic retention: 524 ms at `2026-07-24T16:28:35.577Z`.
 
 No new failure notification was generated after staging activation.
+
+## Safe bounce, replay and monitor-resource recovery
+
+Recorded session `019f950e-9d0e-4342-ac46-16d2b888dc41`
+created exactly one synthetic lead/outbox pair while the recurring lead
+schedule was paused. The protected worker processed one event in one attempt
+through Resend's documented safe bounce address. Resend message
+`c9bf7a75-f6cf-4b1f-b86d-b3dfabfae40c` reached `bounced`, while Neon stored
+one signed `email.sent` event, one signed `email.bounced` event and final
+delivery state `email.bounced`.
+
+The successful bounce webhook was then replayed from Resend. Its dashboard
+showed two attempts for the same event ID and the second application response
+was `{"status":"duplicate"}`. Neon still contained two lifecycle rows total,
+including only one bounce row, and the outbox remained sent with one provider
+attempt. Cleanup then removed two webhook rows, one outbox row and one lead
+row. The temporary bounce recipient was removed from Vercel, staging was
+redeployed, readiness remained `200`, and the worker returned fail-closed
+`service_unavailable` without a notification recipient.
+
+While pausing schedules, one CLI deploy was invoked without the two local
+non-secret staging-origin variables. The then-optional definitions caused
+Checkly to remove and recreate the three staging check objects. Public checks,
+the alert channel, provider secrets and application data were unaffected, but
+the recreated check objects received the IDs recorded above and their
+object-level history restarted. Previously recorded test-session evidence and
+this audit record remain available.
+
+Commit `1b6924e` removes that failure mode: the fixed staging origins are safe
+checked-in defaults, and all staging resources are always instantiated.
+Preview and live deployments without local origin variables both reported
+only update/unchanged resources. Post-hardening session
+`019f951a-437c-4c44-8ce7-bacb28f029c6` passed admin readiness in 405 ms, the
+lead journey in eight seconds and synthetic retention in 427 ms. The exact two
+synthetic rows created by the explicit and scheduled lead runs were removed
+after evidence collection.
+
+## Final provider and schedule state
 
 The public home and public readiness resources remain deployed but inactive
 until the foundation release reaches `shapewebs.com` and passes their

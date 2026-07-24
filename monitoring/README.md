@@ -7,10 +7,11 @@ two-minute `eu-west-1` defaults from `checkly.config.ts`.
 
 - `CHECKLY_WEB_BASE_URL` must be an HTTPS origin without credentials.
 - The default target is `https://shapewebs.com`.
-- `CHECKLY_STAGING_WEB_BASE_URL`, when present, must be one exact HTTPS origin.
-- `CHECKLY_STAGING_ADMIN_BASE_URL`, when present, must be the fixed protected
-  admin staging origin. It enables both the two-minute admin-readiness check
-  and the daily synthetic-retention check.
+- The staging resources are always defined. Their checked-in non-secret
+  defaults are `https://staging.shapewebs.com` and
+  `https://admin-staging.shapewebs.com`; exact HTTPS environment overrides are
+  accepted when a deliberate staging move is required. Missing local origin
+  variables can never remove the managed staging checks.
 - The lead journey targets only protected staging, uses synthetic `.invalid`
   contact data, and must be paired with staging Turnstile test keys and
   automatic cleanup within seven days.
@@ -45,6 +46,8 @@ two-minute `eu-west-1` defaults from `checkly.config.ts`.
   resources without enabling their schedules.
 - `CHECKLY_ACTIVATION_PROFILE=staging pnpm exec checkly deploy` enables only
   the protected staging checks.
+- `CHECKLY_ACTIVATION_PROFILE=staging pnpm exec checkly deploy --preview
+--output` previews a staging deployment without changing provider state.
 - `CHECKLY_ACTIVATION_PROFILE=enabled pnpm exec checkly deploy` enables the
   verified schedules.
 - Local deployment uses the authenticated Checkly CLI session. Non-interactive
