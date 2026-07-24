@@ -41,6 +41,23 @@ DENY`, a restrictive Permissions Policy and a strict referrer policy. Their
 payloads did not identify a database, provider, version, hostname, connection
 detail or secret.
 
+## Deployed input-boundary evidence
+
+Protected public staging rejected non-persisting contact requests at the
+expected boundary:
+
+| Case                                          | Result |
+| --------------------------------------------- | ------ |
+| Missing or malformed idempotency key          | `400`  |
+| Valid idempotency key with a non-JSON body    | `415`  |
+| Valid idempotency key with an invalid payload | `400`  |
+| Valid payload without a Turnstile token       | `400`  |
+
+Each response used `no-store`, returned a generic bounded JSON error and
+retained the public security headers. These requests stop before the
+persistence path; the valid-payload case proved that deployed Turnstile
+enforcement does not fail open.
+
 ## Protection-bypass rotation
 
 The obsolete dedicated `GitHub staging assurance` bypass was revoked and
@@ -52,6 +69,11 @@ then passed protected-target and credential validation and entered k6.
 The temporary bypass created for an attempted interactive browser check was
 revoked after the in-app browser failed to attach a controllable tab. No form
 was submitted and no CAPTCHA was reached.
+
+Raw requests carrying an intentionally invalid bypass value returned `302`
+with `Cache-Control: no-store, max-age=0` to Vercel authentication for both
+fixed health endpoints. They did not reach either application. Authenticated
+Vercel transport returned the application `200` responses recorded above.
 
 ## Explicitly incomplete evidence
 
