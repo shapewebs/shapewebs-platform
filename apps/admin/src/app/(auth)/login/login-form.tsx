@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { adminAuthClient } from "@shapewebs/auth/client";
 import { Buttons } from "@shapewebs/ui";
-import { createBrowserSupabaseClient } from "@shapewebs/db/browser";
+
 import { getSafeAdminRedirectTarget } from "@/lib/redirect";
+
 import styles from "./page.module.css";
 
 type LoginFormProps = {
@@ -13,8 +15,9 @@ type LoginFormProps = {
 
 function getRouteErrorMessage(errorCode: string | null) {
   switch (errorCode) {
+    case "access_denied":
     case "unauthorized":
-      return "Your account is not authorized for the Shapewebs admin portal.";
+      return "This Google account is not authorized for Shapewebs Admin.";
     case "setup":
       return "Authentication still needs to be configured for this environment.";
     default:
@@ -23,7 +26,6 @@ function getRouteErrorMessage(errorCode: string | null) {
 }
 
 export function LoginForm({ isConfigured }: LoginFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -33,86 +35,7 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
   const routeErrorMessage = getRouteErrorMessage(searchParams.get("error"));
 
   return (
-    <form
-      className={styles.formB8q1n7}
-      onSubmit={(event) => {
-        event.preventDefault();
-
-        if (!isConfigured) {
-          setErrorMessage(
-            "Authentication is not configured in this environment.",
-          );
-          return;
-        }
-
-        const formData = new FormData(event.currentTarget);
-        const email = String(formData.get("email") ?? "");
-        const password = String(formData.get("password") ?? "");
-        const supabase = createBrowserSupabaseClient();
-
-        if (!supabase) {
-          setErrorMessage(
-            "Authentication is not configured in this environment.",
-          );
-          return;
-        }
-
-        startTransition(async () => {
-          setErrorMessage(null);
-
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (error) {
-            setErrorMessage(error.message);
-            return;
-          }
-
-          const { data: assurance } =
-            await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-          if (
-            assurance?.currentLevel !== "aal2" &&
-            assurance?.nextLevel === "aal2"
-          ) {
-            router.replace(
-              `/login/mfa?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(redirectTo))}`,
-            );
-            router.refresh();
-            return;
-          }
-
-          router.replace(getSafeAdminRedirectTarget(redirectTo));
-          router.refresh();
-        });
-      }}
-    >
-      <label className={styles.fieldM4k7v3}>
-        <span>Email</span>
-        <input
-          autoComplete="email"
-          disabled={!isConfigured || isPending}
-          name="email"
-          placeholder="owner@shapewebs.com"
-          required
-          type="email"
-        />
-      </label>
-
-      <label className={styles.fieldM4k7v3}>
-        <span>Password</span>
-        <input
-          autoComplete="current-password"
-          disabled={!isConfigured || isPending}
-          name="password"
-          placeholder="••••••••••••"
-          required
-          type="password"
-        />
-      </label>
-
+    <div className={styles.formB8q1n7}>
       {errorMessage ? (
         <p className={styles.errorStateC6d2r9} role="alert">
           {errorMessage}
@@ -126,11 +49,40 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
       <Buttons.Button
         disabled={!isConfigured || isPending}
         kind="primary"
+        onClick={() => {
+          if (!isConfigured) {
+            setErrorMessage(
+              "Authentication is not configured in this environment.",
+            );
+            return;
+          }
+
+          startTransition(async () => {
+            setErrorMessage(null);
+
+            const { error } = await adminAuthClient.signIn.social({
+              callbackURL: redirectTo,
+              errorCallbackURL: `/login?error=access_denied&redirectTo=${encodeURIComponent(redirectTo)}`,
+              provider: "google",
+            });
+
+            if (error) {
+              setErrorMessage(
+                "Google sign-in could not be started. Please try again.",
+              );
+            }
+          });
+        }}
         size="medium"
-        type="submit"
+        type="button"
       >
-        {isPending ? "Signing in..." : "Continue"}
+        {isPending ? "Opening Google..." : "Continue with Google"}
       </Buttons.Button>
-    </form>
+
+      <p className={styles.noticeStateV7m3k2}>
+        Public signup and password login are disabled. Only explicitly
+        allowlisted owner accounts can create an admin session.
+      </p>
+    </div>
   );
 }

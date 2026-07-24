@@ -20,7 +20,7 @@ const [identity] = await sql`
 `;
 
 assert.equal(identity.current_user, "shapewebs_migrator");
-assert.equal(identity.migration_count, 4);
+assert.equal(identity.migration_count, 6);
 
 const [before] = await sql`
   select
@@ -70,7 +70,7 @@ assert.equal(
 );
 assert.equal(
   after.migration_count,
-  4,
+  6,
   "The migration journal must be unchanged",
 );
 

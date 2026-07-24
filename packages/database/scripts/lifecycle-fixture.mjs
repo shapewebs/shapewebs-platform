@@ -120,6 +120,7 @@ const fixture = {
   leads: [
     {
       id: "10000000-0000-4000-8000-000000000006",
+      commandId: "10000000-0000-4000-8000-000000000006",
       organizationId: "10000000-0000-4000-8000-000000000001",
       kind: "contact",
       status: "new",
@@ -127,6 +128,7 @@ const fixture = {
       email: "lifecycle-lead@example.test",
       message: "Synthetic lead retained through recovery",
       payload: { source: "lifecycle-test" },
+      requestFingerprint: "lifecycle-fixture-v1",
     },
   ],
   files: [
@@ -369,6 +371,7 @@ async function seedFixture(value) {
       )`,
     sql`insert into app.lead_submissions (
         id,
+        command_id,
         organization_id,
         kind,
         status,
@@ -376,10 +379,12 @@ async function seedFixture(value) {
         email,
         message,
         payload,
+        request_fingerprint,
         created_at
       )
       values (
         ${lead.id},
+        ${lead.commandId},
         ${lead.organizationId},
         ${lead.kind},
         ${lead.status},
@@ -387,6 +392,7 @@ async function seedFixture(value) {
         ${lead.email},
         ${lead.message},
         ${JSON.stringify(lead.payload)}::jsonb,
+        ${lead.requestFingerprint},
         ${timestamp}::timestamptz
       )`,
     sql`insert into app.files (
@@ -468,6 +474,7 @@ async function readFixture() {
       order by user_id`,
     sql`select
         id,
+        command_id,
         organization_id,
         slug,
         name,
@@ -519,7 +526,8 @@ async function readFixture() {
         name,
         email,
         message,
-        payload
+        payload,
+        request_fingerprint
       from app.lead_submissions
       where id = ${fixture.leads[0].id}`,
     sql`select
@@ -612,6 +620,7 @@ async function readFixture() {
     })),
     leads: leads.map((row) => ({
       id: row.id,
+      commandId: row.command_id,
       organizationId: row.organization_id,
       kind: row.kind,
       status: row.status,
@@ -619,6 +628,7 @@ async function readFixture() {
       email: row.email,
       message: row.message,
       payload: row.payload,
+      requestFingerprint: row.request_fingerprint,
     })),
     files: files.map((row) => ({
       id: row.id,

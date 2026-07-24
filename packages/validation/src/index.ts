@@ -1,36 +1,63 @@
 import { z } from "zod";
 import { supportedLocales } from "@shapewebs/i18n";
 
+export { readBoundedText } from "./http";
+
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
 
 const sharedEnvSchema = z.object({
+  ADMIN_OWNER_EMAILS: z.string().min(3).optional(),
+  BETTER_AUTH_SECRET: z.string().min(32).optional(),
+  BETTER_AUTH_URL: z.url().optional(),
+  CRON_SECRET: z.string().min(32).optional(),
+  DATABASE_URL: z.string().min(1).optional(),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  LEAD_IP_HASH_SECRET: z.string().min(32).optional(),
+  LEAD_NOTIFICATION_FROM_EMAIL: z.email().optional(),
+  LEAD_NOTIFICATION_TO_EMAIL: z.email().optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   PREVIEW_TOKEN_SECRET: z.string().min(32).optional(),
   REVALIDATION_WEBHOOK_SECRET: z.string().min(32).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
-  TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
+  SHAPEWEBS_ORGANIZATION_ID: z.string().uuid().optional(),
+  TURNSTILE_EXPECTED_HOSTNAME: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   SENTRY_DSN: z.string().min(1).optional(),
 });
 
 export const webEnvSchema = sharedEnvSchema.pick({
+  DATABASE_URL: true,
+  LEAD_IP_HASH_SECRET: true,
   NEXT_PUBLIC_SITE_URL: true,
   NEXT_PUBLIC_SUPABASE_URL: true,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: true,
-  TURNSTILE_SITE_KEY: true,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: true,
+  SHAPEWEBS_ORGANIZATION_ID: true,
+  TURNSTILE_EXPECTED_HOSTNAME: true,
   TURNSTILE_SECRET_KEY: true,
-  RESEND_API_KEY: true,
   PREVIEW_TOKEN_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
   SENTRY_DSN: true,
 });
 
 export const adminEnvSchema = sharedEnvSchema.pick({
+  ADMIN_OWNER_EMAILS: true,
+  BETTER_AUTH_SECRET: true,
+  BETTER_AUTH_URL: true,
+  CRON_SECRET: true,
+  DATABASE_URL: true,
+  GOOGLE_CLIENT_ID: true,
+  GOOGLE_CLIENT_SECRET: true,
+  LEAD_NOTIFICATION_FROM_EMAIL: true,
+  LEAD_NOTIFICATION_TO_EMAIL: true,
   NEXT_PUBLIC_ADMIN_URL: true,
   NEXT_PUBLIC_SITE_URL: true,
   NEXT_PUBLIC_SUPABASE_URL: true,
@@ -38,8 +65,9 @@ export const adminEnvSchema = sharedEnvSchema.pick({
   SUPABASE_SERVICE_ROLE_KEY: true,
   PREVIEW_TOKEN_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
-  TURNSTILE_SECRET_KEY: true,
   RESEND_API_KEY: true,
+  RESEND_WEBHOOK_SECRET: true,
+  SHAPEWEBS_ORGANIZATION_ID: true,
   SENTRY_DSN: true,
 });
 
@@ -154,7 +182,7 @@ export const contactFormSchema = z.object({
   company: z.string().max(160).optional(),
   message: z.string().min(10).max(4000),
   localeCode: localeCodeEnum.default("en"),
-  consentAccepted: z.boolean(),
+  consentAccepted: z.literal(true),
 });
 
 export const projectInquirySchema = contactFormSchema.extend({

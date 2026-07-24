@@ -140,8 +140,8 @@ function createDatabase(branchId) {
   console.log(`Created fresh database ${databaseName} on ${branchId}.`);
 }
 
-function connectionString(branchId, roleName) {
-  const response = runNeon([
+function connectionString(branchId, roleName, pooled = false) {
+  const args = [
     "connection-string",
     branchId,
     "--project-id",
@@ -150,12 +150,23 @@ function connectionString(branchId, roleName) {
     roleName,
     "--database-name",
     databaseName,
-  ]);
+  ];
+
+  if (pooled) {
+    args.push("--pooled");
+  }
+
+  const response = runNeon(args);
   assert.equal(typeof response, "string");
   const parsed = new URL(response);
   assert.equal(parsed.username, roleName);
   assert.equal(parsed.pathname, `/${databaseName}`);
   assert.equal(parsed.password.length > 0, true);
+  assert.equal(
+    parsed.hostname.includes("-pooler."),
+    pooled,
+    `${roleName} connection pool mode is incorrect`,
+  );
   return response;
 }
 
@@ -163,9 +174,17 @@ function connectionsFor(branchId) {
   return {
     DATABASE_OWNER_URL: connectionString(branchId, "shapewebs_owner"),
     DATABASE_MIGRATION_URL: connectionString(branchId, "shapewebs_migrator"),
-    DATABASE_ADMIN_URL: connectionString(branchId, "shapewebs_admin_runtime"),
-    DATABASE_WEB_URL: connectionString(branchId, "shapewebs_web_runtime"),
-    DATABASE_PUBLIC_URL: connectionString(branchId, "shapewebs_public_reader"),
+    DATABASE_ADMIN_URL: connectionString(
+      branchId,
+      "shapewebs_admin_runtime",
+      true,
+    ),
+    DATABASE_WEB_URL: connectionString(branchId, "shapewebs_web_runtime", true),
+    DATABASE_PUBLIC_URL: connectionString(
+      branchId,
+      "shapewebs_public_reader",
+      true,
+    ),
   };
 }
 

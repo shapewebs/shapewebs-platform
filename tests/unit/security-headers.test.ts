@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildAdminContentSecurityPolicy,
   buildAdminSecurityHeaders,
   buildWebSecurityHeaders,
 } from "../../packages/config/src/security";
@@ -22,6 +23,10 @@ describe("security headers", () => {
 
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain(
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    );
+    expect(csp).toContain("frame-src 'self' https://challenges.cloudflare.com");
     expect(csp).not.toContain("'unsafe-eval'");
     expect(headers.get("strict-transport-security")).toContain(
       "includeSubDomains",
@@ -41,5 +46,22 @@ describe("security headers", () => {
     const headers = toHeaderMap(buildAdminSecurityHeaders());
 
     expect(headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
+
+  it("builds an admin nonce policy without inline script execution", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const csp = buildAdminContentSecurityPolicy("safeNonce123");
+
+    expect(csp).toContain("'nonce-safeNonce123'");
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp.match(/script-src [^;]+/)?.[0]).not.toContain("'unsafe-inline'");
+    expect(csp).not.toContain("challenges.cloudflare.com");
+    expect(csp).not.toContain("supabase.co");
+  });
+
+  it("rejects malformed admin CSP nonces", () => {
+    expect(() => buildAdminContentSecurityPolicy("bad nonce;")).toThrow(
+      "invalid characters",
+    );
   });
 });

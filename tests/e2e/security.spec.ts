@@ -55,6 +55,9 @@ test("form endpoints reject malformed payloads and missing production controls",
       message: "Local automated fail-closed verification.",
       name: "Automated Test",
     },
+    headers: {
+      "Idempotency-Key": "f6214344-7525-42d0-83ac-210881b1b7b6",
+    },
   });
 
   expect(unavailableResponse.status()).toBe(503);

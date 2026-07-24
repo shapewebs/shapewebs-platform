@@ -1,9 +1,12 @@
 import { getSettingsSnapshot } from "@shapewebs/db";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 import styles from "./page.module.css";
 
 export default async function SettingsPage() {
-  const runtime = await getAdminRuntimeState();
+  const runtime = await requireAdminSession({
+    redirectTo: "/settings",
+    roles: ["owner"],
+  });
   const settings = await getSettingsSnapshot(runtime.supabase);
 
   return (

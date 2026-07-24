@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDocumentEditorState } from "@shapewebs/db";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 import { PageEditorForm } from "../../_components/page-editor-form";
 
 type PageEditorRouteProps = {
@@ -27,7 +27,10 @@ export default async function PageEditorRoute({
 }: PageEditorRouteProps) {
   const routeParams = await params;
   const query = searchParams ? await searchParams : undefined;
-  const runtime = await getAdminRuntimeState();
+  const runtime = await requireAdminSession({
+    redirectTo: `/content/pages/${routeParams.documentId}`,
+    roles: ["owner", "editor"],
+  });
   const editorState = await getDocumentEditorState(runtime.supabase, {
     documentId: routeParams.documentId,
     localeCode: query?.locale,

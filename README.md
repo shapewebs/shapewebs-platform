@@ -24,11 +24,12 @@ prototype to:
 - Vercel Blob for public and private media
 
 Supabase remains transitional code only until the complete replacement passes
-authentication, preview-isolation, restore, and release tests. The first
-Better Auth/Neon/Drizzle package slice and negative database authorization
-tests now pass; the admin route and Google login are the next slice. Production
-authentication and form persistence fail closed when required configuration is
-missing.
+authentication, preview-isolation, restore, and release tests. Better Auth is
+mounted only in the admin app with Google allowlisting and explicit TOTP
+step-up. Public leads now use an atomic Neon lead/outbox transaction, while
+provider credentials and the fixed staging journey remain launch gates.
+Production authentication and form persistence fail closed when required
+configuration is missing.
 
 See the [foundation architecture](docs/foundation/architecture.md), the
 [current-state audit](docs/audits/current-state-2026-07-23.md), and the
@@ -43,7 +44,9 @@ the [Phase 0 implementation plan](docs/plans/phase-0-foundation.md), and the
 - Neon Postgres with `@neondatabase/serverless`
 - Drizzle ORM and reviewed SQL migrations
 - Resend for transactional notifications; `shapewebs.com` is provider-verified,
-  while runtime integration and Production credentials remain pending
+  while staging/Production credentials remain pending
+- OpenTelemetry, Vercel Observability/Speed Insights, and Checkly
+  monitoring-as-code
 - strict TypeScript
 - pnpm 10.17.1 through Corepack
 - Turborepo
@@ -89,18 +92,9 @@ Use the package-manager version declared in `package.json`:
 corepack pnpm install --frozen-lockfile
 corepack pnpm dev:web
 corepack pnpm dev:admin
-corepack pnpm format:check
-corepack pnpm lint
-corepack pnpm lint:docs
-corepack pnpm typecheck
-corepack pnpm test:coverage
-corepack pnpm check:boundaries
-corepack pnpm check:deps
-corepack pnpm check:cycles
-corepack pnpm --filter @shapewebs/database db:check
-corepack pnpm build
-corepack pnpm build:webpack
-corepack pnpm audit
+corepack pnpm verify
+corepack pnpm verify:release
+corepack pnpm clean:artifacts
 ```
 
 Install Chromium once with

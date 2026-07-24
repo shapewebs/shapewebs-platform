@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { hasAdminSupabaseConfig, isLocalAdminSetupMode } from "@/lib/supabase";
+import { hasAdminAuthConfig, isLocalAdminSetupMode } from "@/lib/better-auth";
 import { LoginForm } from "./login-form";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
-  const isConfigured = hasAdminSupabaseConfig();
+  const isConfigured = hasAdminAuthConfig();
   const isLocalSetupMode = isLocalAdminSetupMode();
 
   return (
@@ -13,8 +13,8 @@ export default function LoginPage() {
         <p className={styles.eyebrowZ3p9t2}>Shapewebs Admin</p>
         <h1 className={styles.titleR6k2m4}>CMS access</h1>
         <p className={styles.copyH2v8q6}>
-          Sign in with your admin account, then complete MFA before entering the
-          CMS.
+          Sign in with your allowlisted Google account, then complete a TOTP
+          check before entering the CMS.
         </p>
 
         {isLocalSetupMode ? (

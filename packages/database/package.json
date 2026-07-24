@@ -4,6 +4,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./admin-auth": "./src/admin-auth.ts",
     "./auth-schema": "./src/schema/auth.ts",
     "./factory": "./src/client.ts",
     "./schema": "./src/schema/index.ts",

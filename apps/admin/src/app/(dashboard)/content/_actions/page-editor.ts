@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { contentDocumentSchema } from "@shapewebs/content-schema";
 import { createDraftRevision, createPreviewToken } from "@shapewebs/db";
 import { pageEditorInputSchema } from "@shapewebs/validation";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 
 function getSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -44,7 +44,12 @@ function normalizeOptionalValue(value: FormDataEntryValue | null) {
 }
 
 export async function savePageEditorAction(formData: FormData) {
-  const runtime = await getAdminRuntimeState();
+  const runtime = await requireAdminSession({
+    freshStepUpWithinSeconds:
+      formData.get("intent") === "publish" ? 10 * 60 : undefined,
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
 
   if (!runtime.supabase) {
     redirect("/content?error=setup");

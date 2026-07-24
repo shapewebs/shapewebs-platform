@@ -1,0 +1,92 @@
+import { BrowserCheck, Frequency } from "checkly/constructs";
+
+function getStagingBaseUrl(): URL | null {
+  const configuredUrl = process.env.CHECKLY_STAGING_WEB_BASE_URL;
+
+  if (!configuredUrl) {
+    return null;
+  }
+
+  const baseUrl = new URL(configuredUrl);
+
+  if (
+    baseUrl.protocol !== "https:" ||
+    baseUrl.origin !== configuredUrl ||
+    baseUrl.username ||
+    baseUrl.password
+  ) {
+    throw new Error(
+      "CHECKLY_STAGING_WEB_BASE_URL must be one exact HTTPS origin.",
+    );
+  }
+
+  return baseUrl;
+}
+
+const stagingBaseUrl = getStagingBaseUrl();
+
+if (stagingBaseUrl) {
+  const contactUrl = new URL("/contact", stagingBaseUrl).toString();
+
+  new BrowserCheck("staging-lead-journey", {
+    name: "Staging lead acceptance journey",
+    activated: true,
+    frequency: Frequency.EVERY_10M,
+    locations: ["eu-west-1"],
+    code: {
+      content: `
+        const { expect, test } = require("@playwright/test");
+
+        test("persists one synthetic staging lead", async ({ page }) => {
+          await page.goto(${JSON.stringify(contactUrl)}, {
+            waitUntil: "domcontentloaded",
+          });
+
+          const form = page.locator("form").first();
+          await form.getByLabel("Name").fill("Checkly Synthetic Monitor");
+          await form
+            .getByLabel("Email")
+            .fill("synthetic-monitor@shapewebs.invalid");
+          await form
+            .getByLabel("Company")
+            .fill("CHECKLY_SYNTHETIC_DO_NOT_CONTACT");
+          await form
+            .getByLabel("Message")
+            .fill("Synthetic staging reliability check. Safe to delete.");
+          await form
+            .locator('input[name="consentAccepted"]')
+            .check();
+
+          const turnstileResponse = form.locator(
+            'input[name="cf-turnstile-response"]',
+          );
+          await expect(turnstileResponse).toHaveValue(/.+/, {
+            timeout: 15_000,
+          });
+
+          const responsePromise = page.waitForResponse(
+            (response) =>
+              response.request().method() === "POST" &&
+              response.url().endsWith("/api/forms/contact"),
+          );
+          await form.getByRole("button", {
+            name: "Send contact request",
+          }).click();
+          const response = await responsePromise;
+
+          expect(response.status()).toBe(200);
+          await expect(form).toContainText(
+            "Thanks, your message has been received.",
+          );
+        });
+      `,
+    },
+    playwrightConfig: {
+      use: {
+        locale: "en-GB",
+        timezoneId: "Europe/Copenhagen",
+      },
+    },
+    tags: ["lead", "staging", "synthetic"],
+  });
+}

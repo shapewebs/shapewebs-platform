@@ -1,8 +1,15 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["k6"],
+  "ignoreDependencies": ["k6"],
   "workspaces": {
     ".": {
-      "entry": ["lighthouserc.cjs"],
+      "entry": [
+        "checkly.config.ts",
+        "lighthouserc.cjs",
+        "monitoring/checks/*.ts",
+        "tests/load/*.js",
+      ],
     },
   },
 }

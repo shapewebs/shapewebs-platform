@@ -1,0 +1,76 @@
+# Assurance implementation evidence — 24 July 2026
+
+## Scope
+
+This record covers the short-term security, reliability, observability,
+authentication, lead-delivery, and worktree-hygiene controls added to draft
+pull request `shapewebs/shapewebs-platform#7`.
+
+Production was not changed. Provider credentials were not committed, copied
+into source, or added to Preview/Production.
+
+## Implemented controls
+
+- GitHub ruleset, secret scanning/push protection, dependency review,
+  CODEOWNERS, security policy, SHA-pinned Actions, CodeQL, OSV, and periodic
+  Scorecard.
+- Canonical `verify`, `verify:release`, generated-output, and allowlisted
+  artifact-cleanup commands.
+- Threat model, grouped ASVS register, processor/retention register, SLOs,
+  incident response, and staging security/load runbooks.
+- Typed redacted logs, OpenTelemetry instrumentation, liveness/readiness,
+  Vercel Speed Insights, and Checkly monitoring definitions.
+- Admin-only Better Auth with Google allowlisting, exact origins, fixed
+  sessions, inactivity/revocation, secure cookies, TOTP step-up, per-entry
+  authorization, and append-only audit events.
+- Bounded and validated public forms, server-side Turnstile, atomic Neon
+  lead/outbox persistence, idempotent delivery, bounded retries, signed
+  deduplicated Resend webhooks, and minimal notification content.
+- Forced RLS and negative database cases for role capability, tenant access,
+  public reads, web writes, admin expiry/revocation/inactivity/role/step-up,
+  replay, webhook ordering, and audit immutability.
+
+## Local verification
+
+The final local evidence is recorded after the canonical commands run:
+
+| Command/evidence                            | Result                                                   |
+| ------------------------------------------- | -------------------------------------------------------- |
+| `corepack pnpm verify`                      | Passed: 50 tests; 100% statements/lines, 96.62% branches |
+| webpack builds for both applications        | Passed                                                   |
+| Turbopack builds for both applications      | Passed                                                   |
+| Playwright Chromium critical/security/a11y  | 9/9 passed                                               |
+| Lighthouse CI, three-run assertions         | Passed                                                   |
+| `corepack pnpm clean:artifacts`             | Seven known paths removed; no tracked generated drift    |
+| Disposable Neon lifecycle on current commit | Pending pull-request run                                 |
+| k6 and ZAP against exact protected staging  | Blocked until fixed staging variables exist              |
+
+During verification, the Turborepo parent remained alive after both Next.js
+builds had reported success. The canonical root `build` command now invokes
+both app-level Turbopack builds sequentially; it completed with exit code zero.
+Turborepo remains in use for the workspace type-check graph and Vercel
+coordination.
+
+The release gate is not green until the protected staging target exists and
+the account-specific provider configuration below is complete.
+
+## External configuration gates
+
+- Google OAuth owner identity, client, secret, and exact fixed origins.
+- Checkly account/API credentials, alert channel, and controlled-failure test.
+- Fixed protected staging hosts and GitHub variables for Checkly, k6, and ZAP.
+- Turnstile staging/production keys and exact expected hostnames.
+- Resend key, webhook signing secret/registration, notification addresses, and
+  DMARC decision.
+- Minute-level protected outbox scheduling. The checked-in Hobby Cron schedule
+  is daily and cannot meet the 15-minute SLO.
+- Paid production Neon/Vercel topology, production recovery rehearsal, WAF
+  limits, provider DPA records, and approved retention automation.
+
+## Residual scope
+
+Supabase CMS/public-content components remain transitional and are removed only
+after each Neon-backed slice passes authorization, parity, rollback, and
+release tests. Upload validation, full content revision/publish/rollback,
+stable staging, production recovery, and the future customer portal remain
+later milestones.

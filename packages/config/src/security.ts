@@ -14,16 +14,49 @@ const sharedHeaders: Header[] = [
   },
 ];
 
-function buildCsp(options: { allowAnalytics: boolean }) {
+function buildCsp(options: {
+  allowAnalytics: boolean;
+  allowTurnstile: boolean;
+}) {
   const connectSrc = [
     "'self'",
-    "https://*.supabase.co",
-    "wss://*.supabase.co",
     ...(options.allowAnalytics ? ["https://vitals.vercel-insights.com"] : []),
   ].join(" ");
   const scriptSrc = [
     "'self'",
     "'unsafe-inline'",
+    ...(options.allowTurnstile ? ["https://challenges.cloudflare.com"] : []),
+    ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
+  ].join(" ");
+  const frameSrc = [
+    "'self'",
+    ...(options.allowTurnstile ? ["https://challenges.cloudflare.com"] : []),
+  ].join(" ");
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "object-src 'none'",
+    `connect-src ${connectSrc}`,
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    `frame-src ${frameSrc}`,
+  ].join("; ");
+}
+
+export function buildAdminContentSecurityPolicy(nonce: string): string {
+  if (!/^[A-Za-z0-9+/=_-]+$/.test(nonce)) {
+    throw new Error("The CSP nonce contains invalid characters.");
+  }
+
+  const scriptSrc = [
+    "'self'",
+    `'nonce-${nonce}'`,
+    "'strict-dynamic'",
     ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
   ].join(" ");
 
@@ -32,10 +65,10 @@ function buildCsp(options: { allowAnalytics: boolean }) {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "img-src 'self' data: blob: https:",
+    "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "object-src 'none'",
-    `connect-src ${connectSrc}`,
+    "connect-src 'self'",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "frame-src 'self'",
@@ -47,7 +80,7 @@ export function buildWebSecurityHeaders(): Header[] {
     ...sharedHeaders,
     {
       key: "Content-Security-Policy",
-      value: buildCsp({ allowAnalytics: true }),
+      value: buildCsp({ allowAnalytics: true, allowTurnstile: true }),
     },
     {
       key: "Strict-Transport-Security",
@@ -56,13 +89,22 @@ export function buildWebSecurityHeaders(): Header[] {
   ];
 }
 
-export function buildAdminSecurityHeaders(): Header[] {
+export function buildAdminSecurityHeaders(options?: {
+  includeContentSecurityPolicy?: boolean;
+}): Header[] {
   return [
     ...sharedHeaders,
-    {
-      key: "Content-Security-Policy",
-      value: buildCsp({ allowAnalytics: false }),
-    },
+    ...(options?.includeContentSecurityPolicy === false
+      ? []
+      : [
+          {
+            key: "Content-Security-Policy",
+            value: buildCsp({
+              allowAnalytics: false,
+              allowTurnstile: false,
+            }),
+          },
+        ]),
     {
       key: "Strict-Transport-Security",
       value: "max-age=63072000; includeSubDomains; preload",

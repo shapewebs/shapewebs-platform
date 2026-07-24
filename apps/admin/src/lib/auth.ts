@@ -1,49 +1,186 @@
+import { createHmac } from "node:crypto";
+
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  getAdminSessionContext,
-  type AdminSessionContext,
-} from "@shapewebs/db";
 import type { AdminRole } from "@shapewebs/config";
 import {
-  getAdminServerSupabaseClient,
-  hasAdminSupabaseConfig,
-  isLocalAdminSetupMode,
-} from "./supabase";
-import { getSafeAdminRedirectTarget } from "./redirect";
+  appendAdminAuditEvent,
+  appendSystemAuditEvent,
+  authorizeAdminSession,
+  type AdminAuthorizationContext,
+} from "@shapewebs/database/server";
+import type { AdminSessionContext } from "@shapewebs/db";
+import {
+  createStructuredLogger,
+  resolveShapewebsEnvironment,
+} from "@shapewebs/observability";
 
-type AdminRuntimeState = {
+import {
+  getAdminAuth,
+  getAdminDatabaseUrl,
+  getAdminOrganizationId,
+  isLocalAdminSetupMode,
+} from "./better-auth";
+import { getSafeAdminRedirectTarget } from "./redirect";
+import { getAdminServerSupabaseClient } from "./supabase";
+
+type BetterAuthSession = NonNullable<
+  Awaited<
+    ReturnType<
+      NonNullable<ReturnType<typeof getAdminAuth>>["api"]["getSession"]
+    >
+  >
+>;
+
+export type AdminRuntimeState = {
+  authorization: AdminAuthorizationContext | null;
+  primarySession: BetterAuthSession | null;
   session: AdminSessionContext | null;
   setupMode: boolean;
   supabase: Awaited<ReturnType<typeof getAdminServerSupabaseClient>>;
 };
 
-export async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
-  const isConfigured = hasAdminSupabaseConfig();
+const logger = createStructuredLogger({
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+  environment: resolveShapewebsEnvironment(),
+  service: "shapewebs-admin",
+});
+
+async function recordAuthorizationDenial(
+  runtime: AdminRuntimeState,
+  reasonCode: string,
+) {
+  const databaseUrl = getAdminDatabaseUrl();
+  const organizationId = getAdminOrganizationId();
+  const requestHeaders = await headers();
+  const requestId = requestHeaders.get("x-request-id") ?? undefined;
+  const actorIdHash =
+    runtime.primarySession && process.env.BETTER_AUTH_SECRET
+      ? createHmac("sha256", process.env.BETTER_AUTH_SECRET)
+          .update(runtime.primarySession.user.id)
+          .digest("base64url")
+          .slice(0, 22)
+      : undefined;
+
+  logger.log({
+    actorIdHash,
+    eventCode: "shapewebs.auth.authorization_denied",
+    level: "warn",
+    metadata: {
+      reasonCode,
+      resourceType: "admin_route",
+    },
+    requestId,
+    result: "denied",
+  });
+
+  if (!databaseUrl || !organizationId || !runtime.primarySession) {
+    return;
+  }
+
+  const auditWrite = runtime.authorization
+    ? appendAdminAuditEvent(databaseUrl, {
+        action: "auth.authorization_denied",
+        organizationId,
+        requestId,
+        result: "denied",
+        role: runtime.authorization.role,
+        sessionId: runtime.primarySession.session.id,
+        targetId: reasonCode,
+        targetType: "admin_route",
+        userId: runtime.primarySession.user.id,
+      })
+    : appendSystemAuditEvent(databaseUrl, {
+        action: "auth.authorization_denied",
+        organizationId,
+        requestId,
+        result: "denied",
+        targetId: reasonCode,
+        targetType: "admin_route",
+      });
+
+  await Promise.allSettled([auditWrite]);
+}
+
+function toAdminSessionContext(
+  primarySession: BetterAuthSession,
+  authorization: AdminAuthorizationContext,
+): AdminSessionContext {
+  return {
+    aal: authorization.latestStepUpAt ? "aal2" : "aal1",
+    nextAal: "aal2",
+    profile: {
+      authUserId: primarySession.user.id,
+      defaultLocale: "en",
+      displayName: primarySession.user.name,
+      id: primarySession.user.id,
+      status: "active",
+    },
+    roles: [authorization.role],
+    sessionId: primarySession.session.id,
+    userEmail: primarySession.user.email,
+    userId: primarySession.user.id,
+  };
+}
+
+async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   const setupMode = isLocalAdminSetupMode();
-  const supabase = isConfigured ? await getAdminServerSupabaseClient() : null;
+  const supabase = await getAdminServerSupabaseClient();
 
   if (setupMode) {
     return {
+      authorization: null,
+      primarySession: null,
       session: null,
       setupMode: true,
       supabase,
     };
   }
 
-  if (!supabase) {
+  const auth = getAdminAuth();
+  const databaseUrl = getAdminDatabaseUrl();
+  const organizationId = getAdminOrganizationId();
+
+  if (!auth || !databaseUrl || !organizationId) {
     throw new Error(
       "Admin authentication is unavailable because its required configuration is missing.",
     );
   }
 
+  const primarySession = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!primarySession) {
+    return {
+      authorization: null,
+      primarySession: null,
+      session: null,
+      setupMode: false,
+      supabase,
+    };
+  }
+
+  const authorization = await authorizeAdminSession(databaseUrl, {
+    organizationId,
+    sessionId: primarySession.session.id,
+    userId: primarySession.user.id,
+  });
+
   return {
-    session: await getAdminSessionContext(supabase),
+    authorization,
+    primarySession,
+    session:
+      authorization === null
+        ? null
+        : toAdminSessionContext(primarySession, authorization),
     setupMode: false,
     supabase,
   };
 }
 
 export async function requireAdminSession(options?: {
+  freshStepUpWithinSeconds?: number;
   redirectTo?: string;
   roles?: AdminRole[];
 }) {
@@ -53,21 +190,32 @@ export async function requireAdminSession(options?: {
     return runtime;
   }
 
+  const redirectTo = getSafeAdminRedirectTarget(options?.redirectTo);
   const session = runtime.session;
-  if (
-    !session ||
-    session.profile.status !== "active" ||
-    session.roles.length === 0
-  ) {
-    redirect(
-      `/login?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(options?.redirectTo))}`,
-    );
+  const authorization = runtime.authorization;
+
+  if (!session || !authorization || !runtime.primarySession) {
+    await recordAuthorizationDenial(runtime, "session_unavailable");
+    redirect(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
-  if (session.nextAal === "aal2" && session.aal !== "aal2") {
-    redirect(
-      `/login/mfa?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(options?.redirectTo))}`,
-    );
+  if (
+    !runtime.primarySession.user.twoFactorEnabled ||
+    !authorization.latestStepUpAt
+  ) {
+    await recordAuthorizationDenial(runtime, "totp_step_up_required");
+    redirect(`/login/mfa?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+
+  if (options?.freshStepUpWithinSeconds) {
+    const oldestAllowed = Date.now() - options.freshStepUpWithinSeconds * 1_000;
+
+    if (authorization.latestStepUpAt.getTime() < oldestAllowed) {
+      await recordAuthorizationDenial(runtime, "totp_step_up_stale");
+      redirect(
+        `/login/mfa?redirectTo=${encodeURIComponent(redirectTo)}&reason=step-up`,
+      );
+    }
   }
 
   if (options?.roles?.length) {
@@ -76,8 +224,26 @@ export async function requireAdminSession(options?: {
     );
 
     if (!hasAnyRole) {
+      await recordAuthorizationDenial(runtime, "role_forbidden");
       redirect("/dashboard?error=forbidden");
     }
+  }
+
+  return runtime;
+}
+
+export async function requirePrimaryAdminSession(redirectTo = "/dashboard") {
+  const runtime = await getAdminRuntimeState();
+
+  if (runtime.setupMode) {
+    return runtime;
+  }
+
+  if (!runtime.primarySession || !runtime.authorization) {
+    await recordAuthorizationDenial(runtime, "primary_session_unavailable");
+    redirect(
+      `/login?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(redirectTo))}`,
+    );
   }
 
   return runtime;

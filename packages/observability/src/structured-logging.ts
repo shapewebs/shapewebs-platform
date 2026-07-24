@@ -1,3 +1,5 @@
+import { trace } from "@opentelemetry/api";
+
 export type StructuredLogLevel = "debug" | "info" | "warn" | "error";
 export type ShapewebsService =
   "shapewebs-web" | "shapewebs-admin" | "shapewebs-worker";
@@ -30,15 +32,37 @@ export type StructuredEvent = {
 type StructuredLoggerOptions = {
   deploymentId?: string;
   environment: ShapewebsEnvironment;
+  getTraceId?: () => string | undefined;
   now?: () => Date;
   service: ShapewebsService;
   sink?: (level: StructuredLogLevel, line: string) => void;
 };
 
+export function resolveShapewebsEnvironment(
+  environment: Record<string, string | undefined> = process.env,
+): ShapewebsEnvironment {
+  if (environment.NODE_ENV === "test") {
+    return "test";
+  }
+
+  if (environment.VERCEL_ENV === "preview") {
+    return "preview";
+  }
+
+  if (
+    environment.VERCEL_ENV === "production" ||
+    environment.NODE_ENV === "production"
+  ) {
+    return "production";
+  }
+
+  return "development";
+}
+
 const sensitiveKeyPattern =
   /authorization|cookie|credential|email|message|name|password|payload|secret|token/i;
 const secretValuePattern =
-  /(?:bearer\s+\S+|postgres(?:ql)?:\/\/|sk_[a-z0-9_-]+|-----BEGIN [A-Z ]+PRIVATE KEY-----)/i;
+  /(?:bearer\s+\S+|postgres(?:ql)?:\/\/|(?:api[_-]?key|password|secret|token)=\S+|github_pat_[a-z0-9_]+|gh[pousr]_[a-z0-9]+|\bre_[a-z0-9_-]{16,}\b|\bsk_[a-z0-9_-]+\b|eyJ[a-z0-9_-]+\.[a-z0-9_-]+\.[a-z0-9_-]+|-----BEGIN [A-Z ]+PRIVATE KEY-----)/i;
 
 export function sanitizeLogValue(value: unknown, key = "", depth = 0): unknown {
   if (sensitiveKeyPattern.test(key)) {
@@ -98,12 +122,21 @@ function defaultSink(level: StructuredLogLevel, line: string): void {
 }
 
 export function createStructuredLogger(options: StructuredLoggerOptions) {
+  const getTraceId =
+    options.getTraceId ??
+    (() => {
+      return trace.getActiveSpan()?.spanContext().traceId;
+    });
   const now = options.now ?? (() => new Date());
   const sink = options.sink ?? defaultSink;
 
   return {
     log(event: StructuredEvent): void {
-      const safeEvent = sanitizeLogValue(event) as StructuredEvent;
+      const traceId = event.traceId ?? getTraceId();
+      const safeEvent = sanitizeLogValue({
+        ...event,
+        ...(traceId ? { traceId } : {}),
+      }) as StructuredEvent;
       sink(
         event.level,
         JSON.stringify({

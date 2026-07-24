@@ -3,6 +3,7 @@ import "server-only";
 export {
   createStructuredLogger,
   evaluateReadiness,
+  resolveShapewebsEnvironment,
   sanitizeLogValue,
   type ReadinessCheck,
   type ReadinessResult,

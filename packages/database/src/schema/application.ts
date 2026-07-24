@@ -72,6 +72,13 @@ export const leadStatus = appSchema.enum("lead_status", [
   "spam",
 ]);
 
+export const outboxStatus = appSchema.enum("outbox_status", [
+  "pending",
+  "processing",
+  "sent",
+  "permanent_failure",
+]);
+
 const currentOrganizationId = sql`nullif(current_setting('app.organization_id', true), '')::uuid`;
 const currentUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const currentMembershipRole = sql`nullif(current_setting('app.membership_role', true), '')`;
@@ -435,6 +442,7 @@ export const leadSubmissions = appSchema.table(
   "lead_submissions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    commandId: uuid("command_id").notNull(),
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "restrict" }),
@@ -448,10 +456,12 @@ export const leadSubmissions = appSchema.table(
       .default({})
       .notNull(),
     sourceIpHash: text("source_ip_hash"),
+    requestFingerprint: text("request_fingerprint").notNull(),
     createdAt: createdAt(),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   },
   (table) => [
+    uniqueIndex("lead_submissions_command_unique").on(table.commandId),
     index("lead_submissions_organization_status_created_idx").on(
       table.organizationId,
       table.status,
@@ -472,6 +482,107 @@ export const leadSubmissions = appSchema.table(
       for: "insert",
       to: webRuntimeRole,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}`,
+    }),
+    pgPolicy("web runtime reads its lead receipts", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}`,
+    }),
+  ],
+);
+
+export const outboxEvents = appSchema.table(
+  "outbox_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "restrict" }),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leadSubmissions.id, { onDelete: "restrict" }),
+    eventType: text("event_type").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    status: outboxStatus("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    lockedBy: text("locked_by"),
+    providerMessageId: text("provider_message_id"),
+    deliveryStatus: text("delivery_status"),
+    deliveryOccurredAt: timestamp("delivery_occurred_at", {
+      withTimezone: true,
+    }),
+    lastErrorCode: text("last_error_code"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("outbox_events_idempotency_unique").on(table.idempotencyKey),
+    index("outbox_events_pending_idx").on(
+      table.status,
+      table.nextAttemptAt,
+      table.createdAt,
+    ),
+    index("outbox_events_organization_created_idx").on(
+      table.organizationId,
+      table.createdAt,
+    ),
+    index("outbox_events_provider_message_idx").on(table.providerMessageId),
+    check("outbox_events_attempts_nonnegative", sql`${table.attempts} >= 0`),
+    pgPolicy("admins manage outbox in current organization", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("web runtime inserts lead outbox events", {
+      for: "insert",
+      to: webRuntimeRole,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.eventType} = 'lead.notification.requested'
+        and exists (
+          select 1
+          from ${leadSubmissions}
+          where ${leadSubmissions.id} = ${table.leadId}
+            and ${leadSubmissions.organizationId} = ${currentOrganizationId}
+        )`,
+    }),
+  ],
+);
+
+export const providerWebhookEvents = appSchema.table(
+  "provider_webhook_events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "restrict" }),
+    provider: text("provider").notNull(),
+    eventType: text("event_type").notNull(),
+    providerMessageId: text("provider_message_id"),
+    bodyHash: text("body_hash").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    receivedAt: createdAt(),
+  },
+  (table) => [
+    index("provider_webhook_message_occurred_idx").on(
+      table.providerMessageId,
+      table.occurredAt,
+    ),
+    pgPolicy("admins read provider webhook events", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("admin runtime inserts provider webhook events", {
+      for: "insert",
+      to: adminRuntimeRole,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.provider} = 'resend'`,
     }),
   ],
 );

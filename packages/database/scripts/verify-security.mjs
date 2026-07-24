@@ -43,6 +43,16 @@ const ids = {
   otherOrganizationProject: randomUUID(),
   visibleUpdate: randomUUID(),
   hiddenUpdate: randomUUID(),
+  allowedLead: randomUUID(),
+  allowedOutbox: randomUUID(),
+  deliveredWebhook: `webhook-${randomUUID()}`,
+  sentWebhook: `webhook-${randomUUID()}`,
+  activeAdminSession: `security-session-active-${runId}`,
+  expiredAdminSession: `security-session-expired-${runId}`,
+  idleAdminSession: `security-session-idle-${runId}`,
+  revokedAdminSession: `security-session-revoked-${runId}`,
+  nonStepUpAdminSession: `security-session-no-step-up-${runId}`,
+  customerSession: `security-session-customer-${runId}`,
   draftDocument: randomUUID(),
   publishedDocumentA: randomUUID(),
   publishedDocumentB: randomUUID(),
@@ -86,6 +96,113 @@ async function seed() {
         (${ids.organizationB}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationA}, ${ids.customerUser}, 'customer', 'active'),
         (${ids.organizationB}, ${ids.otherUser}, 'customer', 'active')`,
+    fixtureAdmin`insert into auth.session (
+        id,
+        expires_at,
+        token,
+        created_at,
+        updated_at,
+        user_id
+      )
+      values
+        (
+          ${ids.activeAdminSession},
+          now() + interval '8 hours',
+          ${`token-active-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.expiredAdminSession},
+          now() - interval '1 minute',
+          ${`token-expired-${runId}`},
+          now() - interval '9 hours',
+          now(),
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.idleAdminSession},
+          now() + interval '8 hours',
+          ${`token-idle-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.revokedAdminSession},
+          now() + interval '8 hours',
+          ${`token-revoked-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.nonStepUpAdminSession},
+          now() + interval '8 hours',
+          ${`token-no-step-up-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.customerSession},
+          now() + interval '8 hours',
+          ${`token-customer-${runId}`},
+          now(),
+          now(),
+          ${ids.customerUser}
+        )`,
+    fixtureAdmin`insert into auth.admin_session_security (
+        session_id,
+        user_id,
+        last_seen_at,
+        step_up_verified_at,
+        revoked_at
+      )
+      values
+        (
+          ${ids.activeAdminSession},
+          ${ids.adminUser},
+          now(),
+          now(),
+          null
+        ),
+        (
+          ${ids.expiredAdminSession},
+          ${ids.adminUser},
+          now(),
+          now(),
+          null
+        ),
+        (
+          ${ids.idleAdminSession},
+          ${ids.adminUser},
+          now() - interval '31 minutes',
+          now() - interval '31 minutes',
+          null
+        ),
+        (
+          ${ids.revokedAdminSession},
+          ${ids.adminUser},
+          now(),
+          now(),
+          now()
+        ),
+        (
+          ${ids.nonStepUpAdminSession},
+          ${ids.adminUser},
+          now(),
+          null,
+          null
+        ),
+        (
+          ${ids.customerSession},
+          ${ids.customerUser},
+          now(),
+          now(),
+          null
+        )`,
     fixtureAdmin`insert into app.projects (id, organization_id, slug, name, status)
       values
         (${ids.assignedProject}, ${ids.organizationA}, 'assigned', 'Assigned Project', 'in_progress'),
@@ -124,6 +241,10 @@ async function cleanup() {
   await fixtureAdmin.transaction([
     fixtureAdmin`delete from audit.events
       where id = ${ids.auditEvent}`,
+    fixtureAdmin`delete from app.provider_webhook_events
+      where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
+    fixtureAdmin`delete from app.outbox_events
+      where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.lead_submissions
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.organizations
@@ -239,6 +360,94 @@ async function verifyAdminIsolation() {
   assert.deepEqual(customerDrafts, []);
 }
 
+async function authorizeSyntheticAdminSession({
+  sessionId,
+  userId,
+  organizationId = ids.organizationA,
+}) {
+  const now = new Date();
+  const inactivityCutoff = new Date(now.getTime() - 30 * 60 * 1_000);
+  const results = await admin.transaction([
+    admin`select set_config('app.organization_id', ${organizationId}, true)`,
+    admin`select set_config('app.user_id', ${userId}, true)`,
+    admin`select set_config('app.membership_role', 'customer', true)`,
+    admin`update auth.admin_session_security as security
+      set last_seen_at = ${now}
+      from auth.session as session
+      where security.session_id = ${sessionId}
+        and security.user_id = ${userId}
+        and security.revoked_at is null
+        and security.last_seen_at > ${inactivityCutoff}
+        and session.id = security.session_id
+        and session.user_id = security.user_id
+        and session.expires_at > ${now}
+        and exists (
+          select 1
+          from app.memberships
+          where organization_id = ${organizationId}
+            and user_id = ${userId}
+            and status = 'active'
+            and role in ('owner', 'editor')
+        )
+      returning security.step_up_verified_at`,
+    admin`select role
+      from app.memberships
+      where organization_id = ${organizationId}
+        and user_id = ${userId}
+        and status = 'active'
+      limit 1`,
+  ]);
+
+  const security = results[3][0];
+  const membership = results[4][0];
+
+  if (
+    !security ||
+    !membership ||
+    !["owner", "editor"].includes(membership.role)
+  ) {
+    return null;
+  }
+
+  return {
+    role: membership.role,
+    stepUpVerifiedAt: security.step_up_verified_at,
+  };
+}
+
+async function verifyAdminSessionAssurance() {
+  const active = await authorizeSyntheticAdminSession({
+    sessionId: ids.activeAdminSession,
+    userId: ids.adminUser,
+  });
+  assert.equal(active?.role, "owner");
+  assert.ok(active?.stepUpVerifiedAt);
+
+  const nonStepUp = await authorizeSyntheticAdminSession({
+    sessionId: ids.nonStepUpAdminSession,
+    userId: ids.adminUser,
+  });
+  assert.equal(nonStepUp?.role, "owner");
+  assert.equal(
+    nonStepUp?.stepUpVerifiedAt,
+    null,
+    "an OAuth session without TOTP assurance must not satisfy the step-up gate",
+  );
+
+  for (const [label, sessionId, userId] of [
+    ["expired", ids.expiredAdminSession, ids.adminUser],
+    ["idle", ids.idleAdminSession, ids.adminUser],
+    ["revoked", ids.revokedAdminSession, ids.adminUser],
+    ["customer-role", ids.customerSession, ids.customerUser],
+  ]) {
+    assert.equal(
+      await authorizeSyntheticAdminSession({ sessionId, userId }),
+      null,
+      `${label} session must fail closed`,
+    );
+  }
+}
+
 async function verifyPublicAndWebBoundaries() {
   const publicDocuments = await publicReader`
     select id
@@ -261,17 +470,21 @@ async function verifyPublicAndWebBoundaries() {
   );
   await expectDenied(
     publicReader`insert into app.lead_submissions (
+      command_id,
       organization_id,
       kind,
       name,
       email,
-      message
+      message,
+      request_fingerprint
     ) values (
+      ${randomUUID()},
       ${ids.organizationA},
       'contact',
       'Denied',
       'denied@example.test',
-      'Denied'
+      'Denied',
+      'denied'
     )`,
     "public lead write",
   );
@@ -279,41 +492,238 @@ async function verifyPublicAndWebBoundaries() {
   await web.transaction([
     web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
     web`insert into app.lead_submissions (
+      id,
+      command_id,
       organization_id,
       kind,
       name,
       email,
-      message
+      message,
+      request_fingerprint
     ) values (
+      ${ids.allowedLead},
+      ${ids.allowedLead},
       ${ids.organizationA},
       'contact',
       'Allowed',
       'allowed@example.test',
-      'Allowed'
+      'Allowed',
+      'allowed-fingerprint'
+    )`,
+    web`insert into app.outbox_events (
+      id,
+      organization_id,
+      lead_id,
+      event_type,
+      idempotency_key
+    ) values (
+      ${ids.allowedOutbox},
+      ${ids.organizationA},
+      ${ids.allowedLead},
+      'lead.notification.requested',
+      ${`security-lead/${ids.allowedLead}`}
     )`,
   ]);
+
+  const receipt = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select id, command_id, request_fingerprint
+      from app.lead_submissions
+      where id = ${ids.allowedLead}`,
+  ]);
+  assert.deepEqual(receipt[1], [
+    {
+      id: ids.allowedLead,
+      command_id: ids.allowedLead,
+      request_fingerprint: "allowed-fingerprint",
+    },
+  ]);
+
+  const replay = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`insert into app.lead_submissions (
+      id,
+      command_id,
+      organization_id,
+      kind,
+      name,
+      email,
+      message,
+      request_fingerprint
+    ) values (
+      ${ids.allowedLead},
+      ${ids.allowedLead},
+      ${ids.organizationA},
+      'contact',
+      'Changed replay',
+      'changed@example.test',
+      'Changed replay',
+      'changed-fingerprint'
+    )
+    on conflict (command_id) do nothing
+    returning id`,
+    web`insert into app.outbox_events (
+      id,
+      organization_id,
+      lead_id,
+      event_type,
+      idempotency_key
+    ) values (
+      ${randomUUID()},
+      ${ids.organizationA},
+      ${ids.allowedLead},
+      'lead.notification.requested',
+      ${`security-lead/${ids.allowedLead}`}
+    )
+    on conflict (idempotency_key) do nothing
+    returning id`,
+    web`select id, request_fingerprint
+      from app.lead_submissions
+      where command_id = ${ids.allowedLead}`,
+  ]);
+  assert.deepEqual(replay[1], []);
+  assert.deepEqual(replay[2], []);
+  assert.deepEqual(replay[3], [
+    {
+      id: ids.allowedLead,
+      request_fingerprint: "allowed-fingerprint",
+    },
+  ]);
+
+  await expectDenied(
+    web`select email from app.lead_submissions`,
+    "web lead personal-data read",
+  );
+  await expectDenied(web`select id from app.outbox_events`, "web outbox read");
 
   await expectDenied(
     web.transaction([
       web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
       web`insert into app.lead_submissions (
+        command_id,
         organization_id,
         kind,
         name,
         email,
-        message
+        message,
+        request_fingerprint
       ) values (
+        ${randomUUID()},
         ${ids.organizationB},
         'contact',
         'Cross tenant',
         'cross-tenant@example.test',
-        'Denied'
+        'Denied',
+        'cross-tenant'
       )`,
     ]),
     "cross-tenant lead write",
   );
+}
 
-  await expectDenied(web`select id from app.lead_submissions`, "web lead read");
+async function verifyWebhookIdempotencyAndOrdering() {
+  const providerMessageId = `provider-${runId}`;
+  const deliveredAt = "2026-07-24T12:00:00.000Z";
+  const sentAt = "2026-07-24T11:59:00.000Z";
+
+  await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`update app.outbox_events
+      set
+        provider_message_id = ${providerMessageId},
+        status = 'sent',
+        processed_at = now()
+      where id = ${ids.allowedOutbox}`,
+    admin`insert into app.provider_webhook_events (
+      id,
+      organization_id,
+      provider,
+      event_type,
+      provider_message_id,
+      body_hash,
+      occurred_at
+    ) values (
+      ${ids.deliveredWebhook},
+      ${ids.organizationA},
+      'resend',
+      'email.delivered',
+      ${providerMessageId},
+      'delivered-hash',
+      ${deliveredAt}::timestamptz
+    )`,
+    admin`update app.outbox_events
+      set
+        delivery_status = 'email.delivered',
+        delivery_occurred_at = ${deliveredAt}::timestamptz
+      where provider_message_id = ${providerMessageId}
+        and (
+          delivery_occurred_at is null
+          or delivery_occurred_at <= ${deliveredAt}::timestamptz
+        )`,
+    admin`insert into app.provider_webhook_events (
+      id,
+      organization_id,
+      provider,
+      event_type,
+      provider_message_id,
+      body_hash,
+      occurred_at
+    ) values (
+      ${ids.sentWebhook},
+      ${ids.organizationA},
+      'resend',
+      'email.sent',
+      ${providerMessageId},
+      'sent-hash',
+      ${sentAt}::timestamptz
+    )`,
+    admin`update app.outbox_events
+      set
+        delivery_status = 'email.sent',
+        delivery_occurred_at = ${sentAt}::timestamptz
+      where provider_message_id = ${providerMessageId}
+        and (
+          delivery_occurred_at is null
+          or delivery_occurred_at <= ${sentAt}::timestamptz
+        )`,
+  ]);
+
+  const duplicate = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`insert into app.provider_webhook_events (
+      id,
+      organization_id,
+      provider,
+      event_type,
+      provider_message_id,
+      body_hash,
+      occurred_at
+    ) values (
+      ${ids.deliveredWebhook},
+      ${ids.organizationA},
+      'resend',
+      'email.delivered',
+      ${providerMessageId},
+      'delivered-hash',
+      ${deliveredAt}::timestamptz
+    )
+    on conflict (id) do nothing
+    returning id`,
+    admin`select delivery_status, delivery_occurred_at
+      from app.outbox_events
+      where id = ${ids.allowedOutbox}`,
+  ]);
+
+  assert.deepEqual(duplicate[3], []);
+  assert.equal(duplicate[4][0].delivery_status, "email.delivered");
+  assert.equal(
+    new Date(duplicate[4][0].delivery_occurred_at).toISOString(),
+    deliveredAt,
+  );
 }
 
 async function verifyAuditImmutability() {
@@ -359,11 +769,13 @@ try {
   await seed();
   await verifyRoleAttributes();
   await verifyRlsCoverage();
+  await verifyAdminSessionAssurance();
   await verifyAdminIsolation();
   await verifyPublicAndWebBoundaries();
+  await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, tenant isolation, public access, lead writes, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, tenant isolation, public access, idempotent lead/outbox writes, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

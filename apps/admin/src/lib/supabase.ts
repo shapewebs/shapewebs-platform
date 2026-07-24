@@ -1,17 +1,8 @@
 import { cookies } from "next/headers";
 import {
   createServerSupabaseClient,
-  getAdminSupabaseConfig,
   type SupabaseCookieAdapter,
 } from "@shapewebs/db";
-
-export function hasAdminSupabaseConfig() {
-  return getAdminSupabaseConfig() !== null;
-}
-
-export function isLocalAdminSetupMode() {
-  return process.env.NODE_ENV === "development" && !hasAdminSupabaseConfig();
-}
 
 async function createAdminCookieAdapter(): Promise<SupabaseCookieAdapter> {
   const cookieStore = await cookies();

@@ -1,6 +1,6 @@
 import type { DocumentEditorState } from "@shapewebs/db";
 import { PageEditorForm } from "../../_components/page-editor-form";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 
 const newPageState: DocumentEditorState = {
   documentId: "new",
@@ -28,7 +28,10 @@ const newPageState: DocumentEditorState = {
 };
 
 export default async function NewPageEditorPage() {
-  const runtime = await getAdminRuntimeState();
+  const runtime = await requireAdminSession({
+    redirectTo: "/content/pages/new",
+    roles: ["owner", "editor"],
+  });
 
   return (
     <PageEditorForm editorState={newPageState} setupMode={runtime.setupMode} />

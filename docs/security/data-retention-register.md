@@ -21,6 +21,12 @@
 Deletion jobs must be idempotent, auditable, tenant-scoped and tested against a
 synthetic database before production scheduling.
 
+Lead notification content is deliberately minimized: Resend receives the
+contact identity, form type, submission ID, protected admin link, and delivery
+metadata. The message and project details remain in Neon. Turnstile is loaded
+only with a public form; Vercel Speed Insights is loaded only on Vercel
+deployments. Both uses require an accurate public privacy notice before launch.
+
 ## Processor inventory
 
 | Provider   | Processing                                           | Required control/evidence                                                     |

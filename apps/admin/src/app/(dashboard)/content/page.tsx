@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listDocuments } from "@shapewebs/db";
 import { documentFiltersSchema } from "@shapewebs/validation";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 import styles from "./page.module.css";
 
 type ContentPageProps = {
@@ -15,7 +15,10 @@ type ContentPageProps = {
 export default async function ContentPage({ searchParams }: ContentPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const filters = documentFiltersSchema.parse(params ?? {});
-  const runtime = await getAdminRuntimeState();
+  const runtime = await requireAdminSession({
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
   const documents = await listDocuments(runtime.supabase, filters);
 
   return (

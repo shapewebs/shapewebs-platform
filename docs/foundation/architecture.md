@@ -137,10 +137,10 @@ architectural commitment is to the stable major lines, not to unbounded
 | Admin MFA           | Better Auth TOTP plus a custom OAuth step-up gate                                   | Better Auth does not apply 2FA to social sign-in by default                          |
 | Media               | Separate public and private Vercel Blob stores                                      | Published assets can be cached while drafts and future customer files remain private |
 | CMS editor          | Custom structured block editor; Tiptap only for rich-text fields that truly need it | Predictable rendering, versioned content, and no arbitrary HTML                      |
-| Email               | Resend + React Email behind a server-only `packages/email` boundary                 | Typed templates with provider code kept out of both client bundles                   |
+| Email               | Resend behind a server-only `packages/email` boundary                               | Typed HTML/text templates with provider code kept out of both client bundles         |
 | Email reliability   | Neon transactional outbox, idempotent sends, and signed Resend webhooks             | Persist first, retry safely, and treat email as notification rather than source data |
 | Analytics           | Vercel Web Analytics + Speed Insights                                               | Cookie-free traffic analytics plus real-user Core Web Vitals                         |
-| Runtime visibility  | Vercel Observability; OpenTelemetry hooks when custom spans add value               | One operational surface initially                                                    |
+| Runtime visibility  | OpenTelemetry interface plus Vercel Observability                                   | Portable request/provider/database traces with one initial operational surface       |
 
 ### Why Better Auth and Neon
 
@@ -180,9 +180,8 @@ Resend is the transactional email provider, not a data store or workflow
 engine:
 
 1. `apps/web` validates and rate-limits a contact request.
-2. One database transaction persists the lead. A database-owned trigger adds a
-   typed event to an email outbox without granting the web runtime arbitrary
-   email access.
+2. One application-owned database transaction persists the lead and a typed
+   outbox event without granting the web runtime arbitrary email access.
 3. `apps/admin` processes the outbox with a sending-only, domain-restricted
    Resend API key. `apps/web` never receives that key.
 4. Each send uses both the outbox event ID and a Resend idempotency key. The
@@ -191,10 +190,11 @@ engine:
    failed events. Webhook IDs are unique because delivery is at least once and
    ordering is not guaranteed.
 
-Initial lead notifications contain the submission ID, contact identity, form
-type, and a link to the protected CMS. They do not duplicate the full message
-body in provider logs. Customer-facing acknowledgements are a separate,
-explicit product decision and never imply that a project has been accepted.
+Initial lead notifications contain only the submission ID, contact identity,
+form type, and a link to the protected CMS. They do not duplicate the message
+or project metadata at the provider. Customer-facing acknowledgements are a
+separate, explicit product decision and never imply that a project has been
+accepted.
 
 Use a dedicated Shapewebs sending subdomain, the Ireland sending region,
 receiving disabled, and open/click tracking disabled. Create independent
@@ -243,9 +243,11 @@ marketing site. Experimental Subresource Integrity is not a sound foundation.
 Use separate policies:
 
 - **Site:** static rendering, a very narrow source allow-list, no
-  `unsafe-eval`, no remote fonts, no arbitrary third-party scripts, and CSP
-  reporting. If Next.js still requires inline bootstrap scripts, document the
-  temporary `unsafe-inline` exception rather than weakening other directives.
+  `unsafe-eval`, no remote fonts, and CSP reporting. Cloudflare Turnstile is
+  the only allowed interactive third-party script/frame and is loaded only
+  with a public form. If Next.js still requires inline bootstrap scripts,
+  document the temporary `unsafe-inline` exception rather than weakening other
+  directives.
 - **Platform:** request nonces with a strict dynamic CSP because authenticated
   pages are dynamic already.
 
@@ -264,11 +266,13 @@ Roles:
 
 Rules:
 
-1. Google OAuth authenticates identity; it does not grant a role.
-2. New users receive no privileged role. Admin roles are assigned out of band by
-   the owner and cannot be self-selected.
+1. Google OAuth authenticates identity; it does not accept a browser-supplied
+   role.
+2. Only explicitly allowlisted owner identities may create an administrative
+   account or session during the one-maintainer bootstrap. Future editors and
+   customers require an invitation/assignment flow and cannot self-select.
 3. After login, the server resolves the role and sends an owner/editor to
-   `/admin`, a customer to `/portal`, and everyone else to an access-denied page.
+   `/dashboard`. The customer portal remains disabled.
 4. Every mutation checks the Better Auth session, role/permission, admin
    step-up state, input schema, and affected resource. Proxy/middleware is only
    an early redirect.

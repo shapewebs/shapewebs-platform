@@ -11,7 +11,9 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        headers: buildAdminSecurityHeaders(),
+        headers: buildAdminSecurityHeaders({
+          includeContentSecurityPolicy: false,
+        }),
       },
     ];
   },

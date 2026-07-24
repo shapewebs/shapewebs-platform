@@ -3,10 +3,25 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createStructuredLogger,
   evaluateReadiness,
+  resolveShapewebsEnvironment,
   sanitizeLogValue,
 } from "../../packages/observability/src/structured-logging";
 
 describe("structured observability", () => {
+  it("classifies local, test, preview and production runtimes consistently", () => {
+    expect(resolveShapewebsEnvironment({})).toBe("development");
+    expect(resolveShapewebsEnvironment({ NODE_ENV: "test" })).toBe("test");
+    expect(
+      resolveShapewebsEnvironment({
+        NODE_ENV: "production",
+        VERCEL_ENV: "preview",
+      }),
+    ).toBe("preview");
+    expect(resolveShapewebsEnvironment({ NODE_ENV: "production" })).toBe(
+      "production",
+    );
+  });
+
   it("redacts sensitive keys and secret-shaped values", () => {
     expect(
       sanitizeLogValue({
@@ -25,6 +40,15 @@ describe("structured observability", () => {
       },
       provider: "[REDACTED]",
     });
+
+    for (const value of [
+      "github_pat_0123456789abcdefghijklmnop",
+      "re_0123456789abcdefghijklmnop",
+      "https://example.test/callback?token=exposed",
+      "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature",
+    ]) {
+      expect(sanitizeLogValue(value)).toBe("[REDACTED]");
+    }
   });
 
   it("bounds nested, array, string and unsupported log values", () => {
@@ -82,6 +106,26 @@ describe("structured observability", () => {
         level: "info",
         result: "success",
       }),
+    );
+  });
+
+  it("correlates logs with the active OpenTelemetry trace", () => {
+    const sink = vi.fn();
+    const logger = createStructuredLogger({
+      environment: "test",
+      getTraceId: () => "0123456789abcdef0123456789abcdef",
+      service: "shapewebs-worker",
+      sink,
+    });
+
+    logger.log({
+      eventCode: "shapewebs.test.traced",
+      level: "info",
+      result: "success",
+    });
+
+    expect(sink.mock.calls[0]?.[1]).toContain(
+      '"traceId":"0123456789abcdef0123456789abcdef"',
     );
   });
 

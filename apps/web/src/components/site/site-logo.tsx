@@ -1,5 +1,5 @@
 import type { SVGProps } from "react";
-import { mergeClassNames } from "@shapewebs/ui";
+import { mergeClassNames } from "@shapewebs/ui/merge-class-names";
 
 type SiteLogoProps = SVGProps<SVGSVGElement> & {
   variant?: "mark" | "wordmark";

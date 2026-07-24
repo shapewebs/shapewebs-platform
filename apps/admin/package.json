@@ -11,18 +11,19 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@shapewebs/auth": "workspace:*",
     "@shapewebs/config": "workspace:*",
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/database": "workspace:*",
     "@shapewebs/db": "workspace:*",
+    "@shapewebs/email": "workspace:*",
     "@shapewebs/observability": "workspace:*",
     "@shapewebs/ui": "workspace:*",
     "@shapewebs/validation": "workspace:*",
     "@vercel/otel": "2.1.3",
-    "@supabase/ssr": "0.12.3",
-    "@supabase/supabase-js": "2.110.8",
     "next": "16.2.11",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1"
   }
 }

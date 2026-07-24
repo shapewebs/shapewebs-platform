@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@shapewebs/config";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@shapewebs/ui/styles/system-theme.css";
 import "@shapewebs/ui/styles/base.css";
 import "./brand-theme.css";
@@ -83,7 +84,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        {process.env.VERCEL === "1" ? <SpeedInsights /> : null}
+      </body>
     </html>
   );
 }

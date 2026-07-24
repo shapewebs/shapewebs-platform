@@ -4,6 +4,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./merge-class-names": "./src/merge-class-names.ts",
     "./styles/base.css": "./src/styles/base.css",
     "./styles/system-theme.css": "./src/styles/system-theme.css"
   },

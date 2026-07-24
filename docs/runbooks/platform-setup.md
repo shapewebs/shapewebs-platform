@@ -198,9 +198,10 @@ team-wide variables.
 `shapewebs-web` may receive:
 
 - `NEXT_PUBLIC_SITE_URL`;
-- a public-read-only `DATABASE_URL` only if static generation/revalidation
-  directly reads published content;
-- Turnstile and Resend server secrets for the contact workflow;
+- the pooled `shapewebs_web_runtime` `DATABASE_URL`;
+- `SHAPEWEBS_ORGANIZATION_ID` and `LEAD_IP_HASH_SECRET`;
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and an exact
+  `TURNSTILE_EXPECTED_HOSTNAME`;
 - a narrowly scoped revalidation secret;
 - public Blob credentials only when required.
 
@@ -209,7 +210,12 @@ team-wide variables.
 - `NEXT_PUBLIC_ADMIN_URL` and `NEXT_PUBLIC_SITE_URL`;
 - `DATABASE_URL` for the non-owner admin runtime role;
 - `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`;
+- `BETTER_AUTH_TRUSTED_ORIGINS`, `ADMIN_OWNER_EMAILS`, and
+  `SHAPEWEBS_ORGANIZATION_ID`;
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`;
+- `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`,
+  `LEAD_NOTIFICATION_FROM_EMAIL`, `LEAD_NOTIFICATION_TO_EMAIL`, and
+  `CRON_SECRET`;
 - private/public Blob credentials scoped to their stores;
 - the server-to-server publish/revalidation secret.
 
@@ -238,17 +244,24 @@ not stored in either application or Vercel. Complete the setup as follows:
    is ready;
 4. create a separate Production key with `sending_access`, restricted to the
    Shapewebs domain, only during protected production configuration;
-5. store `RESEND_API_KEY`, `RESEND_FROM`, `LEAD_NOTIFICATION_TO`,
-   `RESEND_WEBHOOK_SECRET`, and the protected worker trigger secret only in
-   `shapewebs-admin`;
+5. store `RESEND_API_KEY`, `LEAD_NOTIFICATION_FROM_EMAIL`,
+   `LEAD_NOTIFICATION_TO_EMAIL`, `RESEND_WEBHOOK_SECRET`, and `CRON_SECRET`
+   only in `shapewebs-admin`;
 6. never place a Resend API key in `shapewebs-web` or a `NEXT_PUBLIC_*`
    variable.
 
 The implementation belongs in a server-only `packages/email` package with
-React Email templates and a provider adapter. A Neon outbox is written in the
-same transaction as the business event. Sends use idempotency keys; signed
+typed HTML/text templates and a provider adapter. A Neon outbox is written in
+the same transaction as the business event. Sends use idempotency keys; signed
 webhooks are deduplicated by their provider event ID and may arrive out of
-order.
+order. Lead notifications contain a protected admin link and omit the message
+body and project details.
+
+The checked-in Hobby-compatible Vercel Cron schedule runs once daily. It is a
+development fallback only and does not satisfy the 15-minute notification SLO.
+Upgrade to a Vercel plan with minute-level Cron or approve another
+authenticated scheduler before commercial launch; then schedule the protected
+outbox endpoint at least every ten minutes.
 
 Before enabling production delivery, test inbox placement, plain-text
 fallbacks, accessibility, malicious form content, duplicate worker execution,

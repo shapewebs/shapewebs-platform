@@ -1,27 +1,70 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac, randomUUID } from "node:crypto";
+import { submitLeadWithOutbox } from "@shapewebs/database/server";
 import {
-  createAdminSupabaseClient,
-  createContactSubmission,
-} from "@shapewebs/db";
+  createStructuredLogger,
+  resolveShapewebsEnvironment,
+} from "@shapewebs/observability";
 import {
   contactFormSchema,
   projectInquirySchema,
+  readBoundedText,
   type ContactFormInput,
   type ProjectInquiryInput,
 } from "@shapewebs/validation";
+
 export { consumeRateLimit } from "./rate-limit";
+
+const maximumRequestBytes = 16 * 1_024;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const logger = createStructuredLogger({
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+  environment: resolveShapewebsEnvironment(),
+  service: "shapewebs-web",
+});
+
+export function createLeadResponse(
+  request: Request,
+  input: {
+    body: { error: string } | { message: string };
+    formType: "contact" | "project_inquiry";
+    reasonCode: string;
+    result: "denied" | "failure" | "success";
+    startedAt: number;
+    status: number;
+  },
+) {
+  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  logger.log({
+    durationMs: Date.now() - input.startedAt,
+    eventCode: "shapewebs.lead.acceptance",
+    level:
+      input.result === "success"
+        ? "info"
+        : input.result === "failure"
+          ? "error"
+          : "warn",
+    metadata: {
+      httpStatus: input.status,
+      operation: input.formType,
+      reasonCode: input.reasonCode,
+      resourceType: "lead",
+    },
+    requestId,
+    result: input.result,
+  });
+
+  return Response.json(input.body, {
+    headers: {
+      "Cache-Control": "no-store",
+      "x-request-id": requestId,
+    },
+    status: input.status,
+  });
+}
 
 function getHashedIdentifier(value: string) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 export function getClientIp(headers: Headers) {
@@ -33,11 +76,50 @@ export function getClientIp(headers: Headers) {
   return headers.get("x-real-ip") ?? "unknown";
 }
 
+export function getIdempotencyKey(headers: Headers): string | null {
+  const value = headers.get("idempotency-key")?.trim();
+  return value && uuidPattern.test(value) ? value : null;
+}
+
+export async function readJsonRequest(request: Request): Promise<
+  | {
+      status: "ok";
+      value: unknown;
+    }
+  | {
+      status: "invalid" | "too_large" | "unsupported";
+    }
+> {
+  if (
+    request.headers.get("content-type")?.split(";", 1)[0] !== "application/json"
+  ) {
+    return { status: "unsupported" };
+  }
+
+  const rawBody = await readBoundedText(request, maximumRequestBytes);
+  if (rawBody.status !== "ok") {
+    return { status: "too_large" };
+  }
+
+  try {
+    return {
+      status: "ok",
+      value: JSON.parse(rawBody.value) as unknown,
+    };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
 export async function verifyTurnstileToken(input: {
+  idempotencyKey: string;
   ip: string;
   token?: string | null;
 }) {
-  if (!process.env.TURNSTILE_SECRET_KEY) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  const expectedHostname = process.env.TURNSTILE_EXPECTED_HOSTNAME;
+
+  if (!secret || !expectedHostname) {
     if (process.env.NODE_ENV !== "development") {
       return {
         mode: "unconfigured" as const,
@@ -51,108 +133,121 @@ export async function verifyTurnstileToken(input: {
     };
   }
 
-  if (!input.token) {
+  if (!input.token || input.token.length > 2_048) {
     return {
       mode: "enforced" as const,
       success: false,
     };
   }
 
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        body: new URLSearchParams({
+          idempotency_key: input.idempotencyKey,
+          remoteip: input.ip,
+          response: input.token,
+          secret,
+        }),
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method: "POST",
+        signal: AbortSignal.timeout(5_000),
       },
-      body: new URLSearchParams({
-        secret: process.env.TURNSTILE_SECRET_KEY,
-        response: input.token,
-        remoteip: input.ip,
-      }),
-      cache: "no-store",
-    },
-  );
+    );
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return {
+        mode: "enforced" as const,
+        success: false,
+      };
+    }
+
+    const payload = (await response.json()) as {
+      action?: unknown;
+      hostname?: unknown;
+      success?: unknown;
+    };
+
+    return {
+      mode: "enforced" as const,
+      success:
+        payload.success === true &&
+        payload.hostname === expectedHostname &&
+        payload.action === "lead_submission",
+    };
+  } catch {
     return {
       mode: "enforced" as const,
       success: false,
     };
   }
+}
 
-  const payload = (await response.json()) as {
-    success?: boolean;
-  };
-
+function getLeadPayload(
+  input: ContactFormInput | ProjectInquiryInput,
+): Record<string, unknown> {
   return {
-    mode: "enforced" as const,
-    success: payload.success === true,
+    budgetBand: "budgetBand" in input ? input.budgetBand : undefined,
+    company: input.company,
+    consentAccepted: input.consentAccepted,
+    localeCode: input.localeCode,
+    serviceInterest:
+      "serviceInterest" in input ? input.serviceInterest : undefined,
+    timeline: "timeline" in input ? input.timeline : undefined,
   };
 }
 
-export async function sendSubmissionNotification(input: {
+function requestFingerprint(input: {
   formType: "contact" | "project_inquiry";
   payload: ContactFormInput | ProjectInquiryInput;
-}) {
-  if (!process.env.RESEND_API_KEY) {
-    return {
-      sent: false,
-    };
-  }
-
-  const projectFields =
-    input.formType === "project_inquiry" && "budgetBand" in input.payload
-      ? `
-          <p><strong>Budget:</strong> ${escapeHtml(input.payload.budgetBand ?? "Not provided")}</p>
-          <p><strong>Timeline:</strong> ${escapeHtml(input.payload.timeline ?? "Not provided")}</p>
-          <p><strong>Service interest:</strong> ${escapeHtml(input.payload.serviceInterest ?? "Not provided")}</p>
-        `
-      : "";
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "Shapewebs <no-reply@shapewebs.com>",
-      to: ["lukas@shapewebs.com"],
-      subject:
-        input.formType === "project_inquiry"
-          ? "New Shapewebs project inquiry"
-          : "New Shapewebs contact form submission",
-      html: `
-        <h1>${input.formType === "project_inquiry" ? "Project inquiry" : "Contact submission"}</h1>
-        <p><strong>Name:</strong> ${escapeHtml(input.payload.name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(input.payload.email)}</p>
-        <p><strong>Company:</strong> ${escapeHtml(input.payload.company ?? "Not provided")}</p>
-        ${projectFields}
-        <p><strong>Message:</strong></p>
-        <p>${escapeHtml(input.payload.message).replaceAll("\n", "<br>")}</p>
-      `,
-    }),
-    cache: "no-store",
-  });
-
-  return {
-    sent: response.ok,
-  };
+}): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        email: input.payload.email.toLowerCase(),
+        formType: input.formType,
+        message: input.payload.message,
+        name: input.payload.name,
+        payload: getLeadPayload(input.payload),
+      }),
+    )
+    .digest("hex");
 }
 
 export async function storeContactSubmission(input: {
-  countryCode?: string | null;
+  commandId: string;
   formType: "contact" | "project_inquiry";
+  ip: string;
   payload: ContactFormInput | ProjectInquiryInput;
-  spamScore?: number | null;
 }) {
-  const supabase = createAdminSupabaseClient();
+  const databaseUrl = process.env.DATABASE_URL;
+  const organizationId = process.env.SHAPEWEBS_ORGANIZATION_ID;
+  const ipHashSecret = process.env.LEAD_IP_HASH_SECRET;
 
-  return createContactSubmission(supabase, input.payload, {
-    formType: input.formType,
-    countryCode: input.countryCode ?? null,
-    spamScore: input.spamScore ?? null,
+  if (!databaseUrl || !organizationId || !ipHashSecret) {
+    return {
+      status: "unconfigured" as const,
+    };
+  }
+
+  const sourceIpHash = createHmac("sha256", ipHashSecret)
+    .update(input.ip)
+    .digest("base64url");
+
+  return submitLeadWithOutbox(databaseUrl, {
+    commandId: input.commandId,
+    email: input.payload.email.toLowerCase(),
+    kind: input.formType,
+    message: input.payload.message,
+    name: input.payload.name,
+    organizationId,
+    payload: getLeadPayload(input.payload),
+    requestFingerprint: requestFingerprint(input),
+    sourceIpHash,
   });
 }
 
