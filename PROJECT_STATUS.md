@@ -3,8 +3,11 @@
 ## Current milestone
 
 - Date: 24 July 2026
-- Branch: `codex/foundation`
-- Pull request: draft `shapewebs/shapewebs-platform#7`
+- Branch: protected `staging`; current evidence branch
+  `codex/staging-scheduler-evidence`
+- Pull requests: draft staging evidence
+  `shapewebs/shapewebs-platform#15`; draft foundation promotion
+  `shapewebs/shapewebs-platform#7`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
@@ -55,12 +58,13 @@ connected to production data, or promoted to the production domains.
   stable, sanitized payloads.
 - Checkly monitoring-as-code defines two-minute public home/readiness checks,
   protected staging admin readiness, a ten-minute synthetic lead journey and
-  daily marker-restricted cleanup. Web and admin monitoring use
-  distinct encrypted Vercel bypass credentials. All five checks notify the
-  confirmed Gmail inbox. The three staging schedules are active; public checks
+  daily marker-restricted cleanup, plus a five-minute outbox heartbeat with a
+  six-minute grace window. Web and admin monitoring use
+  distinct encrypted Vercel bypass credentials. All six checks notify the
+  confirmed Gmail inbox. The four staging schedules are active; public checks
   remain inactive until the foundation release passes their launch assertions.
 - Fixed non-secret staging origins are checked-in defaults, so a local Checkly
-  deployment always instantiates all five resources and missing shell variables
+  deployment always instantiates all six resources and missing shell variables
   cannot delete the staging checks.
 - The protected GitHub `staging` branch is mapped to fixed
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
@@ -143,10 +147,29 @@ connected to production data, or promoted to the production domains.
   `shapewebs@gmail.com` is the independent recovery address. There is no
   catch-all, and `noreply@shapewebs.com` remains a Resend-only sender rather
   than a human mailbox.
+- Exact inbox-preserving filters apply `Shapewebs/Admin`, `Info`, `Sales`,
+  `Support`, `Security`, `Privacy`, `Billing`, or `Personal` labels to matching
+  inbound addresses. Existing conversations were backfilled without
+  archiving, forwarding, deleting or marking them read. Replies use the same
+  role address that received the message, while `admin@shapewebs.com` remains
+  the default identity for new mail.
+- `admin@shapewebs.com` remains the default Workspace sender. The additional
+  `Shapewebs <info@shapewebs.com>` identity sent a controlled message whose
+  authenticated From address arrived correctly at `shapewebs@gmail.com`. The
+  stale `smtp.simply.com` `info@` send-as entry was then removed from the
+  personal Gmail account without deleting mail.
 - Branch-scoped staging configuration now uses `admin@shapewebs.com` as the
   Better Auth owner, `sales@shapewebs.com` as the lead recipient, and
   `Shapewebs <noreply@shapewebs.com>` as the transactional sender. No
   production application environment was changed.
+- A staging-only Cloudflare Worker invokes the protected outbox route every
+  five minutes with independent encrypted Vercel-bypass and bearer
+  credentials. Consecutive live invocations passed, and an approved controlled
+  missed-heartbeat exercise proved Checkly failure and recovery alerts
+  end-to-end. The exact Cron Trigger was restored without a manual heartbeat;
+  the next real invocation completed successfully. A final Neon read found 21
+  of 21 synthetic outbox events suppressed, zero unresolved events and zero
+  provider message IDs.
 - Staging synthetic leads have a dedicated, POST-only retention route, a
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
@@ -177,7 +200,9 @@ Staging provisioning and runtime evidence is recorded in:
 
 - `docs/audits/staging-provisioning-2026-07-24.md`;
 - `docs/audits/staging-runtime-verification-2026-07-24.md`;
-- `docs/audits/checkly-monitoring-2026-07-24.md`.
+- `docs/audits/checkly-monitoring-2026-07-24.md`;
+- `docs/audits/staging-outbox-scheduler-2026-07-24.md`; and
+- `docs/audits/workspace-mail-verification-2026-07-24.md`.
 
 ## External launch gates
 
@@ -185,8 +210,9 @@ These are intentionally not guessed or provisioned:
 
 - Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
   staging journey;
-- Workspace mailbox MFA, alias send-as/filter configuration, and controlled
-  inbound/outbound mail-flow evidence;
+- Workspace mailbox MFA plus the remaining alias send-as and controlled
+  outbound identity evidence. External MX delivery, all inbox filters and the
+  `info@` identity are complete;
 - production Turnstile site/secret keys and the exact production hostname;
 - production Resend key/webhook configuration; the staging recipient is now
   `sales@shapewebs.com`, and staging delivery, bounce, and provider replay
@@ -215,33 +241,41 @@ seven-event replacement before revocation. Neon CLI then echoed the staging
 migrator connection string despite a requested JSON format; that non-production
 role password was reset immediately and the replacement connection was
 verified. No temporary local Keychain copy remains. Google OAuth remains
-unconfigured. Checkly is authenticated locally, its Gmail alert channel
+unconfigured because the new Workspace identity still receives an
+account-specific Google Cloud Console availability page while Google's public
+status is healthy. Checkly is authenticated locally, its Gmail alert channel
 delivered the controlled failure and recovery, and the three protected staging
 schedules are active. One operator deploy briefly recreated those three check
 objects after their then-optional origin variables were absent; commit
 `1b6924e` makes the fixed staging resources unconditional and a subsequent
-three-check session passed. The outbox heartbeat exists but remains inactive.
-A staging-only Cloudflare Worker is deployed with encrypted credentials and no
-trigger; the weak legacy cron secret was replaced atomically in Vercel and
-Cloudflare. Protected staging PR `#11`, its disposable Neon lifecycle, both
-Vercel builds, and post-merge k6/ZAP run `30116773588` passed. A read-only
-staging query then found nine due events, all exact Checkly synthetic fixtures
-and no customer leads. The pending suppression change processes those fixtures
-without contacting Resend; the trigger stays off until that change passes the
-same staging gate. Production database/auth/email variables remain
+three-check session passed. The staging-only Cloudflare Worker now runs on the
+exact five-minute trigger with encrypted credentials. The weak legacy cron
+secret was replaced atomically in Vercel and Cloudflare. Protected staging PRs
+`#11` through `#14`, their disposable Neon lifecycles, Vercel builds and
+post-merge k6/ZAP runs passed. The Worker needed both Cloudflare's public-fetch
+flag and a per-invocation, correctly bound runtime `fetch`. Its Checkly ping
+token was rotated after the heartbeat resource ID was mistakenly used as the
+private ping token. Two consecutive live executions then completed, Checkly
+recorded both heartbeats, Neon contained only suppressed synthetic outbox
+events and Resend had no new email. The owner-approved missed-heartbeat
+exercise then delivered both failure and recovery notifications, restored the
+exact five-minute Cron Trigger and recovered only after a real Worker success.
+An external Resend MX test also delivered to `admin@shapewebs.com`, all six
+role aliases and `lukasthomsen@shapewebs.com`; all eight arrived in the central
+Workspace inbox. Production database/auth/email variables remain
 intentionally unconfigured for the new path. Existing transitional Supabase
 production variables are not removed until the corresponding CMS and
 public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Configure the Workspace-owned Google OAuth client and complete the
-   Google-to-TOTP fail-closed staging journey.
-2. Complete mailbox MFA and controlled primary/alias mail-flow verification.
-3. Deploy and prove exact synthetic-notification suppression, then activate the
-   five-minute outbox schedule and record heartbeat/alert evidence.
-4. Replace the Supabase CMS paths one vertical slice at a time, then remove
+1. Complete mailbox MFA, recovery-address verification and the remaining
+   alias send-as/outbound identity verification.
+2. Configure the Workspace-owned Google OAuth client when the new account can
+   access Google Cloud, then complete the Google-to-TOTP fail-closed staging
+   journey.
+3. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
-5. Build the CMS lifecycle, storage controls, final public studio design, and
+4. Build the CMS lifecycle, storage controls, final public studio design, and
    production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

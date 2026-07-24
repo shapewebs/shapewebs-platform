@@ -26,8 +26,8 @@ outbox. Production scheduling and production credentials are out of scope.
 
 ## Provider state
 
-- The Checkly heartbeat exists but remains inactive until the live schedule is
-  proven.
+- The Checkly heartbeat is active with a five-minute period, a six-minute
+  grace window and the existing operational email channel.
 - The Worker was initially deployed without a cron trigger and with all three
   values stored as encrypted Cloudflare secrets.
 - The existing 11-character staging `CRON_SECRET` failed the Worker's
@@ -57,12 +57,37 @@ outbox. Production scheduling and production credentials are out of scope.
   any database or email-provider change. The target is on the Worker's own
   Cloudflare zone, so the public-fetch compatibility flag is being added
   through the protected staging gate before another activation attempt.
+- Protected staging PR
+  [`#13`](https://github.com/shapewebs/shapewebs-platform/pull/13) added
+  `global_fetch_strictly_public`, passed every protected check and was
+  squash-merged. Post-merge k6 and ZAP run
+  [`30119433938`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30119433938)
+  passed.
 - The public path alone did not resolve the zero-millisecond failure. The
   runtime `fetch` method had been stored at module scope and later called
   through the dependency object, losing Cloudflare's request-bound receiver.
   Runtime dependencies are now created per invocation, `fetch` is bound to the
   Workers global context, and a Workers-runtime regression test asserts that
   receiver.
+- Protected staging PR
+  [`#14`](https://github.com/shapewebs/shapewebs-platform/pull/14) delivered
+  that receiver fix, passed every protected check and was squash-merged.
+  Post-merge k6 and ZAP run
+  [`30120169125`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30120169125)
+  passed.
+- The first receiver-fixed invocation reached the protected admin route and
+  processed ten exact synthetic events, proving the Vercel and database path.
+  It then failed closed as `heartbeat_rejected`. No provider message ID or
+  Resend email was created.
+- Checkly uses a distinct private ping token rather than the heartbeat
+  resource ID. The mistakenly configured ID was replaced with a newly rotated
+  ping token generated in memory and written directly to Checkly and the
+  encrypted Cloudflare secret. The private URL was not retained in the
+  repository or audit output.
+- Checkly rejects pings while the heartbeat is inactive. The monitor was
+  activated through the checked-in monitoring-as-code profile only after the
+  rotated Worker secret was deployed. Checkly documents that the first
+  accepted ping starts the timer.
 - No production Vercel, Cloudflare, Checkly, Neon, or Resend value was created
   or changed.
 
@@ -75,12 +100,45 @@ The following passed locally:
 - Wrangler dry-run bundle; and
 - Checkly monitoring TypeScript validation.
 
-Final evidence still required:
+The protected staging branch, disposable Neon lifecycle, Vercel builds,
+post-merge k6 and ZAP assurance, Node tests and Workers-runtime tests all
+passed before live activation.
 
-1. the synthetic-suppression change passes the protected staging branch;
-2. one authenticated run suppresses the nine fixtures without a Resend send;
-3. unauthenticated and stale-credential requests remain denied;
-4. the exact Cloudflare cron trigger is deployed and propagated;
-5. at least two scheduled invocations complete;
-6. the Checkly heartbeat records those invocations; and
-7. a controlled missed heartbeat produces and recovers an alert.
+Live evidence:
+
+- The exact `*/5 * * * *` trigger is deployed on
+  `shapewebs-outbox-scheduler-staging`.
+- The active secret-only Worker version completed at
+  `2026-07-24T19:35:55Z` in 2.351 seconds, processing two events with zero
+  retryable or permanent failures.
+- The same version completed again at `2026-07-24T19:40:55Z` in 2.243 seconds,
+  processing zero events with zero retryable or permanent failures.
+- Checkly reported two heartbeat events and 100% availability after those
+  invocations.
+- A final read-only Neon query found 17 outbox events: all 17 were `sent` with
+  `suppressed_synthetic`, zero were unresolved and zero had a provider message
+  ID.
+- A final Resend read found no new provider email. The newest email remained
+  the earlier controlled provider test from `2026-07-24T16:57:40Z`.
+- Automated and deployed route controls continue to reject unauthenticated,
+  malformed and stale-credential requests.
+
+The owner approved the deliberately external missed-heartbeat and recovery
+exercise. The staging Cron Trigger alone was removed after a healthy pre-check;
+one already queued invocation produced a final successful heartbeat at
+`2026-07-24T20:05:56Z`. Checkly exhausted the five-minute period and six-minute
+grace window, recorded the expected failure and delivered the failure alert to
+`shapewebs@gmail.com` at `2026-07-24T20:17:03Z`.
+
+The exact `*/5 * * * *` trigger was restored at
+`2026-07-24T20:17:44Z`. No manual Checkly ping was used. The next scheduled
+Worker invocation completed at `2026-07-24T20:20:57Z` in 3.885 seconds,
+processed one synthetic event and reported zero retryable and permanent
+failures. Checkly recovered at `2026-07-24T20:21:00Z`, and the recovery email
+arrived in the same operational inbox.
+
+After recovery, the trigger API again returned exactly one
+`*/5 * * * *` schedule. Checkly was healthy with nine recorded events. Neon
+contained 21 outbox events, all `sent` with `suppressed_synthetic`, zero
+unresolved events and zero provider message IDs. Resend sent no outbox
+notification during the exercise.
