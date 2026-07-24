@@ -95,6 +95,31 @@ async function seed() {
       values
         (${ids.organizationA}, ${`security-a-${runId}`}, 'Security Organization A'),
         (${ids.organizationB}, ${`security-b-${runId}`}, 'Security Organization B')`,
+    fixtureAdmin`insert into app.organization_settings (
+        organization_id,
+        locales,
+        region_profiles,
+        feature_flags,
+        consent_rule_sets,
+        cookie_policy_versions
+      )
+      values
+        (
+          ${ids.organizationA},
+          '[{"code":"en","isDefault":true,"label":"Organization A"}]'::jsonb,
+          '[{"code":"organization_a","displayName":"Organization A","ruleSetKey":"organization_a"}]'::jsonb,
+          '[{"enabled":true,"key":"security.organization_a"}]'::jsonb,
+          '[{"defaultMode":"inform","key":"organization_a"}]'::jsonb,
+          '["security-a"]'::jsonb
+        ),
+        (
+          ${ids.organizationB},
+          '[{"code":"en","isDefault":true,"label":"Organization B"}]'::jsonb,
+          '[{"code":"organization_b","displayName":"Organization B","ruleSetKey":"organization_b"}]'::jsonb,
+          '[{"enabled":true,"key":"security.organization_b"}]'::jsonb,
+          '[{"defaultMode":"inform","key":"organization_b"}]'::jsonb,
+          '["security-b"]'::jsonb
+        )`,
     fixtureAdmin`insert into app.memberships (organization_id, user_id, role, status)
       values
         (${ids.organizationA}, ${ids.adminUser}, 'owner', 'active'),
@@ -321,6 +346,72 @@ async function verifyRlsCoverage() {
 }
 
 async function verifyAdminIsolation() {
+  const organizationASettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select organization_id, feature_flags
+      from app.organization_settings`,
+  });
+  assert.deepEqual(organizationASettings, [
+    {
+      organization_id: ids.organizationA,
+      feature_flags: [{ enabled: true, key: "security.organization_a" }],
+    },
+  ]);
+
+  const editorSettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select organization_id from app.organization_settings`,
+  });
+  assert.deepEqual(
+    editorSettings,
+    [],
+    "editors must not read owner-only organization settings",
+  );
+
+  const customerSettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    membershipRole: "customer",
+    query: admin`select organization_id from app.organization_settings`,
+  });
+  assert.deepEqual(
+    customerSettings,
+    [],
+    "customers must not read organization settings",
+  );
+
+  const crossTenantSettingsUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.organization_settings
+      set updated_at = updated_at
+      where organization_id = ${ids.organizationB}
+      returning organization_id`,
+  });
+  assert.deepEqual(
+    crossTenantSettingsUpdate,
+    [],
+    "owners must not update another organization's settings",
+  );
+
+  const ownerSettingsUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.organization_settings
+      set updated_at = updated_at
+      where organization_id = ${ids.organizationA}
+      returning organization_id`,
+  });
+  assert.deepEqual(ownerSettingsUpdate, [
+    { organization_id: ids.organizationA },
+  ]);
+
   const organizationAProjects = await withAdminContext({
     organizationId: ids.organizationA,
     userId: ids.adminUser,
@@ -474,6 +565,10 @@ async function verifyPublicAndWebBoundaries() {
     "public auth-schema read",
   );
   await expectDenied(
+    publicReader`select organization_id from app.organization_settings`,
+    "public organization-settings read",
+  );
+  await expectDenied(
     publicReader`insert into app.lead_submissions (
       command_id,
       organization_id,
@@ -607,6 +702,10 @@ async function verifyPublicAndWebBoundaries() {
   await expectDenied(
     web`select email from app.lead_submissions`,
     "web lead personal-data read",
+  );
+  await expectDenied(
+    web`select organization_id from app.organization_settings`,
+    "web organization-settings read",
   );
   await expectDenied(web`select id from app.outbox_events`, "web outbox read");
 
@@ -918,7 +1017,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

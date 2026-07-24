@@ -5,6 +5,149 @@ export { readBoundedText } from "./http";
 
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
+
+function isSafeSettingsKey(value: string) {
+  const separators = new Set([".", "_", "-"]);
+
+  if (separators.has(value[0] ?? "") || separators.has(value.at(-1) ?? "")) {
+    return false;
+  }
+
+  for (const [index, character] of [...value].entries()) {
+    const isLowercaseLetter = character >= "a" && character <= "z";
+    const isNumber = character >= "0" && character <= "9";
+
+    if (!isLowercaseLetter && !isNumber && !separators.has(character)) {
+      return false;
+    }
+
+    if (separators.has(character) && separators.has(value[index - 1] ?? "")) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const settingsKeySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .refine(isSafeSettingsKey, "Must be a normalized lowercase settings key.");
+
+const settingsLocaleSchema = z
+  .object({
+    code: localeCodeEnum,
+    isDefault: z.boolean(),
+    label: z.string().trim().min(1).max(80),
+  })
+  .strict();
+
+const settingsRegionProfileSchema = z
+  .object({
+    code: settingsKeySchema,
+    displayName: z.string().trim().min(1).max(120),
+    ruleSetKey: settingsKeySchema,
+  })
+  .strict();
+
+const settingsFeatureFlagSchema = z
+  .object({
+    enabled: z.boolean(),
+    key: settingsKeySchema,
+  })
+  .strict();
+
+const settingsConsentRuleSetSchema = z
+  .object({
+    defaultMode: z.enum(["inform", "mixed", "opt_in"]),
+    key: settingsKeySchema,
+  })
+  .strict();
+
+export const organizationSettingsValueSchema = z
+  .object({
+    consentRuleSets: z.array(settingsConsentRuleSetSchema).min(1).max(20),
+    cookiePolicyVersions: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1)
+          .max(80)
+          .refine(
+            isSafeSettingsKey,
+            "Must be a normalized lowercase policy version.",
+          ),
+      )
+      .min(1)
+      .max(20),
+    featureFlags: z.array(settingsFeatureFlagSchema).max(100),
+    locales: z.array(settingsLocaleSchema).min(1).max(20),
+    regionProfiles: z.array(settingsRegionProfileSchema).min(1).max(20),
+  })
+  .strict()
+  .superRefine((settings, context) => {
+    const uniqueValues = (values: string[], path: string, message: string) => {
+      if (new Set(values).size !== values.length) {
+        context.addIssue({
+          code: "custom",
+          message,
+          path: [path],
+        });
+      }
+    };
+
+    uniqueValues(
+      settings.locales.map((locale) => locale.code),
+      "locales",
+      "Locale codes must be unique.",
+    );
+    uniqueValues(
+      settings.regionProfiles.map((profile) => profile.code),
+      "regionProfiles",
+      "Region profile codes must be unique.",
+    );
+    uniqueValues(
+      settings.featureFlags.map((flag) => flag.key),
+      "featureFlags",
+      "Feature flag keys must be unique.",
+    );
+    uniqueValues(
+      settings.consentRuleSets.map((ruleSet) => ruleSet.key),
+      "consentRuleSets",
+      "Consent rule-set keys must be unique.",
+    );
+    uniqueValues(
+      settings.cookiePolicyVersions,
+      "cookiePolicyVersions",
+      "Cookie-policy versions must be unique.",
+    );
+
+    if (settings.locales.filter((locale) => locale.isDefault).length !== 1) {
+      context.addIssue({
+        code: "custom",
+        message: "Exactly one locale must be the default.",
+        path: ["locales"],
+      });
+    }
+
+    const consentRuleSetKeys = new Set(
+      settings.consentRuleSets.map((ruleSet) => ruleSet.key),
+    );
+
+    for (const [index, profile] of settings.regionProfiles.entries()) {
+      if (!consentRuleSetKeys.has(profile.ruleSetKey)) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "Region profiles must reference an existing consent rule set.",
+          path: ["regionProfiles", index, "ruleSetKey"],
+        });
+      }
+    }
+  });
 export const emailAddressSchema = z
   .string()
   .trim()
@@ -248,3 +391,6 @@ export type MfaEnrollInput = z.infer<typeof mfaEnrollSchema>;
 export type PageEditorInput = z.infer<typeof pageEditorInputSchema>;
 export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
 export type MediaUploadInput = z.infer<typeof mediaUploadSchema>;
+export type OrganizationSettingsValue = z.infer<
+  typeof organizationSettingsValueSchema
+>;
