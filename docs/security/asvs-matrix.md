@@ -52,6 +52,18 @@ unreviewed.
 - Expiry/review: 24 October 2026, every Next.js minor upgrade, and before
   production launch.
 
+## Reviewed ZAP passive-baseline dispositions
+
+These findings remain visible as `INFO` in every ZAP report. They are not
+ignored. The checked-in dispositions expire unless they are reviewed by the
+dates and triggers below.
+
+| ZAP alert                                    | Disposition                      | Rationale and compensating controls                                                                                                                                                                                                                                                                                                      | Owner           | Expiry/review                                                                      |
+| -------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------- |
+| `10055` CSP: `script-src unsafe-inline`      | Accepted risk                    | Same static-public-CSP tradeoff documented above. No arbitrary HTML or marketing scripts; structured React rendering, output encoding, dependency controls and browser tests remain mandatory.                                                                                                                                           | Shapewebs owner | 24 October 2026, every Next.js minor upgrade, and before production launch         |
+| `10098` Cross-Domain Misconfiguration        | Accepted risk                    | Vercel adds `Access-Control-Allow-Origin: *` to the scanned public static pages and assets. They contain no authenticated, tenant-specific or secret data; admin remains on a separate origin with server-enforced authorization. Reassess before any credentialed or sensitive public response is introduced.                           | Shapewebs owner | 24 October 2026 and before authenticated or sensitive public reads                 |
+| `90004` Cross-Origin-Embedder-Policy missing | Not applicable to current design | The public site does not use cross-origin-isolated browser capabilities. Enabling `require-corp` would risk blocking the explicitly allowlisted Turnstile integration; CSP, COOP, CORP, Permissions Policy and exact provider origins remain in force. Reassess before adding cross-origin-isolated APIs or changing third-party embeds. | Shapewebs owner | 24 October 2026 and before cross-origin-isolated APIs or third-party embed changes |
+
 An accepted risk is invalid without an owner, compensating controls, an expiry
 or review date, and evidence that the release gate reviewed it.
 

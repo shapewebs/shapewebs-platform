@@ -20,6 +20,7 @@ const zapImage =
 const target = requireStagingTarget("ZAP_TARGET_URL");
 const automationBypassSecret = requireAutomationBypassSecret();
 const reportDirectory = path.resolve("test-results/zap");
+const baselineConfigPath = path.resolve("tooling/zap/baseline.conf");
 
 const secretDirectory = mkdtempSync(
   path.join(os.tmpdir(), "shapewebs-zap-secrets-"),
@@ -62,8 +63,20 @@ try {
       `${reportDirectory}:/zap/wrk:rw`,
       "--volume",
       `${secretDirectory}:/zap/secrets:ro`,
+      "--volume",
+      `${baselineConfigPath}:/zap/config/baseline.conf:ro`,
       zapImage,
-      "/zap/zap-baseline.py",
+      "sh",
+      "-c",
+      [
+        "status=0",
+        '/zap/zap-baseline.py "$@" || status=$?',
+        "if [ -f /tmp/shapewebs-zap-home/zap.log ]; then",
+        "  cp /tmp/shapewebs-zap-home/zap.log /zap/wrk/zap.log || true",
+        "fi",
+        'exit "$status"',
+      ].join("\n"),
+      "shapewebs-zap",
       "-t",
       target.toString(),
       "-m",
@@ -74,11 +87,13 @@ try {
       "report.md",
       "-r",
       "report.html",
+      "-c",
+      "/zap/config/baseline.conf",
       // Keep the packaged passive scan off the Automation Framework so every
-      // generated artifact stays inside the explicitly mounted report path.
+      // generated report stays inside the explicitly mounted report path.
       "--autooff",
       "-z",
-      "-dir /zap/wrk/zap-home -configfile /zap/secrets/vercel-bypass.properties",
+      "-dir /tmp/shapewebs-zap-home -configfile /zap/secrets/vercel-bypass.properties",
     ],
     { stdio: "inherit" },
   );

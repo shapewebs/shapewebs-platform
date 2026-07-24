@@ -6,6 +6,7 @@
 coverage
 playwright-report
 test-results
+tooling/zap/*.conf
 packages/db/src/generated
 drizzle/meta
 pnpm-lock.yaml
