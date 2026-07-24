@@ -71,10 +71,10 @@ connected to production data, or promoted to the production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0006`, including marker-restricted synthetic lead retention. The
-  runtime roles passed the complete RLS and authorization suite. Neon Free
-  cannot protect the persistent branch, so a protected paid production branch
-  remains a launch gate.
+  through `0008`, including marker-restricted synthetic lead retention and
+  owner-only organization settings. The runtime roles passed the complete RLS
+  and authorization suite. Neon Free cannot protect the persistent branch, so
+  a protected paid production branch remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget remains restricted to the public
   staging hostname. Automated staging uses Cloudflare's official test pair in
@@ -101,7 +101,7 @@ connected to production data, or promoted to the production domains.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains eight reviewed Drizzle migrations, forced RLS,
+- `packages/database` contains nine reviewed Drizzle migrations, forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -217,6 +217,11 @@ left no journal or schema residue, and both temporary branches were deleted.
 The evidence is recorded in:
 
 - `docs/audits/neon-organization-settings-verification-2026-07-24.md`.
+
+Persistent staging now has nine journaled migrations and a one-to-one
+organization/settings backfill. A provider-owner read and pooled admin-runtime
+check proved forced RLS, one owner-visible row, zero editor-visible rows, no
+web/public SELECT privilege and zero residual migrator backfill policies.
 
 ## External launch gates
 

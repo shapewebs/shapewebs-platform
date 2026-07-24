@@ -95,31 +95,6 @@ async function seed() {
       values
         (${ids.organizationA}, ${`security-a-${runId}`}, 'Security Organization A'),
         (${ids.organizationB}, ${`security-b-${runId}`}, 'Security Organization B')`,
-    fixtureAdmin`insert into app.organization_settings (
-        organization_id,
-        locales,
-        region_profiles,
-        feature_flags,
-        consent_rule_sets,
-        cookie_policy_versions
-      )
-      values
-        (
-          ${ids.organizationA},
-          '[{"code":"en","isDefault":true,"label":"Organization A"}]'::jsonb,
-          '[{"code":"organization_a","displayName":"Organization A","ruleSetKey":"organization_a"}]'::jsonb,
-          '[{"enabled":true,"key":"security.organization_a"}]'::jsonb,
-          '[{"defaultMode":"inform","key":"organization_a"}]'::jsonb,
-          '["security-a"]'::jsonb
-        ),
-        (
-          ${ids.organizationB},
-          '[{"code":"en","isDefault":true,"label":"Organization B"}]'::jsonb,
-          '[{"code":"organization_b","displayName":"Organization B","ruleSetKey":"organization_b"}]'::jsonb,
-          '[{"enabled":true,"key":"security.organization_b"}]'::jsonb,
-          '[{"defaultMode":"inform","key":"organization_b"}]'::jsonb,
-          '["security-b"]'::jsonb
-        )`,
     fixtureAdmin`insert into app.memberships (organization_id, user_id, role, status)
       values
         (${ids.organizationA}, ${ids.adminUser}, 'owner', 'active'),
@@ -265,6 +240,67 @@ async function seed() {
         (${ids.publishedDocumentA}, ${ids.organizationA}, 'page', 'published-a', 'published', ${ids.adminUser}, now()),
         (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now())`,
   ]);
+
+  await migrator.transaction([
+    migrator`create policy "migrator backfills organization settings"
+      on app.organizations
+      for select
+      to shapewebs_migrator
+      using (true)`,
+    migrator`create policy "migrator inserts organization settings backfill"
+      on app.organization_settings
+      for insert
+      to shapewebs_migrator
+      with check (true)`,
+    migrator`create policy "migrator reads organization settings backfill conflicts"
+      on app.organization_settings
+      for select
+      to shapewebs_migrator
+      using (true)`,
+    migrator`insert into app.organization_settings (
+        organization_id,
+        locales,
+        region_profiles,
+        feature_flags,
+        consent_rule_sets,
+        cookie_policy_versions
+      )
+      select
+        id,
+        '[{"code":"en","isDefault":true,"label":"English"},{"code":"da-DK","isDefault":false,"label":"Dansk"}]'::jsonb,
+        '[{"code":"eea_uk_ch","displayName":"EEA / UK / CH","ruleSetKey":"eea_uk_ch"},{"code":"us_california","displayName":"United States / California-sensitive","ruleSetKey":"us_california"},{"code":"rest_of_world","displayName":"Rest of world","ruleSetKey":"rest_of_world"}]'::jsonb,
+        '[{"enabled":false,"key":"cms.scheduled_publishing"},{"enabled":false,"key":"cms.translation_dashboard"},{"enabled":true,"key":"web.region_sensitive_consent"}]'::jsonb,
+        '[{"defaultMode":"opt_in","key":"eea_uk_ch"},{"defaultMode":"mixed","key":"us_california"},{"defaultMode":"inform","key":"rest_of_world"}]'::jsonb,
+        '["v1-eea","v1-us","v1-global"]'::jsonb
+      from app.organizations
+      where id in (${ids.organizationA}, ${ids.organizationB})
+      on conflict (organization_id) do nothing`,
+    migrator`drop policy "migrator reads organization settings backfill conflicts"
+      on app.organization_settings`,
+    migrator`drop policy "migrator inserts organization settings backfill"
+      on app.organization_settings`,
+    migrator`drop policy "migrator backfills organization settings"
+      on app.organizations`,
+  ]);
+
+  await fixtureAdmin.transaction([
+    fixtureAdmin`update app.organization_settings
+      set
+        locales = '[{"code":"en","isDefault":true,"label":"Organization A"}]'::jsonb,
+        region_profiles = '[{"code":"organization_a","displayName":"Organization A","ruleSetKey":"organization_a"}]'::jsonb,
+        feature_flags = '[{"enabled":true,"key":"security.organization_a"}]'::jsonb,
+        consent_rule_sets = '[{"defaultMode":"inform","key":"organization_a"}]'::jsonb,
+        cookie_policy_versions = '["security-a"]'::jsonb
+      where organization_id = ${ids.organizationA}`,
+    fixtureAdmin`update app.organization_settings
+      set
+        locales = '[{"code":"en","isDefault":true,"label":"Organization B"}]'::jsonb,
+        region_profiles = '[{"code":"organization_b","displayName":"Organization B","ruleSetKey":"organization_b"}]'::jsonb,
+        feature_flags = '[{"enabled":true,"key":"security.organization_b"}]'::jsonb,
+        consent_rule_sets = '[{"defaultMode":"inform","key":"organization_b"}]'::jsonb,
+        cookie_policy_versions = '["security-b"]'::jsonb
+      where organization_id = ${ids.organizationB}`,
+  ]);
 }
 
 async function cleanup() {
@@ -342,6 +378,22 @@ async function verifyRlsCoverage() {
     uncovered,
     [],
     "Every app and audit table must enable and force RLS",
+  );
+
+  const residualBackfillPolicies = await migrator`
+    select policyname
+    from pg_policies
+    where schemaname = 'app'
+      and policyname in (
+        'migrator backfills organization settings',
+        'migrator inserts organization settings backfill',
+        'migrator reads organization settings backfill conflicts'
+      )
+  `;
+  assert.deepEqual(
+    residualBackfillPolicies,
+    [],
+    "The temporary settings-backfill policy must not survive its transaction",
   );
 }
 
