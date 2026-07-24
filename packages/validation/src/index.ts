@@ -5,6 +5,23 @@ export { readBoundedText } from "./http";
 
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
+const emailAddressSchema = z.email();
+const notificationMailboxSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(320)
+  .refine((value) => {
+    if (emailAddressSchema.safeParse(value).success) {
+      return true;
+    }
+
+    const displayMailbox = /^[^<>\r\n]{1,100}\s<([^<>\r\n]+)>$/.exec(value);
+    return Boolean(
+      displayMailbox &&
+      emailAddressSchema.safeParse(displayMailbox[1]?.trim()).success,
+    );
+  }, "Must be one valid email mailbox.");
 
 const sharedEnvSchema = z.object({
   ADMIN_OWNER_EMAILS: z.string().min(3).optional(),
@@ -15,8 +32,8 @@ const sharedEnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   LEAD_IP_HASH_SECRET: z.string().min(32).optional(),
-  LEAD_NOTIFICATION_FROM_EMAIL: z.email().optional(),
-  LEAD_NOTIFICATION_TO_EMAIL: z.email().optional(),
+  LEAD_NOTIFICATION_FROM_EMAIL: notificationMailboxSchema.optional(),
+  LEAD_NOTIFICATION_TO_EMAIL: emailAddressSchema.optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),

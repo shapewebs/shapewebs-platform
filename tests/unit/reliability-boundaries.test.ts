@@ -11,7 +11,10 @@ import {
   renderLeadText,
 } from "../../packages/email/src/lead-template";
 import { sendLeadNotification } from "../../packages/email/src/resend-delivery";
-import { contactFormSchema } from "../../packages/validation/src/index";
+import {
+  contactFormSchema,
+  parseAdminEnv,
+} from "../../packages/validation/src/index";
 import { readBoundedText } from "../../packages/validation/src/http";
 
 describe("reliability and provider boundaries", () => {
@@ -99,6 +102,36 @@ describe("reliability and provider boundaries", () => {
         NODE_ENV: "production",
       }),
     ).toBeNull();
+  });
+
+  it("accepts one notification sender mailbox without allowing header injection", () => {
+    expect(
+      parseAdminEnv({
+        LEAD_NOTIFICATION_FROM_EMAIL: "Shapewebs <website@shapewebs.com>",
+        LEAD_NOTIFICATION_TO_EMAIL: "owner@example.com",
+      }),
+    ).toMatchObject({
+      LEAD_NOTIFICATION_FROM_EMAIL: "Shapewebs <website@shapewebs.com>",
+      LEAD_NOTIFICATION_TO_EMAIL: "owner@example.com",
+    });
+    expect(
+      parseAdminEnv({
+        LEAD_NOTIFICATION_FROM_EMAIL: "website@shapewebs.com",
+      }),
+    ).toMatchObject({
+      LEAD_NOTIFICATION_FROM_EMAIL: "website@shapewebs.com",
+    });
+
+    for (const sender of [
+      "Shapewebs <not-an-email>",
+      "Shapewebs <website@shapewebs.com>\r\nBcc: attacker@example.com",
+    ]) {
+      expect(() =>
+        parseAdminEnv({
+          LEAD_NOTIFICATION_FROM_EMAIL: sender,
+        }),
+      ).toThrow();
+    }
   });
 
   it("enables synthetic retention only for the exact protected preview origin", () => {
