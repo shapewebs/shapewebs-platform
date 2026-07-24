@@ -20,6 +20,7 @@ export {
   listLeadSubmissions,
   recordResendWebhook,
   submitLeadWithOutbox,
+  suppressLeadNotification,
   type ClaimedLeadNotification,
   type LeadSubmissionDto,
   type LeadSubmissionCommand,

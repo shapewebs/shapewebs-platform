@@ -28,11 +28,22 @@ outbox. Production scheduling and production credentials are out of scope.
 - The Worker was initially deployed without a cron trigger and with all three
   values stored as encrypted Cloudflare secrets.
 - The existing 11-character staging `CRON_SECRET` failed the Worker's
-  32-character minimum and was rotated to a 64-character random value in the
-  Vercel branch-scoped Preview environment.
-- The fixed admin staging deployment must be rebuilt from the protected
-  `staging` Git branch before the new credential is accepted. Until that
-  deployment passes, the Worker schedule and heartbeat remain inactive.
+  32-character minimum. It was replaced with a one-way Vercel Sensitive value
+  generated once in memory and written directly to both Vercel and Cloudflare.
+- Staging PR
+  [`#11`](https://github.com/shapewebs/shapewebs-platform/pull/11) passed the
+  complete protected pull-request gate and was squash-merged into `staging`.
+  The resulting fixed Vercel deployment is ready. Staging assurance run
+  [`30116773588`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30116773588)
+  passed k6 and the passive ZAP baseline.
+- A read-only Neon query found nine due outbox events. All nine are the exact
+  Checkly fixture with the `CHECKLY_SYNTHETIC_DO_NOT_CONTACT` marker; no
+  ordinary or provider-test lead is pending.
+- The outbox repository now classifies only that full fixture. The admin worker
+  marks the claimed event as `sent` with delivery status
+  `suppressed_synthetic`, records a safe structured event, and does not call
+  Resend. This suppression change must pass the protected staging deployment
+  gate before the cron is activated.
 - No production Vercel, Cloudflare, Checkly, Neon, or Resend value was created
   or changed.
 
@@ -47,9 +58,10 @@ The following passed locally:
 
 Final evidence still required:
 
-1. protected `staging` deployment accepts the synchronized credential;
-2. unauthenticated and stale-credential requests remain denied;
-3. the exact Cloudflare cron trigger is deployed and propagated;
-4. at least two scheduled invocations complete;
-5. the Checkly heartbeat records those invocations; and
-6. a controlled missed heartbeat produces and recovers an alert.
+1. the synthetic-suppression change passes the protected staging branch;
+2. one authenticated run suppresses the nine fixtures without a Resend send;
+3. unauthenticated and stale-credential requests remain denied;
+4. the exact Cloudflare cron trigger is deployed and propagated;
+5. at least two scheduled invocations complete;
+6. the Checkly heartbeat records those invocations; and
+7. a controlled missed heartbeat produces and recovers an alert.

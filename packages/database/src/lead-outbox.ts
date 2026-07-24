@@ -140,6 +140,7 @@ export type ClaimedLeadNotification = {
   kind: LeadKind;
   leadId: string;
   name: string;
+  suppressDelivery: boolean;
 };
 
 export type LeadSubmissionDto = {
@@ -199,7 +200,7 @@ export async function listLeadSubmissions(
   return results[3];
 }
 
-function expiredSyntheticLeadFilter(organizationId: string) {
+function syntheticLeadFilter(organizationId: string) {
   return and(
     eq(leadSubmissions.organizationId, organizationId),
     eq(leadSubmissions.kind, "contact"),
@@ -207,6 +208,12 @@ function expiredSyntheticLeadFilter(organizationId: string) {
     sql`lower(${leadSubmissions.email}) = ${syntheticEmail}`,
     eq(leadSubmissions.message, syntheticMessage),
     sql`${leadSubmissions.payload}->>'company' = ${syntheticCompany}`,
+  );
+}
+
+function expiredSyntheticLeadFilter(organizationId: string) {
+  return and(
+    syntheticLeadFilter(organizationId),
     sql`${leadSubmissions.createdAt} < now() - interval '6 days'`,
   );
 }
@@ -334,6 +341,10 @@ export async function claimLeadNotification(
         kind: leadSubmissions.kind,
         leadId: leadSubmissions.id,
         name: leadSubmissions.name,
+        suppressDelivery: sql<boolean>`coalesce(
+          ${syntheticLeadFilter(input.organizationId)},
+          false
+        )`,
       })
       .from(outboxEvents)
       .innerJoin(leadSubmissions, eq(leadSubmissions.id, outboxEvents.leadId))
@@ -387,7 +398,56 @@ export async function claimLeadNotification(
     kind: candidate.kind,
     leadId: candidate.leadId,
     name: candidate.name,
+    suppressDelivery: candidate.suppressDelivery,
   };
+}
+
+export async function suppressLeadNotification(
+  databaseUrl: string,
+  input: {
+    eventId: string;
+    organizationId: string;
+    workerId: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(database, {
+    organizationId: input.organizationId,
+    role: "owner",
+  });
+  const results = await database.batch([
+    ...context,
+    database
+      .update(outboxEvents)
+      .set({
+        deliveryStatus: "suppressed_synthetic",
+        lastErrorCode: null,
+        lockedAt: null,
+        lockedBy: null,
+        processedAt: now,
+        providerMessageId: null,
+        status: "sent",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(outboxEvents.id, input.eventId),
+          eq(outboxEvents.organizationId, input.organizationId),
+          eq(outboxEvents.status, "processing"),
+          eq(outboxEvents.lockedBy, input.workerId),
+          sql`exists (
+            select 1
+            from ${leadSubmissions}
+            where ${leadSubmissions.id} = ${outboxEvents.leadId}
+              and ${syntheticLeadFilter(input.organizationId)}
+          )`,
+        ),
+      )
+      .returning({ id: outboxEvents.id }),
+  ]);
+
+  return results[3].length === 1;
 }
 
 export async function completeLeadNotification(

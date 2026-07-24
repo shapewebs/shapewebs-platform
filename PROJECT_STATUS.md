@@ -222,20 +222,24 @@ objects after their then-optional origin variables were absent; commit
 `1b6924e` makes the fixed staging resources unconditional and a subsequent
 three-check session passed. The outbox heartbeat exists but remains inactive.
 A staging-only Cloudflare Worker is deployed with encrypted credentials and no
-trigger; the weak legacy cron secret was rotated, and the protected `staging`
-branch must deploy the synchronized value before the five-minute trigger is
-activated. Production database/auth/email variables remain intentionally
-unconfigured for the new path. Existing transitional Supabase production
-variables are not removed until the corresponding CMS and public-content paths
-have verified Neon parity.
+trigger; the weak legacy cron secret was replaced atomically in Vercel and
+Cloudflare. Protected staging PR `#11`, its disposable Neon lifecycle, both
+Vercel builds, and post-merge k6/ZAP run `30116773588` passed. A read-only
+staging query then found nine due events, all exact Checkly synthetic fixtures
+and no customer leads. The pending suppression change processes those fixtures
+without contacting Resend; the trigger stays off until that change passes the
+same staging gate. Production database/auth/email variables remain
+intentionally unconfigured for the new path. Existing transitional Supabase
+production variables are not removed until the corresponding CMS and
+public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
 1. Configure the Workspace-owned Google OAuth client and complete the
    Google-to-TOTP fail-closed staging journey.
 2. Complete mailbox MFA and controlled primary/alias mail-flow verification.
-3. Deploy the synchronized staging branch, activate the five-minute outbox
-   schedule, and record the outbox heartbeat and alert evidence.
+3. Deploy and prove exact synthetic-notification suppression, then activate the
+   five-minute outbox schedule and record heartbeat/alert evidence.
 4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
 5. Build the CMS lifecycle, storage controls, final public studio design, and

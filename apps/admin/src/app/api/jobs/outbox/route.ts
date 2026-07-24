@@ -4,6 +4,7 @@ import {
   claimLeadNotification,
   completeLeadNotification,
   failLeadNotification,
+  suppressLeadNotification,
 } from "@shapewebs/database/server";
 import { sendLeadNotification } from "@shapewebs/email/server";
 import {
@@ -100,6 +101,45 @@ export async function GET(request: Request) {
 
       if (!notification) {
         break;
+      }
+
+      if (notification.suppressDelivery) {
+        const suppressed = await suppressLeadNotification(
+          environment.databaseUrl,
+          {
+            eventId: notification.eventId,
+            organizationId: environment.organizationId,
+            workerId,
+          },
+        );
+
+        if (!suppressed) {
+          logger.log({
+            eventCode: "shapewebs.outbox.delivery",
+            level: "error",
+            metadata: {
+              attempt: notification.attempt,
+              reasonCode: "claim_lost_after_suppression",
+              resourceType: "lead_notification",
+            },
+            requestId,
+            result: "degraded",
+          });
+          break;
+        }
+
+        logger.log({
+          eventCode: "shapewebs.outbox.delivery",
+          level: "info",
+          metadata: {
+            operation: "synthetic_suppressed",
+            resourceType: "lead_notification",
+          },
+          requestId,
+          result: "success",
+        });
+        processed += 1;
+        continue;
       }
 
       const result = await sendLeadNotification(environment.resendApiKey, {
