@@ -13,38 +13,57 @@ const zapImage =
 const target = requireStagingTarget("ZAP_TARGET_URL");
 const automationBypassSecret = requireAutomationBypassSecret();
 const reportDirectory = path.resolve("test-results/zap");
+const containerUserId = process.getuid?.();
+const containerGroupId = process.getgid?.();
+
+if (!Number.isInteger(containerUserId) || !Number.isInteger(containerGroupId)) {
+  throw new Error(
+    "ZAP release verification requires a host with numeric user and group IDs.",
+  );
+}
+
 const secretDirectory = mkdtempSync(
   path.join(os.tmpdir(), "shapewebs-zap-secrets-"),
+);
+const zapHomeDirectory = mkdtempSync(
+  path.join(os.tmpdir(), "shapewebs-zap-home-"),
 );
 const secretConfigPath = path.join(secretDirectory, "vercel-bypass.properties");
 
 mkdirSync(reportDirectory, { recursive: true });
-writeFileSync(
-  secretConfigPath,
-  [
-    "replacer.full_list(0).description=Vercel staging automation bypass",
-    "replacer.full_list(0).enabled=true",
-    "replacer.full_list(0).matchtype=REQ_HEADER",
-    "replacer.full_list(0).matchstr=x-vercel-protection-bypass",
-    "replacer.full_list(0).regex=false",
-    `replacer.full_list(0).replacement=${automationBypassSecret}`,
-    "",
-  ].join("\n"),
-  { encoding: "utf8", mode: 0o600 },
-);
 
 let result;
 
 try {
+  writeFileSync(
+    secretConfigPath,
+    [
+      "replacer.full_list(0).description=Vercel staging automation bypass",
+      "replacer.full_list(0).enabled=true",
+      "replacer.full_list(0).matchtype=REQ_HEADER",
+      "replacer.full_list(0).matchstr=x-vercel-protection-bypass",
+      "replacer.full_list(0).regex=false",
+      `replacer.full_list(0).replacement=${automationBypassSecret}`,
+      "",
+    ].join("\n"),
+    { encoding: "utf8", mode: 0o600 },
+  );
+
   result = spawnSync(
     "docker",
     [
       "run",
       "--rm",
+      "--user",
+      `${containerUserId}:${containerGroupId}`,
+      "--env",
+      "HOME=/home/zap",
       "--volume",
       `${reportDirectory}:/zap/wrk:rw`,
       "--volume",
       `${secretDirectory}:/zap/secrets:ro`,
+      "--volume",
+      `${zapHomeDirectory}:/home/zap:rw`,
       zapImage,
       "zap-baseline.py",
       "-t",
@@ -64,6 +83,7 @@ try {
   );
 } finally {
   rmSync(secretDirectory, { force: true, recursive: true });
+  rmSync(zapHomeDirectory, { force: true, recursive: true });
 }
 
 if (result?.error?.code === "ENOENT") {
