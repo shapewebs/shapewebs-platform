@@ -1,6 +1,9 @@
 name: Staging reliability and security
 
 on:
+  push:
+    branches:
+      - staging
   schedule:
     - cron: "23 3 * * 2"
   workflow_dispatch:
