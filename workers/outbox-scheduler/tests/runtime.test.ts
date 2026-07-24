@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bindRuntimeFetch,
   runOutboxSchedule,
   type SchedulerDependencies,
 } from "../src/scheduler";
@@ -8,6 +9,19 @@ import {
 const scheduledTime = Date.parse("2026-07-24T18:00:00.000Z");
 
 describe("outbox scheduler Workers runtime", () => {
+  it("binds the runtime fetch to the Workers global context", async () => {
+    const unboundFetch = function (this: unknown) {
+      expect(this).toBe(globalThis);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    } as unknown as typeof fetch;
+
+    const response = await bindRuntimeFetch(unboundFetch)(
+      "https://example.com",
+    );
+
+    expect(response.status).toBe(204);
+  });
+
   it("uses the Workers fetch, stream, abort, crypto, and URL APIs", async () => {
     const calls: string[] = [];
     const dependencies: SchedulerDependencies = {

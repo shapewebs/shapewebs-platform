@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  bindRuntimeFetch,
+  createRuntimeDependencies,
   runOutboxSchedule,
   type SchedulerBindings,
   type SchedulerDependencies,
@@ -71,6 +73,26 @@ function successfulOutboxResponse(
 }
 
 describe("Cloudflare outbox scheduler", () => {
+  it("creates request-scoped runtime dependencies with a bound fetch", async () => {
+    const unboundFetch = function (this: unknown) {
+      expect(this).toBe(globalThis);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    } as unknown as typeof fetch;
+
+    const response = await bindRuntimeFetch(unboundFetch)(
+      "https://example.com",
+    );
+    const runtimeDependencies = createRuntimeDependencies();
+
+    expect(response.status).toBe(204);
+    expect(runtimeDependencies).toEqual({
+      fetch: expect.any(Function),
+      log: expect.any(Function),
+      now: expect.any(Function),
+      randomUUID: expect.any(Function),
+    });
+  });
+
   it("invokes only the exact outbox target and heartbeats after success", async () => {
     const calls: FetchCall[] = [];
     const fetchImplementation: typeof fetch = async (input, init) => {

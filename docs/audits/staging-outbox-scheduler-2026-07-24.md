@@ -57,6 +57,12 @@ outbox. Production scheduling and production credentials are out of scope.
   any database or email-provider change. The target is on the Worker's own
   Cloudflare zone, so the public-fetch compatibility flag is being added
   through the protected staging gate before another activation attempt.
+- The public path alone did not resolve the zero-millisecond failure. The
+  runtime `fetch` method had been stored at module scope and later called
+  through the dependency object, losing Cloudflare's request-bound receiver.
+  Runtime dependencies are now created per invocation, `fetch` is bound to the
+  Workers global context, and a Workers-runtime regression test asserts that
+  receiver.
 - No production Vercel, Cloudflare, Checkly, Neon, or Resend value was created
   or changed.
 
