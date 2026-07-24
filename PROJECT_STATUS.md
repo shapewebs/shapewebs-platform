@@ -138,6 +138,11 @@ connected to production data, or promoted to the production domains.
   were removed, apex null MX and `v=spf1 -all` were added, and DMARC is
   `quarantine` with strict DKIM alignment. Resend's DKIM and `send` subdomain
   SPF/MX records remain intact for outbound transactional mail.
+- ADR 0003 defines the next mail boundary: one named Google Workspace user
+  (`lukasthomsen@shapewebs.com`), role aliases for customer and operational
+  mail, `shapewebs@gmail.com` as independent recovery, and
+  `noreply@shapewebs.com` as a Resend-only sender. Workspace is not yet
+  provisioned and inbound mail remains fail-closed.
 - Staging synthetic leads have a dedicated, POST-only retention route, a
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
@@ -175,6 +180,8 @@ Staging provisioning and runtime evidence is recorded in:
 These are intentionally not guessed or provisioned:
 
 - first-owner Google email and Google OAuth client ID/secret;
+- approval and provisioning of the paid Google Workspace mailbox before the
+  null-MX mail cutover;
 - production Turnstile site/secret keys and the exact production hostname;
 - a reachable external Resend notification recipient and production Resend
   key/webhook configuration; staging delivery, bounce and provider replay
