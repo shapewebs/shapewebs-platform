@@ -10,32 +10,32 @@ This matrix groups related ASVS requirements. The exact ASVS requirement IDs
 must be added when the official machine-readable 5.0 requirement catalog is
 checked into the assurance process.
 
-| Control area                                 | Target | Status      | Implementation/evidence                                                                                      | Owner        |
-| -------------------------------------------- | ------ | ----------- | ------------------------------------------------------------------------------------------------------------ | ------------ |
-| Architecture and trust boundaries            | L2     | Implemented | `docs/security/threat-model.md`, split applications and packages                                             | Owner        |
-| Secure development lifecycle                 | L2     | Implemented | Required CI, roadmap, ADRs, PR template, repository ruleset                                                  | Owner        |
-| Authentication library                       | L2     | Implemented | Admin-only Better Auth route, Drizzle adapter, Google-only UI, fail-closed environment validation            | Owner        |
-| OAuth state, PKCE and exact callback origins | L2     | Partial     | Better Auth protocol handling and exact-origin validation; fixed staging Google client still requires setup  | Owner        |
-| Public registration disabled                 | L2     | Implemented | Email/password paths disabled; only allowlisted Google users can create users/sessions                       | Owner        |
-| MFA and administrative step-up               | L2     | Partial     | TOTP enrollment and server-enforced OAuth step-up implemented; fixed-staging journey still requires provider | Owner        |
-| Session cookie attributes                    | L2     | Partial     | Host-only Secure/HttpOnly/SameSite policy implemented; deployed cookie inspection remains a launch gate      | Owner        |
-| Session expiry and revocation                | L2     | Implemented | Fixed 8-hour expiry, 30-minute inactivity, revocation, database negative scenarios, configuration unit tests | Owner        |
-| Per-entry-point authorization                | L2     | Partial     | Migrated admin/lead paths re-authorize; transitional Supabase CMS paths still require replacement            | Owner        |
-| Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                             | Owner        |
-| Minimal DTO/data exposure                    | L2     | Partial     | Lead repository returns explicit DTOs and worker fields; remaining CMS repositories are pending              | Owner        |
-| Input validation and size limits             | L2     | Partial     | Bounded JSON/webhook bodies, Zod forms, exact UUIDs and provider validation; uploads remain pending          | Owner        |
-| Output encoding and content safety           | L2     | Partial     | React encoding and escaped minimal emails; structured CMS enforcement remains pending                        | Owner        |
-| CSRF protection                              | L2     | Partial     | Exact Better Auth origins, SameSite cookies and step-up Origin validation; provider E2E remains pending      | Owner        |
-| File upload safety                           | L2     | Planned     | Blob boundary and type/signature/size/dimension validation contract pending                                  | Owner        |
-| Cryptography and secrets                     | L2     | Partial     | Provider primitives, encrypted OAuth tokens, push protection; operator rotation drill pending                | Owner        |
-| Security headers and CSP                     | L2/L1  | Implemented | Nonce admin CSP, constrained public CSP and browser tests; public `unsafe-inline` tracked below              | Owner        |
-| Logging and audit                            | L2     | Implemented | Typed redacted logs, redaction tests, correlated traces and append-only authentication/audit events          | Owner        |
-| Error handling                               | L2     | Partial     | Fail-closed routes and provider/transaction failure tests; controlled staging alert exercise pending         | Owner        |
-| Data protection and retention                | L2     | Partial     | Retention/processor register and data-minimized email; scheduled deletion jobs pending                       | Owner        |
-| Communication security                       | L2     | Implemented | HTTPS/HSTS, exact provider origins, secure production cookies                                                | Vercel/Owner |
-| Malicious automation protection              | L2     | Partial     | Server Turnstile and bounded local limits; Vercel WAF/distributed limits pending                             | Owner        |
-| Supply-chain security                        | L2     | Implemented | Lockfile, OSV, CodeQL, dependency review, SHA pins and periodic Scorecard                                    | Owner        |
-| Backup, restore and rollback                 | L2     | Partial     | Disposable migration/restore verified; paid production project and recovery drill pending                    | Owner        |
+| Control area                                 | Target | Status      | Implementation/evidence                                                                                               | Owner        |
+| -------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Architecture and trust boundaries            | L2     | Implemented | `docs/security/threat-model.md`, split applications and packages                                                      | Owner        |
+| Secure development lifecycle                 | L2     | Implemented | Required CI, roadmap, ADRs, PR template, repository ruleset                                                           | Owner        |
+| Authentication library                       | L2     | Implemented | Admin-only Better Auth route, Drizzle adapter, Google-only UI, fail-closed environment validation                     | Owner        |
+| OAuth state, PKCE and exact callback origins | L2     | Partial     | Better Auth protocol handling and exact-origin validation; fixed staging Google client still requires setup           | Owner        |
+| Public registration disabled                 | L2     | Implemented | Email/password paths disabled; only allowlisted Google users can create users/sessions                                | Owner        |
+| MFA and administrative step-up               | L2     | Partial     | TOTP enrollment and server-enforced OAuth step-up implemented; fixed-staging journey still requires provider          | Owner        |
+| Session cookie attributes                    | L2     | Partial     | Host-only Secure/HttpOnly/SameSite policy implemented; deployed cookie inspection remains a launch gate               | Owner        |
+| Session expiry and revocation                | L2     | Implemented | Fixed 8-hour expiry, 30-minute inactivity, revocation, database negative scenarios, configuration unit tests          | Owner        |
+| Per-entry-point authorization                | L2     | Partial     | Migrated admin/lead paths re-authorize; transitional Supabase CMS paths still require replacement                     | Owner        |
+| Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                                      | Owner        |
+| Minimal DTO/data exposure                    | L2     | Partial     | Lead repository returns explicit DTOs and worker fields; remaining CMS repositories are pending                       | Owner        |
+| Input validation and size limits             | L2     | Partial     | Bounded JSON/webhook bodies, Zod forms, exact UUIDs and provider validation; uploads remain pending                   | Owner        |
+| Output encoding and content safety           | L2     | Partial     | React encoding and escaped minimal emails; structured CMS enforcement remains pending                                 | Owner        |
+| CSRF protection                              | L2     | Partial     | Exact Better Auth origins, SameSite cookies and step-up Origin validation; provider E2E remains pending               | Owner        |
+| File upload safety                           | L2     | Planned     | Blob boundary and type/signature/size/dimension validation contract pending                                           | Owner        |
+| Cryptography and secrets                     | L2     | Partial     | Provider primitives, encrypted OAuth tokens, push protection and staging bypass rotation; provider drills pending     | Owner        |
+| Security headers and CSP                     | L2/L1  | Implemented | Nonce admin CSP, constrained public CSP and browser tests; public `unsafe-inline` tracked below                       | Owner        |
+| Logging and audit                            | L2     | Implemented | Typed redacted logs, redaction tests, correlated traces and append-only authentication/audit events                   | Owner        |
+| Error handling                               | L2     | Partial     | Fail-closed routes and provider/transaction failure tests; controlled staging alert exercise pending                  | Owner        |
+| Data protection and retention                | L2     | Partial     | Retention/processor register, data-minimized email and strict staging synthetic cleanup; production schedules pending | Owner        |
+| Communication security                       | L2     | Implemented | HTTPS/HSTS, exact provider origins, secure production cookies                                                         | Vercel/Owner |
+| Malicious automation protection              | L2     | Partial     | Server Turnstile and bounded local limits; Vercel WAF/distributed limits pending                                      | Owner        |
+| Supply-chain security                        | L2     | Implemented | Lockfile, OSV, CodeQL, dependency review, SHA pins and periodic Scorecard                                             | Owner        |
+| Backup, restore and rollback                 | L2     | Partial     | Disposable migration/restore verified; paid production project and recovery drill pending                             | Owner        |
 
 ## Accepted risk: static public CSP
 

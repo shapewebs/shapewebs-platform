@@ -1,29 +1,10 @@
 import { ApiCheck, AssertionBuilder, Frequency } from "checkly/constructs";
 
-function getStagingAdminBaseUrl(): URL | null {
-  const configuredUrl = process.env.CHECKLY_STAGING_ADMIN_BASE_URL;
+import { getOptionalExactHttpsOrigin } from "../lib/environment";
 
-  if (!configuredUrl) {
-    return null;
-  }
-
-  const baseUrl = new URL(configuredUrl);
-
-  if (
-    baseUrl.protocol !== "https:" ||
-    baseUrl.origin !== configuredUrl ||
-    baseUrl.username ||
-    baseUrl.password
-  ) {
-    throw new Error(
-      "CHECKLY_STAGING_ADMIN_BASE_URL must be one exact HTTPS origin.",
-    );
-  }
-
-  return baseUrl;
-}
-
-const stagingAdminBaseUrl = getStagingAdminBaseUrl();
+const stagingAdminBaseUrl = getOptionalExactHttpsOrigin(
+  "CHECKLY_STAGING_ADMIN_BASE_URL",
+);
 
 if (stagingAdminBaseUrl) {
   new ApiCheck("staging-synthetic-retention", {
@@ -45,7 +26,7 @@ if (stagingAdminBaseUrl) {
         },
         {
           key: "x-vercel-protection-bypass",
-          value: "{{SHAPEWEBS_STAGING_BYPASS_SECRET}}",
+          value: "{{SHAPEWEBS_STAGING_ADMIN_BYPASS_SECRET}}",
         },
       ],
       method: "POST",

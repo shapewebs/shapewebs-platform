@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
 import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
+import { getOptionalExactHttpsOrigin } from "../../monitoring/lib/environment";
 import {
   escapeEmailHtml,
   renderLeadHtml,
@@ -110,6 +111,31 @@ describe("reliability and provider boundaries", () => {
           environment,
         ),
       ).toBeNull();
+    }
+  });
+
+  it("accepts only exact HTTPS origins for optional staging monitors", () => {
+    expect(
+      getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {}),
+    ).toBeNull();
+    expect(
+      getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
+        CHECKLY_STAGING_ADMIN_BASE_URL: "https://admin-staging.shapewebs.com",
+      })?.origin,
+    ).toBe("https://admin-staging.shapewebs.com");
+
+    for (const configuredUrl of [
+      "http://admin-staging.shapewebs.com",
+      "https://admin-staging.shapewebs.com/path",
+      "https://user:password@admin-staging.shapewebs.com",
+    ]) {
+      expect(() =>
+        getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
+          CHECKLY_STAGING_ADMIN_BASE_URL: configuredUrl,
+        }),
+      ).toThrow(
+        "CHECKLY_STAGING_ADMIN_BASE_URL must be one exact HTTPS origin.",
+      );
     }
   });
 

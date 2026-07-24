@@ -2,7 +2,8 @@
 
 - Date: 24 July 2026
 - Environment: synthetic non-production staging
-- Status: control plane provisioned; runtime deployment verification pending
+- Status: control plane and fixed-host health verified; provider journeys
+  pending
 
 ## GitHub and Vercel
 
@@ -48,12 +49,20 @@ paid production project with a protected branch remains a launch gate.
 The public sitekey and private secret are branch-scoped Vercel variables. The
 secret was neither printed nor written to the repository.
 
-## Pending runtime evidence
+## Runtime evidence
 
-- Produce fresh Vercel deployments from Git branch `staging`.
-- Confirm both fixed hostnames resolve to those branch deployments.
-- Verify sanitized liveness and readiness behavior.
+Both fixed hostnames resolve to their protected Git branch `staging`
+deployments. Public and admin liveness/readiness returned sanitized `200`
+responses with `no-store` and the expected security headers. Detailed evidence
+and explicit limitations are recorded in
+`docs/audits/staging-runtime-verification-2026-07-24.md`.
+
+## Pending provider evidence
+
+- Promote reviewed migration `0006` and its retention route through a protected
+  pull request to `staging`.
 - Submit a synthetic lead through real Turnstile and confirm the atomic lead
   and outbox records.
-- Configure Google OAuth, Resend, Checkly, and protected staging access before
-  claiming the complete staging launch gate.
+- Complete the green protected-staging k6/ZAP run.
+- Configure Google OAuth, Resend and Checkly before claiming the complete
+  staging launch gate.

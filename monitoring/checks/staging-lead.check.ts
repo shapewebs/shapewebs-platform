@@ -1,29 +1,10 @@
 import { BrowserCheck, Frequency } from "checkly/constructs";
 
-function getStagingBaseUrl(): URL | null {
-  const configuredUrl = process.env.CHECKLY_STAGING_WEB_BASE_URL;
+import { getOptionalExactHttpsOrigin } from "../lib/environment";
 
-  if (!configuredUrl) {
-    return null;
-  }
-
-  const baseUrl = new URL(configuredUrl);
-
-  if (
-    baseUrl.protocol !== "https:" ||
-    baseUrl.origin !== configuredUrl ||
-    baseUrl.username ||
-    baseUrl.password
-  ) {
-    throw new Error(
-      "CHECKLY_STAGING_WEB_BASE_URL must be one exact HTTPS origin.",
-    );
-  }
-
-  return baseUrl;
-}
-
-const stagingBaseUrl = getStagingBaseUrl();
+const stagingBaseUrl = getOptionalExactHttpsOrigin(
+  "CHECKLY_STAGING_WEB_BASE_URL",
+);
 
 if (stagingBaseUrl) {
   const contactUrl = new URL("/contact", stagingBaseUrl).toString();
@@ -39,11 +20,11 @@ if (stagingBaseUrl) {
 
         test("persists one synthetic staging lead", async ({ page }) => {
           const protectionBypass =
-            process.env.SHAPEWEBS_STAGING_BYPASS_SECRET ?? "";
+            process.env.SHAPEWEBS_STAGING_WEB_BYPASS_SECRET ?? "";
 
           if (!/^[A-Za-z0-9_-]{32,128}$/.test(protectionBypass)) {
             throw new Error(
-              "SHAPEWEBS_STAGING_BYPASS_SECRET is unavailable or invalid.",
+              "SHAPEWEBS_STAGING_WEB_BYPASS_SECRET is unavailable or invalid.",
             );
           }
 
