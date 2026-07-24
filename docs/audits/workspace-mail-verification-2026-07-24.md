@@ -3,8 +3,9 @@
 - Date: 24 July 2026
 - Environment: Google Workspace trial and Resend staging
 - Primary mailbox: `admin@shapewebs.com`
-- Status: inbound routing and transactional MX delivery verified; MFA,
-  send-as identities, filters and outbound identity verification remain open
+- Status: inbound routing, transactional MX delivery, inbox organization and
+  the `info@` outbound identity verified; MFA and the remaining send-as
+  identities remain open
 
 ## Address contract
 
@@ -41,27 +42,54 @@ This proves that each published inbound address terminates in the central
 Workspace mailbox and that `noreply@shapewebs.com` can reach the human mailbox
 through the same external path used by the transactional provider.
 
+## Inbox organization
+
+One `Shapewebs` parent label and these eight child labels are active:
+
+- `Shapewebs/Admin`;
+- `Shapewebs/Info`;
+- `Shapewebs/Sales`;
+- `Shapewebs/Support`;
+- `Shapewebs/Security`;
+- `Shapewebs/Privacy`;
+- `Shapewebs/Billing`; and
+- `Shapewebs/Personal`.
+
+Each address has an exact `to:` filter that applies only its matching label.
+The filters preserve the inbox and unread state: they do not archive, forward,
+delete or mark mail as read. Existing conversations were backfilled. The
+external MX fixtures visibly carry their matching labels.
+
+## Outbound identity evidence
+
+`admin@shapewebs.com` remains the default Workspace sender.
+`Shapewebs <info@shapewebs.com>` is an additional alias identity. An authorized
+message sent from that identity reached `shapewebs@gmail.com` at
+`2026-07-24T20:46:58Z`, and Gmail reported the authenticated From address as
+`info@shapewebs.com`.
+
 ## Personal Gmail finding
 
-`shapewebs@gmail.com` still has a legacy `info@shapewebs.com` send-as identity.
-The first Gmail-origin test therefore did not provide independent MX evidence:
-Google treated the `info@` message as an internal self-message, while the other
-seven attempts returned send-as misconfiguration notices. No domain routing
-failure was inferred from those attempts; the external Resend exercise passed
-for every address.
+`shapewebs@gmail.com` had a legacy `info@shapewebs.com` send-as identity that
+used `smtp.simply.com` and was still the default. The first Gmail-origin test
+therefore did not provide independent MX evidence: Google treated the `info@`
+message as an internal self-message, while the other seven attempts returned
+send-as misconfiguration notices. No domain routing failure was inferred from
+those attempts; the external Resend exercise passed for every address.
 
-The legacy personal send-as identity must be removed after the equivalent
-Workspace sender is verified. Human domain mail should originate from the
-Workspace account; the personal Gmail account should remain recovery and
+After the Workspace `info@` identity passed its outbound test, the stale
+personal send-as entry was removed. `shapewebs@gmail.com` is again its own
+default and only sender. No mail was deleted. Human domain mail now originates
+from the Workspace account; the personal Gmail account remains recovery and
 operational contact only.
 
 ## Remaining controls
 
 1. Enable two-step verification on `admin@shapewebs.com` and verify the
    `shapewebs@gmail.com` recovery address.
-2. Add Workspace send-as identities for the role and personal aliases, keeping
-   each as an alias of the central account.
-3. Add inbox-preserving labels and filters for every alias.
-4. Send a controlled outbound message from each configured Workspace identity
+2. Add Workspace send-as identities for `sales@`, `support@`, `security@`,
+   `privacy@`, `billing@` and `lukasthomsen@`, keeping each as an alias of the
+   central account.
+3. Send a controlled outbound message from each remaining Workspace identity
    to `shapewebs@gmail.com` and verify the authenticated From address.
-5. Do not add `noreply@shapewebs.com` as a Gmail sender or mailbox.
+4. Do not add `noreply@shapewebs.com` as a Gmail sender or mailbox.

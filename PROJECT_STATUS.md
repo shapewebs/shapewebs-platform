@@ -147,6 +147,15 @@ connected to production data, or promoted to the production domains.
   `shapewebs@gmail.com` is the independent recovery address. There is no
   catch-all, and `noreply@shapewebs.com` remains a Resend-only sender rather
   than a human mailbox.
+- Exact inbox-preserving filters apply `Shapewebs/Admin`, `Info`, `Sales`,
+  `Support`, `Security`, `Privacy`, `Billing`, or `Personal` labels to matching
+  inbound addresses. Existing conversations were backfilled without
+  archiving, forwarding, deleting or marking them read.
+- `admin@shapewebs.com` remains the default Workspace sender. The additional
+  `Shapewebs <info@shapewebs.com>` identity sent a controlled message whose
+  authenticated From address arrived correctly at `shapewebs@gmail.com`. The
+  stale `smtp.simply.com` `info@` send-as entry was then removed from the
+  personal Gmail account without deleting mail.
 - Branch-scoped staging configuration now uses `admin@shapewebs.com` as the
   Better Auth owner, `sales@shapewebs.com` as the lead recipient, and
   `Shapewebs <noreply@shapewebs.com>` as the transactional sender. No
@@ -199,9 +208,9 @@ These are intentionally not guessed or provisioned:
 
 - Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
   staging journey;
-- Workspace mailbox MFA, alias send-as/filter configuration, and controlled
-  outbound identity evidence. External MX delivery to the primary mailbox and
-  every configured alias is complete;
+- Workspace mailbox MFA plus the remaining alias send-as and controlled
+  outbound identity evidence. External MX delivery, all inbox filters and the
+  `info@` identity are complete;
 - production Turnstile site/secret keys and the exact production hostname;
 - production Resend key/webhook configuration; the staging recipient is now
   `sales@shapewebs.com`, and staging delivery, bounce, and provider replay
@@ -258,8 +267,8 @@ public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Complete mailbox MFA, recovery-address verification, alias send-as/filter
-   configuration and outbound identity verification.
+1. Complete mailbox MFA, recovery-address verification and the remaining
+   alias send-as/outbound identity verification.
 2. Configure the Workspace-owned Google OAuth client when the new account can
    access Google Cloud, then complete the Google-to-TOTP fail-closed staging
    journey.
