@@ -59,10 +59,8 @@ and explicit limitations are recorded in
 
 ## Pending provider evidence
 
-- Promote reviewed migration `0006` and its retention route through a protected
-  pull request to `staging`.
-- Submit a synthetic lead through real Turnstile and confirm the atomic lead
-  and outbox records.
 - Complete the green protected-staging k6/ZAP run.
+- Configure an authenticated scheduler for the POST-only retention route and
+  record its first successful deletion after the six-day threshold.
 - Configure Google OAuth, Resend and Checkly before claiming the complete
   staging launch gate.

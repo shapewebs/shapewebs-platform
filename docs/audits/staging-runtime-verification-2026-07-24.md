@@ -75,6 +75,28 @@ with `Cache-Control: no-store, max-age=0` to Vercel authentication for both
 fixed health endpoints. They did not reach either application. Authenticated
 Vercel transport returned the application `200` responses recorded above.
 
+## Real Turnstile and atomic persistence evidence
+
+An in-app browser subsequently reached the fixed public staging contact page
+through the owner's existing protected-deployment access. The general contact
+form was filled with the exact marker-restricted `.invalid` synthetic fixture.
+The deployed Cloudflare Turnstile widget produced a non-empty token without
+browser errors, and the form returned the visible success state:
+`Thanks, your message has been received.`
+
+A read-only Neon query then found lead
+`b1c112a5-6313-49c9-8321-29bb93c72117`, created at
+`2026-07-24 13:50:35.141334+00`, joined to exactly one
+`lead.notification.requested` outbox event. Its state was `pending` with zero
+attempts, which is expected while Resend remains unconfigured. This proves the
+deployed acknowledgement followed the atomic lead/outbox commit.
+
+Migration `0006` was then applied through the dedicated direct migrator
+credential to the non-production Neon `staging` branch. Post-migration
+verification returned seven migration records, one exact
+`owners delete expired synthetic leads` policy, and the fresh synthetic
+lead/outbox pair still intact. No production database or credential changed.
+
 ## Explicitly incomplete evidence
 
 The staging release gate is not green:
@@ -86,10 +108,6 @@ The staging release gate is not green:
   write the ephemeral report bind mount nor read the ephemeral secret-config
   bind mount. The credential was not printed, and the temporary secret was
   removed in `finally`;
-- the real Turnstile lead/outbox journey still requires an attached in-app
-  staging browser tab;
-- migration `0006` and its retention route are verified on the candidate and
-  disposable databases but are not yet promoted to the fixed `staging` branch;
 - Google OAuth, Resend, Checkly alerts and the controlled-failure exercise
   remain account-specific gates;
 - no production resource, domain, database or deployment was changed.

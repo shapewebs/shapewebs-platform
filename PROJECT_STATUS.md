@@ -61,11 +61,10 @@ connected to production data, or promoted to the production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0005`. Migration `0006`, which adds marker-restricted synthetic lead
-  retention, is verified on disposable branches and remains pending promotion
-  to fixed staging. The runtime roles passed the complete RLS and authorization
-  suite. Neon Free cannot protect the persistent branch, so a protected paid
-  production branch remains a launch gate.
+  through `0006`, including marker-restricted synthetic lead retention. The
+  runtime roles passed the complete RLS and authorization suite. Neon Free
+  cannot protect the persistent branch, so a protected paid production branch
+  remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget is restricted to the public staging
   hostname, and its secret exists only in the matching Vercel branch scope.
@@ -100,6 +99,9 @@ connected to production data, or promoted to the production domains.
   limiting, and server-side Turnstile verification.
 - A lead and its durable outbox event commit in one transaction. Acknowledged
   leads therefore do not depend on Resend availability.
+- The real fixed-staging contact journey passed Cloudflare Turnstile, returned
+  the deployed success state, and produced one joined Neon lead/outbox pair.
+  The notification remains correctly pending until Resend is configured.
 - Outbox delivery uses bounded claiming, application and provider idempotency,
   safe retry/backoff, a terminal/manual-review state, and protection against
   replay after the provider idempotency window.
