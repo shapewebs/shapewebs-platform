@@ -1,6 +1,14 @@
 name: Neon non-production lifecycle
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/neon-lifecycle.yml"
+      - "drizzle/**"
+      - "packages/database/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
   workflow_dispatch:
     inputs:
       confirm_project:
@@ -18,7 +26,7 @@ concurrency:
 jobs:
   verify:
     name: Verify disposable Neon lifecycle
-    if: ${{ inputs.confirm_project == 'shapewebs-platform' }}
+    if: ${{ github.event_name == 'pull_request' || inputs.confirm_project == 'shapewebs-platform' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: neon-nonproduction
