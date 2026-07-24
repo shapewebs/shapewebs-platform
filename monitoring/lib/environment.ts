@@ -5,6 +5,8 @@ type ChecklyActivationProfile =
   "alert-test" | "disabled" | "enabled" | "staging";
 
 const ALERT_TEST_CHECK_ID = "staging-admin-readiness";
+const defaultStagingAdminOrigin = "https://admin-staging.shapewebs.com";
+const defaultStagingWebOrigin = "https://staging.shapewebs.com";
 
 export function isChecklyCheckActivated(
   checkId: string,
@@ -26,18 +28,15 @@ export function isChecklyCheckActivated(
   );
 }
 
-export function getOptionalExactHttpsOrigin(
+export function getExactStagingHttpsOrigin(
   environmentName: StagingOriginEnvironment,
   environment: NodeJS.ProcessEnv = process.env,
-): URL | null {
+): URL {
   const configuredUrl =
     environmentName === "CHECKLY_STAGING_ADMIN_BASE_URL"
-      ? environment.CHECKLY_STAGING_ADMIN_BASE_URL
-      : environment.CHECKLY_STAGING_WEB_BASE_URL;
-
-  if (!configuredUrl) {
-    return null;
-  }
+      ? (environment.CHECKLY_STAGING_ADMIN_BASE_URL ??
+        defaultStagingAdminOrigin)
+      : (environment.CHECKLY_STAGING_WEB_BASE_URL ?? defaultStagingWebOrigin);
 
   const baseUrl = new URL(configuredUrl);
 

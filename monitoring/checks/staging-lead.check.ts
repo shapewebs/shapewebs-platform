@@ -2,26 +2,25 @@ import { BrowserCheck, Frequency } from "checkly/constructs";
 
 import { operationalEmailAlerts } from "../lib/alert-channels";
 import {
-  getOptionalExactHttpsOrigin,
+  getExactStagingHttpsOrigin,
   isChecklyCheckActivated,
 } from "../lib/environment";
 
-const stagingBaseUrl = getOptionalExactHttpsOrigin(
+const stagingBaseUrl = getExactStagingHttpsOrigin(
   "CHECKLY_STAGING_WEB_BASE_URL",
 );
 
-if (stagingBaseUrl) {
-  const checkId = "staging-lead-journey";
-  const contactUrl = new URL("/contact", stagingBaseUrl).toString();
+const checkId = "staging-lead-journey";
+const contactUrl = new URL("/contact", stagingBaseUrl).toString();
 
-  new BrowserCheck(checkId, {
-    name: "Staging lead acceptance journey",
-    activated: isChecklyCheckActivated(checkId),
-    alertChannels: [operationalEmailAlerts],
-    frequency: Frequency.EVERY_10M,
-    locations: ["eu-west-1"],
-    code: {
-      content: `
+new BrowserCheck(checkId, {
+  name: "Staging lead acceptance journey",
+  activated: isChecklyCheckActivated(checkId),
+  alertChannels: [operationalEmailAlerts],
+  frequency: Frequency.EVERY_10M,
+  locations: ["eu-west-1"],
+  code: {
+    content: `
         const { expect, test } = require("@playwright/test");
 
         test("persists one synthetic staging lead", async ({ page }) => {
@@ -81,13 +80,12 @@ if (stagingBaseUrl) {
           );
         });
       `,
+  },
+  playwrightConfig: {
+    use: {
+      locale: "en-GB",
+      timezoneId: "Europe/Copenhagen",
     },
-    playwrightConfig: {
-      use: {
-        locale: "en-GB",
-        timezoneId: "Europe/Copenhagen",
-      },
-    },
-    tags: ["lead", "staging", "synthetic"],
-  });
-}
+  },
+  tags: ["lead", "staging", "synthetic"],
+});

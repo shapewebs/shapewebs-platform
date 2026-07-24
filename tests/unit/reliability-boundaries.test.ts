@@ -4,7 +4,7 @@ import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
 import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
 import { getClientIp } from "../../apps/web/src/lib/request-identity";
-import { getOptionalExactHttpsOrigin } from "../../monitoring/lib/environment";
+import { getExactStagingHttpsOrigin } from "../../monitoring/lib/environment";
 import {
   escapeEmailHtml,
   renderLeadHtml,
@@ -172,14 +172,17 @@ describe("reliability and provider boundaries", () => {
     }
   });
 
-  it("accepts only exact HTTPS origins for optional staging monitors", () => {
+  it("always defines staging monitors with exact HTTPS origins", () => {
     expect(
-      getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {}),
-    ).toBeNull();
+      getExactStagingHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {}).origin,
+    ).toBe("https://admin-staging.shapewebs.com");
     expect(
-      getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
+      getExactStagingHttpsOrigin("CHECKLY_STAGING_WEB_BASE_URL", {}).origin,
+    ).toBe("https://staging.shapewebs.com");
+    expect(
+      getExactStagingHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
         CHECKLY_STAGING_ADMIN_BASE_URL: "https://admin-staging.shapewebs.com",
-      })?.origin,
+      }).origin,
     ).toBe("https://admin-staging.shapewebs.com");
 
     for (const configuredUrl of [
@@ -188,7 +191,7 @@ describe("reliability and provider boundaries", () => {
       "https://user:password@admin-staging.shapewebs.com",
     ]) {
       expect(() =>
-        getOptionalExactHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
+        getExactStagingHttpsOrigin("CHECKLY_STAGING_ADMIN_BASE_URL", {
           CHECKLY_STAGING_ADMIN_BASE_URL: configuredUrl,
         }),
       ).toThrow(
