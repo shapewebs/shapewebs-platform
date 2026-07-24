@@ -9,7 +9,6 @@ import {
   authorizeAdminSession,
   type AdminAuthorizationContext,
 } from "@shapewebs/database/server";
-import type { AdminSessionContext } from "@shapewebs/db";
 import {
   createStructuredLogger,
   resolveShapewebsEnvironment,
@@ -22,7 +21,6 @@ import {
   isLocalAdminSetupMode,
 } from "./better-auth";
 import { getSafeAdminRedirectTarget } from "./redirect";
-import { getAdminServerSupabaseClient } from "./supabase";
 
 type BetterAuthSession = NonNullable<
   Awaited<
@@ -35,9 +33,24 @@ type BetterAuthSession = NonNullable<
 export type AdminRuntimeState = {
   authorization: AdminAuthorizationContext | null;
   primarySession: BetterAuthSession | null;
-  session: AdminSessionContext | null;
+  session: AdminRuntimeSession | null;
   setupMode: boolean;
-  supabase: Awaited<ReturnType<typeof getAdminServerSupabaseClient>>;
+};
+
+type AdminRuntimeSession = {
+  aal: "aal1" | "aal2";
+  nextAal: "aal2";
+  profile: {
+    authUserId: string;
+    defaultLocale: "en";
+    displayName: string;
+    id: string;
+    status: "active";
+  };
+  roles: AdminRole[];
+  sessionId: string;
+  userEmail: string;
+  userId: string;
 };
 
 const logger = createStructuredLogger({
@@ -105,7 +118,7 @@ async function recordAuthorizationDenial(
 function toAdminSessionContext(
   primarySession: BetterAuthSession,
   authorization: AdminAuthorizationContext,
-): AdminSessionContext {
+): AdminRuntimeSession {
   return {
     aal: authorization.latestStepUpAt ? "aal2" : "aal1",
     nextAal: "aal2",
@@ -124,8 +137,8 @@ function toAdminSessionContext(
 }
 
 async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
+  const requestHeaders = await headers();
   const setupMode = isLocalAdminSetupMode();
-  const supabase = await getAdminServerSupabaseClient();
 
   if (setupMode) {
     return {
@@ -133,7 +146,6 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
       primarySession: null,
       session: null,
       setupMode: true,
-      supabase,
     };
   }
 
@@ -148,7 +160,7 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   }
 
   const primarySession = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!primarySession) {
@@ -157,7 +169,6 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
       primarySession: null,
       session: null,
       setupMode: false,
-      supabase,
     };
   }
 
@@ -175,7 +186,6 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
         ? null
         : toAdminSessionContext(primarySession, authorization),
     setupMode: false,
-    supabase,
   };
 }
 

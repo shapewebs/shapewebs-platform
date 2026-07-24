@@ -35,7 +35,7 @@ function buildCsp(options: {
 
   return [
     "default-src 'self'",
-    "base-uri 'self'",
+    "base-uri 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "img-src 'self' data: blob:",
@@ -62,7 +62,7 @@ export function buildAdminContentSecurityPolicy(nonce: string): string {
 
   return [
     "default-src 'self'",
-    "base-uri 'self'",
+    "base-uri 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "img-src 'self' data: blob:",
@@ -72,6 +72,16 @@ export function buildAdminContentSecurityPolicy(nonce: string): string {
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "frame-src 'self'",
+  ].join("; ");
+}
+
+export function buildAdminApiContentSecurityPolicy(): string {
+  return [
+    "default-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
   ].join("; ");
 }
 

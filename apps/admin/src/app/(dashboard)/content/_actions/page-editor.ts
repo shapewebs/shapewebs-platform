@@ -5,6 +5,7 @@ import { contentDocumentSchema } from "@shapewebs/content-schema";
 import { createDraftRevision, createPreviewToken } from "@shapewebs/db";
 import { pageEditorInputSchema } from "@shapewebs/validation";
 import { requireAdminSession } from "@/lib/auth";
+import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
 
 function getSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -44,14 +45,15 @@ function normalizeOptionalValue(value: FormDataEntryValue | null) {
 }
 
 export async function savePageEditorAction(formData: FormData) {
-  const runtime = await requireAdminSession({
+  await requireAdminSession({
     freshStepUpWithinSeconds:
       formData.get("intent") === "publish" ? 10 * 60 : undefined,
     redirectTo: "/content",
     roles: ["owner", "editor"],
   });
+  const supabase = await getTransitionalAdminSupabaseClient();
 
-  if (!runtime.supabase) {
+  if (!supabase) {
     redirect("/content?error=setup");
   }
 
@@ -76,7 +78,7 @@ export async function savePageEditorAction(formData: FormData) {
 
   const content = contentDocumentSchema.parse(JSON.parse(parsed.contentJson));
 
-  const editorState = await createDraftRevision(runtime.supabase, {
+  const editorState = await createDraftRevision(supabase, {
     documentId: parsed.documentId,
     localeCode: parsed.localeCode,
     pageKind: parsed.pageKind,
@@ -109,7 +111,7 @@ export async function savePageEditorAction(formData: FormData) {
       );
     }
 
-    const preview = await createPreviewToken(runtime.supabase, {
+    const preview = await createPreviewToken(supabase, {
       documentId: editorState.documentId,
       localeCode: editorState.localeCode,
       revisionId: latestRevision.revisionId,

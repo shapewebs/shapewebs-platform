@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 
 import { neon } from "@neondatabase/serverless";
 
+import migrationJournal from "../../../drizzle/meta/_journal.json" with { type: "json" };
+
 const databaseUrl = process.env.DATABASE_MIGRATION_URL;
+const expectedMigrationCount = migrationJournal.entries.length;
 
 if (!databaseUrl) {
   throw new Error("DATABASE_MIGRATION_URL is required.");
@@ -20,7 +23,7 @@ const [identity] = await sql`
 `;
 
 assert.equal(identity.current_user, "shapewebs_migrator");
-assert.equal(identity.migration_count, 6);
+assert.equal(identity.migration_count, expectedMigrationCount);
 
 const [before] = await sql`
   select
@@ -70,7 +73,7 @@ assert.equal(
 );
 assert.equal(
   after.migration_count,
-  6,
+  expectedMigrationCount,
   "The migration journal must be unchanged",
 );
 

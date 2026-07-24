@@ -1,0 +1,41 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "shapewebs-outbox-scheduler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": {
+    "crons": [],
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "env": {
+    "staging": {
+      "name": "shapewebs-outbox-scheduler-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "OUTBOX_TARGET_URL": "https://admin-staging.shapewebs.com/api/jobs/outbox",
+        "SHAPEWEBS_ENVIRONMENT": "staging",
+      },
+      "secrets": {
+        "required": [
+          "CHECKLY_HEARTBEAT_URL",
+          "OUTBOX_CRON_SECRET",
+          "VERCEL_AUTOMATION_BYPASS",
+        ],
+      },
+      "triggers": {
+        "crons": ["*/5 * * * *"],
+      },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1,
+      },
+    },
+  },
+}

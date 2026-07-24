@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cookies } from "next/headers";
 import {
   createServerSupabaseClient,
@@ -17,7 +19,7 @@ async function createAdminCookieAdapter(): Promise<SupabaseCookieAdapter> {
   };
 }
 
-export async function getAdminServerSupabaseClient() {
+export async function getTransitionalAdminSupabaseClient() {
   const adapter = await createAdminCookieAdapter();
   return createServerSupabaseClient(adapter);
 }

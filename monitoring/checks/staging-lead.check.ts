@@ -1,43 +1,43 @@
 import { BrowserCheck, Frequency } from "checkly/constructs";
 
-function getStagingBaseUrl(): URL | null {
-  const configuredUrl = process.env.CHECKLY_STAGING_WEB_BASE_URL;
+import { operationalEmailAlerts } from "../lib/alert-channels";
+import {
+  getExactStagingHttpsOrigin,
+  isChecklyCheckActivated,
+} from "../lib/environment";
 
-  if (!configuredUrl) {
-    return null;
-  }
+const stagingBaseUrl = getExactStagingHttpsOrigin(
+  "CHECKLY_STAGING_WEB_BASE_URL",
+);
 
-  const baseUrl = new URL(configuredUrl);
+const checkId = "staging-lead-journey";
+const contactUrl = new URL("/contact", stagingBaseUrl).toString();
 
-  if (
-    baseUrl.protocol !== "https:" ||
-    baseUrl.origin !== configuredUrl ||
-    baseUrl.username ||
-    baseUrl.password
-  ) {
-    throw new Error(
-      "CHECKLY_STAGING_WEB_BASE_URL must be one exact HTTPS origin.",
-    );
-  }
-
-  return baseUrl;
-}
-
-const stagingBaseUrl = getStagingBaseUrl();
-
-if (stagingBaseUrl) {
-  const contactUrl = new URL("/contact", stagingBaseUrl).toString();
-
-  new BrowserCheck("staging-lead-journey", {
-    name: "Staging lead acceptance journey",
-    activated: true,
-    frequency: Frequency.EVERY_10M,
-    locations: ["eu-west-1"],
-    code: {
-      content: `
+new BrowserCheck(checkId, {
+  name: "Staging lead acceptance journey",
+  activated: isChecklyCheckActivated(checkId),
+  alertChannels: [operationalEmailAlerts],
+  frequency: Frequency.EVERY_10M,
+  locations: ["eu-west-1"],
+  code: {
+    content: `
         const { expect, test } = require("@playwright/test");
 
         test("persists one synthetic staging lead", async ({ page }) => {
+          const protectionBypass =
+            process.env.SHAPEWEBS_STAGING_WEB_BYPASS_SECRET ?? "";
+
+          if (!/^[A-Za-z0-9_-]{32,128}$/.test(protectionBypass)) {
+            throw new Error(
+              "SHAPEWEBS_STAGING_WEB_BYPASS_SECRET is unavailable or invalid.",
+            );
+          }
+
+          await page.setExtraHTTPHeaders({
+            "x-vercel-protection-bypass": protectionBypass,
+            "x-vercel-set-bypass-cookie": "true",
+          });
+
           await page.goto(${JSON.stringify(contactUrl)}, {
             waitUntil: "domcontentloaded",
           });
@@ -80,13 +80,12 @@ if (stagingBaseUrl) {
           );
         });
       `,
+  },
+  playwrightConfig: {
+    use: {
+      locale: "en-GB",
+      timezoneId: "Europe/Copenhagen",
     },
-    playwrightConfig: {
-      use: {
-        locale: "en-GB",
-        timezoneId: "Europe/Copenhagen",
-      },
-    },
-    tags: ["lead", "staging", "synthetic"],
-  });
-}
+  },
+  tags: ["lead", "staging", "synthetic"],
+});

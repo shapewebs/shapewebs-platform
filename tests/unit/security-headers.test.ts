@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildAdminApiContentSecurityPolicy,
   buildAdminContentSecurityPolicy,
   buildAdminSecurityHeaders,
   buildWebSecurityHeaders,
@@ -22,6 +23,7 @@ describe("security headers", () => {
     const csp = headers.get("content-security-policy");
 
     expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("base-uri 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain(
       "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
@@ -54,9 +56,20 @@ describe("security headers", () => {
 
     expect(csp).toContain("'nonce-safeNonce123'");
     expect(csp).toContain("'strict-dynamic'");
+    expect(csp).toContain("base-uri 'none'");
     expect(csp.match(/script-src [^;]+/)?.[0]).not.toContain("'unsafe-inline'");
     expect(csp).not.toContain("challenges.cloudflare.com");
     expect(csp).not.toContain("supabase.co");
+  });
+
+  it("denies all browser rendering contexts for admin API responses", () => {
+    const csp = buildAdminApiContentSecurityPolicy();
+
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).toContain("base-uri 'none'");
+    expect(csp).toContain("form-action 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
   });
 
   it("rejects malformed admin CSP nonces", () => {

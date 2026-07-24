@@ -16,8 +16,23 @@ test("public responses expose the required production security policy", async ({
   expect(headers["strict-transport-security"]).toContain("includeSubDomains");
   expect(headers["cache-control"]).toContain("s-maxage");
   expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("base-uri 'none'");
   expect(csp).toContain("frame-ancestors 'none'");
   expect(csp).not.toContain("'unsafe-eval'");
+});
+
+test("admin API responses deny browser rendering contexts", async ({
+  request,
+}) => {
+  const response = await request.get(`${adminOrigin}/api/health/live`);
+  const headers = response.headers();
+  const csp = headers["content-security-policy"];
+
+  expect(response.status()).toBe(200);
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(csp).toContain("default-src 'none'");
+  expect(csp).toContain("base-uri 'none'");
+  expect(csp).toContain("frame-ancestors 'none'");
 });
 
 test("placeholder inventory route returns a real 404", async ({ request }) => {

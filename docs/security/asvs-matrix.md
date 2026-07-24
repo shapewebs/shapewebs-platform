@@ -6,36 +6,38 @@
   `accepted risk`
 - Review cadence: quarterly and at each release gate
 
-This matrix groups related ASVS requirements. The exact ASVS requirement IDs
-must be added when the official machine-readable 5.0 requirement catalog is
-checked into the assurance process.
+This matrix groups related ASVS requirements for engineering orientation. The
+exact, version-qualified requirement register and pinned official catalog index
+are maintained in `assurance/asvs`. The structural check runs in `pnpm verify`;
+the stricter production launch gate fails while any target requirement remains
+unreviewed.
 
-| Control area                                 | Target | Status      | Implementation/evidence                                                                                      | Owner        |
-| -------------------------------------------- | ------ | ----------- | ------------------------------------------------------------------------------------------------------------ | ------------ |
-| Architecture and trust boundaries            | L2     | Implemented | `docs/security/threat-model.md`, split applications and packages                                             | Owner        |
-| Secure development lifecycle                 | L2     | Implemented | Required CI, roadmap, ADRs, PR template, repository ruleset                                                  | Owner        |
-| Authentication library                       | L2     | Implemented | Admin-only Better Auth route, Drizzle adapter, Google-only UI, fail-closed environment validation            | Owner        |
-| OAuth state, PKCE and exact callback origins | L2     | Partial     | Better Auth protocol handling and exact-origin validation; fixed staging Google client still requires setup  | Owner        |
-| Public registration disabled                 | L2     | Implemented | Email/password paths disabled; only allowlisted Google users can create users/sessions                       | Owner        |
-| MFA and administrative step-up               | L2     | Partial     | TOTP enrollment and server-enforced OAuth step-up implemented; fixed-staging journey still requires provider | Owner        |
-| Session cookie attributes                    | L2     | Partial     | Host-only Secure/HttpOnly/SameSite policy implemented; deployed cookie inspection remains a launch gate      | Owner        |
-| Session expiry and revocation                | L2     | Implemented | Fixed 8-hour expiry, 30-minute inactivity, revocation, database negative scenarios, configuration unit tests | Owner        |
-| Per-entry-point authorization                | L2     | Partial     | Migrated admin/lead paths re-authorize; transitional Supabase CMS paths still require replacement            | Owner        |
-| Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                             | Owner        |
-| Minimal DTO/data exposure                    | L2     | Partial     | Lead repository returns explicit DTOs and worker fields; remaining CMS repositories are pending              | Owner        |
-| Input validation and size limits             | L2     | Partial     | Bounded JSON/webhook bodies, Zod forms, exact UUIDs and provider validation; uploads remain pending          | Owner        |
-| Output encoding and content safety           | L2     | Partial     | React encoding and escaped minimal emails; structured CMS enforcement remains pending                        | Owner        |
-| CSRF protection                              | L2     | Partial     | Exact Better Auth origins, SameSite cookies and step-up Origin validation; provider E2E remains pending      | Owner        |
-| File upload safety                           | L2     | Planned     | Blob boundary and type/signature/size/dimension validation contract pending                                  | Owner        |
-| Cryptography and secrets                     | L2     | Partial     | Provider primitives, encrypted OAuth tokens, push protection; operator rotation drill pending                | Owner        |
-| Security headers and CSP                     | L2/L1  | Implemented | Nonce admin CSP, constrained public CSP and browser tests; public `unsafe-inline` tracked below              | Owner        |
-| Logging and audit                            | L2     | Implemented | Typed redacted logs, redaction tests, correlated traces and append-only authentication/audit events          | Owner        |
-| Error handling                               | L2     | Partial     | Fail-closed routes and provider/transaction failure tests; controlled staging alert exercise pending         | Owner        |
-| Data protection and retention                | L2     | Partial     | Retention/processor register and data-minimized email; scheduled deletion jobs pending                       | Owner        |
-| Communication security                       | L2     | Implemented | HTTPS/HSTS, exact provider origins, secure production cookies                                                | Vercel/Owner |
-| Malicious automation protection              | L2     | Partial     | Server Turnstile and bounded local limits; Vercel WAF/distributed limits pending                             | Owner        |
-| Supply-chain security                        | L2     | Implemented | Lockfile, OSV, CodeQL, dependency review, SHA pins and periodic Scorecard                                    | Owner        |
-| Backup, restore and rollback                 | L2     | Partial     | Disposable migration/restore verified; paid production project and recovery drill pending                    | Owner        |
+| Control area                                 | Target | Status      | Implementation/evidence                                                                                               | Owner        |
+| -------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Architecture and trust boundaries            | L2     | Implemented | `docs/security/threat-model.md`, split applications and packages                                                      | Owner        |
+| Secure development lifecycle                 | L2     | Implemented | Required CI, roadmap, ADRs, PR template, repository ruleset                                                           | Owner        |
+| Authentication library                       | L2     | Implemented | Admin-only Better Auth route, Drizzle adapter, Google-only UI, fail-closed environment validation                     | Owner        |
+| OAuth state, PKCE and exact callback origins | L2     | Partial     | Better Auth protocol handling and exact-origin validation; fixed staging Google client still requires setup           | Owner        |
+| Public registration disabled                 | L2     | Implemented | Email/password paths disabled; only allowlisted Google users can create users/sessions                                | Owner        |
+| MFA and administrative step-up               | L2     | Partial     | TOTP enrollment and server-enforced OAuth step-up implemented; fixed-staging journey still requires provider          | Owner        |
+| Session cookie attributes                    | L2     | Partial     | Host-only Secure/HttpOnly/SameSite policy implemented; deployed cookie inspection remains a launch gate               | Owner        |
+| Session expiry and revocation                | L2     | Implemented | Fixed 8-hour expiry, 30-minute inactivity, revocation, database negative scenarios, configuration unit tests          | Owner        |
+| Per-entry-point authorization                | L2     | Partial     | Migrated admin/lead paths re-authorize; transitional Supabase CMS paths still require replacement                     | Owner        |
+| Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                                      | Owner        |
+| Minimal DTO/data exposure                    | L2     | Partial     | Lead repository returns explicit DTOs and worker fields; remaining CMS repositories are pending                       | Owner        |
+| Input validation and size limits             | L2     | Partial     | Bounded JSON/webhook bodies, Zod forms, exact UUIDs and provider validation; uploads remain pending                   | Owner        |
+| Output encoding and content safety           | L2     | Partial     | React/email escaping, structured CMS rendering and internal-href protocol enforcement; remaining exact IDs pending    | Owner        |
+| CSRF protection                              | L2     | Partial     | Exact Better Auth origins, SameSite cookies and step-up Origin validation; provider E2E remains pending               | Owner        |
+| File upload safety                           | L2     | Planned     | Blob boundary and type/signature/size/dimension validation contract pending                                           | Owner        |
+| Cryptography and secrets                     | L2     | Partial     | Provider primitives, encrypted OAuth tokens, push protection and staging bypass rotation; provider drills pending     | Owner        |
+| Security headers and CSP                     | L2/L1  | Implemented | Nonce admin CSP, constrained public CSP and browser tests; public `unsafe-inline` tracked below                       | Owner        |
+| Logging and audit                            | L2     | Implemented | Typed redacted logs, redaction tests, correlated traces and append-only authentication/audit events                   | Owner        |
+| Error handling                               | L2     | Partial     | Fail-closed routes and provider/transaction failure tests; controlled staging alert exercise pending                  | Owner        |
+| Data protection and retention                | L2     | Partial     | Retention/processor register, data-minimized email and strict staging synthetic cleanup; production schedules pending | Owner        |
+| Communication security                       | L2     | Implemented | HTTPS/HSTS, exact provider origins, secure production cookies                                                         | Vercel/Owner |
+| Malicious automation protection              | L2     | Partial     | Server Turnstile and bounded local limits; Vercel WAF/distributed limits pending                                      | Owner        |
+| Supply-chain security                        | L2     | Implemented | Lockfile, OSV, CodeQL, dependency review, SHA pins and periodic Scorecard                                             | Owner        |
+| Backup, restore and rollback                 | L2     | Partial     | Disposable migration/restore verified; paid production project and recovery drill pending                             | Owner        |
 
 ## Accepted risk: static public CSP
 
@@ -50,15 +52,27 @@ checked into the assurance process.
 - Expiry/review: 24 October 2026, every Next.js minor upgrade, and before
   production launch.
 
+## Reviewed ZAP passive-baseline dispositions
+
+These findings remain visible as `INFO` in every ZAP report. They are not
+ignored. The checked-in dispositions expire unless they are reviewed by the
+dates and triggers below.
+
+| ZAP alert                                    | Disposition                      | Rationale and compensating controls                                                                                                                                                                                                                                                                                                      | Owner           | Expiry/review                                                                      |
+| -------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------- |
+| `10055` CSP: `script-src unsafe-inline`      | Accepted risk                    | Same static-public-CSP tradeoff documented above. No arbitrary HTML or marketing scripts; structured React rendering, output encoding, dependency controls and browser tests remain mandatory.                                                                                                                                           | Shapewebs owner | 24 October 2026, every Next.js minor upgrade, and before production launch         |
+| `10098` Cross-Domain Misconfiguration        | Accepted risk                    | Vercel adds `Access-Control-Allow-Origin: *` to the scanned public static pages and assets. They contain no authenticated, tenant-specific or secret data; admin remains on a separate origin with server-enforced authorization. Reassess before any credentialed or sensitive public response is introduced.                           | Shapewebs owner | 24 October 2026 and before authenticated or sensitive public reads                 |
+| `90004` Cross-Origin-Embedder-Policy missing | Not applicable to current design | The public site does not use cross-origin-isolated browser capabilities. Enabling `require-corp` would risk blocking the explicitly allowlisted Turnstile integration; CSP, COOP, CORP, Permissions Policy and exact provider origins remain in force. Reassess before adding cross-origin-isolated APIs or changing third-party embeds. | Shapewebs owner | 24 October 2026 and before cross-origin-isolated APIs or third-party embed changes |
+
 An accepted risk is invalid without an owner, compensating controls, an expiry
 or review date, and evidence that the release gate reviewed it.
 
 ## Completion rule
 
 This grouped matrix is the live engineering summary, not a claim of
-certification. Before production, the official machine-readable ASVS 5.0
-catalog must be pinned to a reviewed version and every applicable requirement
-must link to one of:
+certification. The official stable ASVS 5.0.0 machine-readable catalog is
+pinned by release asset and SHA-256. Before production, every target requirement
+in `assurance/asvs/evidence.json` must link to one of:
 
 - implementation and automated evidence;
 - a named manual verification with a dated result;

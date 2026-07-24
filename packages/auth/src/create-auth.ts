@@ -6,6 +6,7 @@ import {
 } from "@shapewebs/database/admin-auth";
 import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
+import { emailAddressSchema } from "@shapewebs/validation";
 import { eq } from "drizzle-orm";
 import { APIError } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
@@ -84,7 +85,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
   }
 
   for (const email of ownerEmails) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!emailAddressSchema.safeParse(email).success) {
       throw new Error("ADMIN_OWNER_EMAILS contains an invalid email address.");
     }
   }

@@ -1,0 +1,10 @@
+{
+  "asset": "OWASP_Application_Security_Verification_Standard_5.0.0_en.flat.json",
+  "catalogIndexSha256": "9e0963dcd63d2a2bd50b87b1f8d237e6ea317458fea6f9f02a527020edc40648",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "releaseTag": "v5.0.0_release",
+  "sourceSha256": "8201b20eec2908c3380ac600c91c8ba746346fbb808859366abb232027532311",
+  "sourceUrl": "https://github.com/OWASP/ASVS/releases/download/v5.0.0_release/OWASP_Application_Security_Verification_Standard_5.0.0_en.flat.json",
+  "version": "5.0.0"
+}

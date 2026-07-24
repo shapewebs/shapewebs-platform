@@ -6,26 +6,20 @@ function getStagingBaseUrl() {
     throw new Error("K6_TARGET_URL is required.");
   }
 
-  const target = new URL(__ENV.K6_TARGET_URL);
+  const target = __ENV.K6_TARGET_URL.trim();
+  const originMatch = /^https:\/\/([a-z0-9.-]+)(?::443)?\/?$/i.exec(target);
   const allowedHosts = (__ENV.SHAPEWEBS_STAGING_HOSTS ?? "")
     .split(",")
     .map((host) => host.trim().toLowerCase())
     .filter(Boolean);
 
-  if (
-    target.protocol !== "https:" ||
-    target.username ||
-    target.password ||
-    target.search ||
-    target.hash ||
-    !allowedHosts.includes(target.hostname.toLowerCase())
-  ) {
+  if (!originMatch || !allowedHosts.includes(originMatch[1].toLowerCase())) {
     throw new Error(
-      "The k6 target must be an explicitly allowlisted HTTPS host.",
+      "The k6 target must be an explicitly allowlisted HTTPS origin.",
     );
   }
 
-  return target;
+  return `https://${originMatch[1].toLowerCase()}`;
 }
 
 function getAutomationBypassSecret() {
@@ -60,7 +54,7 @@ export const options = {
 };
 
 export default function publicSmoke() {
-  const home = http.get(new URL("/", stagingBaseUrl).toString(), {
+  const home = http.get(`${stagingBaseUrl}/`, {
     headers: {
       "x-vercel-protection-bypass": automationBypassSecret,
     },
@@ -72,16 +66,13 @@ export default function publicSmoke() {
     "home returns 200": (response) => response.status === 200,
   });
 
-  const readiness = http.get(
-    new URL("/api/health/ready", stagingBaseUrl).toString(),
-    {
-      headers: {
-        "x-vercel-protection-bypass": automationBypassSecret,
-      },
-      tags: { journey: "public-readiness" },
-      timeout: "5s",
+  const readiness = http.get(`${stagingBaseUrl}/api/health/ready`, {
+    headers: {
+      "x-vercel-protection-bypass": automationBypassSecret,
     },
-  );
+    tags: { journey: "public-readiness" },
+    timeout: "5s",
+  });
 
   check(readiness, {
     "readiness returns 200": (response) => response.status === 200,

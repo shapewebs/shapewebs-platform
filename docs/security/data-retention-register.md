@@ -6,17 +6,17 @@
 
 ## Retention schedule
 
-| Data                                     | Purpose                                   | Location/processors                | Default retention                        | Disposal                                   |
-| ---------------------------------------- | ----------------------------------------- | ---------------------------------- | ---------------------------------------- | ------------------------------------------ |
-| Operational application logs             | Reliability and debugging                 | Vercel/selected telemetry backend  | 30 days                                  | Automated deletion                         |
-| Security and administrative audit events | Incident investigation and accountability | Neon/Vercel                        | 365 days                                 | Automated deletion or anonymization        |
-| Unconverted leads                        | Respond to inquiries and sales follow-up  | Neon, Resend notification metadata | 12 months after last meaningful contact  | Delete or irreversibly anonymize           |
-| Active customer/project records          | Contract delivery and customer portal     | Neon, Vercel Blob                  | Contract term plus approved legal period | Controlled export and deletion             |
-| Accounting records                       | Legal/accounting obligation               | Approved accounting systems        | Legally required period                  | Do not automate until schedule is approved |
-| OAuth profile                            | Admin identity and allowlisting           | Google, Better Auth, Neon          | Account lifetime plus 30 days            | Revoke sessions, delete account/profile    |
-| TOTP secrets and backup codes            | Administrative MFA                        | Better Auth/Neon                   | Account lifetime                         | Revoke and securely delete                 |
-| Email delivery events                    | Delivery operations and abuse response    | Neon, Resend                       | 90 days unless linked to an incident     | Automated deletion                         |
-| Synthetic test data                      | Verification                              | Non-production Neon, CI artifacts  | 7 days maximum                           | Lifecycle cleanup/artifact expiry          |
+| Data                                     | Purpose                                   | Location/processors                | Default retention                        | Disposal                                        |
+| ---------------------------------------- | ----------------------------------------- | ---------------------------------- | ---------------------------------------- | ----------------------------------------------- |
+| Operational application logs             | Reliability and debugging                 | Vercel/selected telemetry backend  | 30 days                                  | Automated deletion                              |
+| Security and administrative audit events | Incident investigation and accountability | Neon/Vercel                        | 365 days                                 | Automated deletion or anonymization             |
+| Unconverted leads                        | Respond to inquiries and sales follow-up  | Neon, Resend notification metadata | 12 months after last meaningful contact  | Delete or irreversibly anonymize                |
+| Active customer/project records          | Contract delivery and customer portal     | Neon, Vercel Blob                  | Contract term plus approved legal period | Controlled export and deletion                  |
+| Accounting records                       | Legal/accounting obligation               | Approved accounting systems        | Legally required period                  | Do not automate until schedule is approved      |
+| OAuth profile                            | Admin identity and allowlisting           | Google, Better Auth, Neon          | Account lifetime plus 30 days            | Revoke sessions, delete account/profile         |
+| TOTP secrets and backup codes            | Administrative MFA                        | Better Auth/Neon                   | Account lifetime                         | Revoke and securely delete                      |
+| Email delivery events                    | Delivery operations and abuse response    | Neon, Resend                       | 90 days unless linked to an incident     | Automated deletion                              |
+| Synthetic test data                      | Verification                              | Non-production Neon, CI artifacts  | 7 days maximum                           | Daily marker-restricted cleanup/artifact expiry |
 
 Deletion jobs must be idempotent, auditable, tenant-scoped and tested against a
 synthetic database before production scheduling.

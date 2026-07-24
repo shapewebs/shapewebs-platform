@@ -6,8 +6,10 @@ This record covers the short-term security, reliability, observability,
 authentication, lead-delivery, and worktree-hygiene controls added to draft
 pull request `shapewebs/shapewebs-platform#7`.
 
-Production was not changed. Provider credentials were not committed, copied
-into source, or added to Preview/Production.
+Application production was not changed. Provider credentials were not
+committed or copied into source. Exact Git-branch-scoped Preview credentials
+were added for Neon, Turnstile, retention and restricted Resend staging; no new
+production database, authentication or email credential was added.
 
 ## Implemented controls
 
@@ -34,16 +36,17 @@ into source, or added to Preview/Production.
 
 The final local evidence is recorded after the canonical commands run:
 
-| Command/evidence                              | Result                                                   |
-| --------------------------------------------- | -------------------------------------------------------- |
-| `corepack pnpm verify`                        | Passed: 50 tests; 100% statements/lines, 96.62% branches |
-| webpack builds for both applications          | Passed                                                   |
-| Turbopack builds for both applications        | Passed                                                   |
-| Playwright Chromium critical/security/a11y    | 9/9 passed                                               |
-| Lighthouse CI, three-run assertions           | Passed                                                   |
-| `corepack pnpm clean:artifacts`               | Seven known paths removed; no tracked generated drift    |
-| Disposable Neon lifecycle on current worktree | Passed locally: migrate/RLS/rollback/restore/cleanup     |
-| k6 and ZAP against exact protected staging    | Blocked until fixed staging variables exist              |
+| Command/evidence                              | Result                                                     |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| `corepack pnpm verify`                        | Passed: 64 tests; 100% statements/lines, 96.62% branches   |
+| webpack builds for both applications          | Passed                                                     |
+| Turbopack builds for both applications        | Passed                                                     |
+| Playwright Chromium critical/security/a11y    | 9/9 passed                                                 |
+| Lighthouse CI, three-run assertions           | Passed                                                     |
+| `corepack pnpm clean:artifacts`               | Seven known paths removed; no tracked generated drift      |
+| Disposable Neon lifecycle on current worktree | Passed locally: migrate/RLS/rollback/restore/cleanup       |
+| k6 against exact protected staging            | Passed in GitHub run `30103670868`                         |
+| ZAP against exact protected staging           | 63 pass, 3 reviewed info, 0 warn/fail in run `30103670868` |
 
 During verification, the Turborepo parent remained alive after both Next.js
 builds had reported success. The canonical root `build` command now invokes
@@ -59,17 +62,19 @@ the replay path proves deduplication without granting the web runtime outbox
 read access. A complete local rerun passed and deleted both disposable branches;
 the pull-request run remains the independent confirmation.
 
-The release gate is not green until the protected staging target exists and
-the account-specific provider configuration below is complete.
+The repository and protected-staging assurance gates are green. The production
+release remains blocked on the account-specific provider and recovery
+configuration below.
 
 ## External configuration gates
 
 - Google OAuth owner identity, client, secret, and exact fixed origins.
-- Checkly account/API credentials, alert channel, and controlled-failure test.
-- Fixed protected staging hosts and GitHub variables for Checkly, k6, and ZAP.
-- Turnstile staging/production keys and exact expected hostnames.
-- Resend key, webhook signing secret/registration, notification addresses, and
-  DMARC decision.
+- Non-interactive Checkly credentials if monitoring deployment later moves
+  from the authenticated local CLI session into CI.
+- Production Turnstile keys and exact expected hostname.
+- Reachable external Resend notification recipient and production
+  key/webhook configuration. Staging signed delivery, safe bounce and
+  provider-level replay/deduplication passed.
 - Minute-level protected outbox scheduling. The checked-in Hobby Cron schedule
   is daily and cannot meet the 15-minute SLO.
 - Paid production Neon/Vercel topology, production recovery rehearsal, WAF
@@ -80,5 +85,4 @@ the account-specific provider configuration below is complete.
 Supabase CMS/public-content components remain transitional and are removed only
 after each Neon-backed slice passes authorization, parity, rollback, and
 release tests. Upload validation, full content revision/publish/rollback,
-stable staging, production recovery, and the future customer portal remain
-later milestones.
+production recovery, and the future customer portal remain later milestones.

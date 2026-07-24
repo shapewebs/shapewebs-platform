@@ -11,5 +11,8 @@
         "tests/load/*.js",
       ],
     },
+    "workers/outbox-scheduler": {
+      "entry": ["tests/**/*.test.ts"],
+    },
   },
 }

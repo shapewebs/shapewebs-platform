@@ -5,6 +5,28 @@ export { readBoundedText } from "./http";
 
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
+export const emailAddressSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(320)
+  .pipe(z.email());
+const notificationMailboxSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(320)
+  .refine((value) => {
+    if (emailAddressSchema.safeParse(value).success) {
+      return true;
+    }
+
+    const displayMailbox = /^[^<>\r\n]{1,100}\s<([^<>\r\n]+)>$/.exec(value);
+    return Boolean(
+      displayMailbox &&
+      emailAddressSchema.safeParse(displayMailbox[1]?.trim()).success,
+    );
+  }, "Must be one valid email mailbox.");
 
 const sharedEnvSchema = z.object({
   ADMIN_OWNER_EMAILS: z.string().min(3).optional(),
@@ -15,14 +37,15 @@ const sharedEnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   LEAD_IP_HASH_SECRET: z.string().min(32).optional(),
-  LEAD_NOTIFICATION_FROM_EMAIL: z.email().optional(),
-  LEAD_NOTIFICATION_TO_EMAIL: z.email().optional(),
+  LEAD_NOTIFICATION_FROM_EMAIL: notificationMailboxSchema.optional(),
+  LEAD_NOTIFICATION_TO_EMAIL: emailAddressSchema.optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SYNTHETIC_RETENTION_SECRET: z.string().min(32).optional(),
   PREVIEW_TOKEN_SECRET: z.string().min(32).optional(),
   REVALIDATION_WEBHOOK_SECRET: z.string().min(32).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
@@ -30,6 +53,7 @@ const sharedEnvSchema = z.object({
   SHAPEWEBS_ORGANIZATION_ID: z.string().uuid().optional(),
   TURNSTILE_EXPECTED_HOSTNAME: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  TURNSTILE_TEST_MODE: z.enum(["true", "false"]).optional(),
   SENTRY_DSN: z.string().min(1).optional(),
 });
 
@@ -43,6 +67,7 @@ export const webEnvSchema = sharedEnvSchema.pick({
   SHAPEWEBS_ORGANIZATION_ID: true,
   TURNSTILE_EXPECTED_HOSTNAME: true,
   TURNSTILE_SECRET_KEY: true,
+  TURNSTILE_TEST_MODE: true,
   PREVIEW_TOKEN_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
   SENTRY_DSN: true,
@@ -63,6 +88,7 @@ export const adminEnvSchema = sharedEnvSchema.pick({
   NEXT_PUBLIC_SUPABASE_URL: true,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: true,
   SUPABASE_SERVICE_ROLE_KEY: true,
+  SYNTHETIC_RETENTION_SECRET: true,
   PREVIEW_TOKEN_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
   RESEND_API_KEY: true,
@@ -144,6 +170,29 @@ export const documentFiltersSchema = z.object({
     .optional(),
 });
 
+const canonicalHttpsUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) => {
+      try {
+        const url = new URL(value);
+
+        return (
+          url.protocol === "https:" &&
+          url.username.length === 0 &&
+          url.password.length === 0
+        );
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: "Canonical URL overrides must use HTTPS without credentials.",
+    },
+  );
+
 export const pageEditorInputSchema = z.object({
   documentId: z.string().uuid().optional(),
   localeCode: localeCodeEnum.default("en"),
@@ -163,7 +212,7 @@ export const pageEditorInputSchema = z.object({
   summary: z.string().trim().max(320).optional(),
   metaTitle: z.string().trim().max(160).optional(),
   metaDescription: z.string().trim().max(320).optional(),
-  canonicalUrlOverride: z.string().trim().max(500).optional(),
+  canonicalUrlOverride: canonicalHttpsUrlSchema.optional(),
   robotsIndex: z.boolean().default(true),
   contentJson: z.string().trim().min(2),
   changeNote: z.string().trim().max(240).optional(),

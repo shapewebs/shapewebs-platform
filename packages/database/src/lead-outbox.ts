@@ -5,6 +5,7 @@ import {
   eq,
   gt,
   gte,
+  inArray,
   isNull,
   lt,
   lte,
@@ -17,6 +18,12 @@ import { leadSubmissions, outboxEvents, providerWebhookEvents } from "./schema";
 import type { AdminAuthorizationContext } from "./admin-auth";
 
 type LeadKind = "contact" | "project_inquiry";
+
+const maximumSyntheticRetentionBatchSize = 1_000;
+const syntheticCompany = "CHECKLY_SYNTHETIC_DO_NOT_CONTACT";
+const syntheticEmail = "synthetic-monitor@shapewebs.invalid";
+const syntheticMessage = "Synthetic staging reliability check. Safe to delete.";
+const syntheticName = "Checkly Synthetic Monitor";
 
 type DatabaseContext = {
   organizationId: string;
@@ -190,6 +197,68 @@ export async function listLeadSubmissions(
   ]);
 
   return results[3];
+}
+
+function expiredSyntheticLeadFilter(organizationId: string) {
+  return and(
+    eq(leadSubmissions.organizationId, organizationId),
+    eq(leadSubmissions.kind, "contact"),
+    eq(leadSubmissions.name, syntheticName),
+    sql`lower(${leadSubmissions.email}) = ${syntheticEmail}`,
+    eq(leadSubmissions.message, syntheticMessage),
+    sql`${leadSubmissions.payload}->>'company' = ${syntheticCompany}`,
+    sql`${leadSubmissions.createdAt} < now() - interval '6 days'`,
+  );
+}
+
+export async function deleteExpiredSyntheticLeadSubmissions(
+  databaseUrl: string,
+  input: {
+    organizationId: string;
+  },
+): Promise<number> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(database, {
+    organizationId: input.organizationId,
+    role: "owner",
+  });
+  const candidates = await database.batch([
+    ...context,
+    database
+      .select({ id: leadSubmissions.id })
+      .from(leadSubmissions)
+      .where(expiredSyntheticLeadFilter(input.organizationId))
+      .orderBy(asc(leadSubmissions.createdAt))
+      .limit(maximumSyntheticRetentionBatchSize),
+  ]);
+  const candidateIds = candidates[3].map(({ id }) => id);
+
+  if (candidateIds.length === 0) {
+    return 0;
+  }
+
+  const deleted = await database.batch([
+    ...context,
+    database
+      .delete(outboxEvents)
+      .where(
+        and(
+          eq(outboxEvents.organizationId, input.organizationId),
+          inArray(outboxEvents.leadId, candidateIds),
+        ),
+      ),
+    database
+      .delete(leadSubmissions)
+      .where(
+        and(
+          expiredSyntheticLeadFilter(input.organizationId),
+          inArray(leadSubmissions.id, candidateIds),
+        ),
+      )
+      .returning({ id: leadSubmissions.id }),
+  ]);
+
+  return deleted[4].length;
 }
 
 export async function claimLeadNotification(

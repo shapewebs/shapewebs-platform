@@ -4,6 +4,6 @@
     "baseUrl": "..",
     "incremental": false
   },
-  "include": ["../checkly.config.ts", "checks/**/*.ts"],
+  "include": ["../checkly.config.ts", "checks/**/*.ts", "lib/**/*.ts"],
   "exclude": ["../node_modules"]
 }

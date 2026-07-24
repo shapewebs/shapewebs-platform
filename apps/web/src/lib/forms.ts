@@ -11,8 +11,10 @@ import {
   type ContactFormInput,
   type ProjectInquiryInput,
 } from "@shapewebs/validation";
+import { isTurnstileVerificationAccepted } from "./turnstile";
 
 export { consumeRateLimit } from "./rate-limit";
+export { getClientIp } from "./request-identity";
 
 const maximumRequestBytes = 16 * 1_024;
 const uuidPattern =
@@ -65,15 +67,6 @@ export function createLeadResponse(
 
 function getHashedIdentifier(value: string) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-export function getClientIp(headers: Headers) {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() ?? "unknown";
-  }
-
-  return headers.get("x-real-ip") ?? "unknown";
 }
 
 export function getIdempotencyKey(headers: Headers): string | null {
@@ -174,10 +167,12 @@ export async function verifyTurnstileToken(input: {
 
     return {
       mode: "enforced" as const,
-      success:
-        payload.success === true &&
-        payload.hostname === expectedHostname &&
-        payload.action === "lead_submission",
+      success: isTurnstileVerificationAccepted({
+        environment: process.env,
+        expectedHostname,
+        payload,
+        secret,
+      }),
     };
   } catch {
     return {

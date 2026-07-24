@@ -26,6 +26,9 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "@next/next/no-html-link-for-pages": "off",
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
     },
   },
   {
@@ -44,6 +47,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "dist/**",
     "apps/*/next-env.d.ts",
+    "workers/*/worker-configuration.d.ts",
   ]),
 ]);
 
