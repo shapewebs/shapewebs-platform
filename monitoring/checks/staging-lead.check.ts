@@ -38,6 +38,20 @@ if (stagingBaseUrl) {
         const { expect, test } = require("@playwright/test");
 
         test("persists one synthetic staging lead", async ({ page }) => {
+          const protectionBypass =
+            process.env.SHAPEWEBS_STAGING_BYPASS_SECRET ?? "";
+
+          if (!/^[A-Za-z0-9_-]{32,128}$/.test(protectionBypass)) {
+            throw new Error(
+              "SHAPEWEBS_STAGING_BYPASS_SECRET is unavailable or invalid.",
+            );
+          }
+
+          await page.setExtraHTTPHeaders({
+            "x-vercel-protection-bypass": protectionBypass,
+            "x-vercel-set-bypass-cookie": "true",
+          });
+
           await page.goto(${JSON.stringify(contactUrl)}, {
             waitUntil: "domcontentloaded",
           });

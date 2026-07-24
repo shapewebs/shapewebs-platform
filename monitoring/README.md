@@ -11,6 +11,10 @@ two-minute Frankfurt-region defaults from `checkly.config.ts`.
 - The lead journey targets only protected staging, uses synthetic `.invalid`
   contact data, and must be paired with staging Turnstile test keys and
   automatic cleanup within seven days.
+- `SHAPEWEBS_STAGING_BYPASS_SECRET` must be a dedicated Checkly-only global
+  secret. The browser script reads it only at runtime and sends it as Vercel's
+  protection-bypass header before navigation. Never reuse the GitHub Actions
+  bypass.
 - Secrets belong in Checkly encrypted environment variables, never in this
   repository.
 
