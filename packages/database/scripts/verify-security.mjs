@@ -575,8 +575,7 @@ async function verifyPublicAndWebBoundaries() {
       'lead.notification.requested',
       ${`security-lead/${ids.allowedLead}`}
     )
-    on conflict (idempotency_key) do nothing
-    returning id`,
+    on conflict do nothing`,
     web`select id, request_fingerprint
       from app.lead_submissions
       where command_id = ${ids.allowedLead}`,
@@ -589,6 +588,16 @@ async function verifyPublicAndWebBoundaries() {
       request_fingerprint: "allowed-fingerprint",
     },
   ]);
+
+  const outboxReplayCount = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select count(*)::integer as count
+      from app.outbox_events
+      where idempotency_key = ${`security-lead/${ids.allowedLead}`}`,
+  });
+  assert.deepEqual(outboxReplayCount, [{ count: 1 }]);
 
   await expectDenied(
     web`select email from app.lead_submissions`,

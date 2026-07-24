@@ -34,22 +34,30 @@ into source, or added to Preview/Production.
 
 The final local evidence is recorded after the canonical commands run:
 
-| Command/evidence                            | Result                                                   |
-| ------------------------------------------- | -------------------------------------------------------- |
-| `corepack pnpm verify`                      | Passed: 50 tests; 100% statements/lines, 96.62% branches |
-| webpack builds for both applications        | Passed                                                   |
-| Turbopack builds for both applications      | Passed                                                   |
-| Playwright Chromium critical/security/a11y  | 9/9 passed                                               |
-| Lighthouse CI, three-run assertions         | Passed                                                   |
-| `corepack pnpm clean:artifacts`             | Seven known paths removed; no tracked generated drift    |
-| Disposable Neon lifecycle on current commit | Pending pull-request run                                 |
-| k6 and ZAP against exact protected staging  | Blocked until fixed staging variables exist              |
+| Command/evidence                              | Result                                                   |
+| --------------------------------------------- | -------------------------------------------------------- |
+| `corepack pnpm verify`                        | Passed: 50 tests; 100% statements/lines, 96.62% branches |
+| webpack builds for both applications          | Passed                                                   |
+| Turbopack builds for both applications        | Passed                                                   |
+| Playwright Chromium critical/security/a11y    | 9/9 passed                                               |
+| Lighthouse CI, three-run assertions           | Passed                                                   |
+| `corepack pnpm clean:artifacts`               | Seven known paths removed; no tracked generated drift    |
+| Disposable Neon lifecycle on current worktree | Passed locally: migrate/RLS/rollback/restore/cleanup     |
+| k6 and ZAP against exact protected staging    | Blocked until fixed staging variables exist              |
 
 During verification, the Turborepo parent remained alive after both Next.js
 builds had reported success. The canonical root `build` command now invokes
 both app-level Turbopack builds sequentially; it completed with exit code zero.
 Turborepo remains in use for the workspace type-check graph and Vercel
 coordination.
+
+The first clean-runner database attempts exposed a transient Neon operation
+lock, a fixture column mapped to the wrong table, and an RLS test that requested
+an unnecessary outbox `RETURNING` privilege. The lifecycle runner now retries
+only Neon's explicit lock condition, the fixture matches migration `0005`, and
+the replay path proves deduplication without granting the web runtime outbox
+read access. A complete local rerun passed and deleted both disposable branches;
+the pull-request run remains the independent confirmation.
 
 The release gate is not green until the protected staging target exists and
 the account-specific provider configuration below is complete.

@@ -93,7 +93,7 @@ export async function submitLeadWithOutbox(
         leadId: command.commandId,
         organizationId: command.organizationId,
       })
-      .onConflictDoNothing({ target: outboxEvents.idempotencyKey }),
+      .onConflictDoNothing(),
     database
       .select({
         id: leadSubmissions.id,
