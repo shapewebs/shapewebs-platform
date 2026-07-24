@@ -1,7 +1,7 @@
 # Monitoring as code
 
 Shapewebs synthetic checks are defined in `monitoring/checks` and inherit
-two-minute Frankfurt-region defaults from `checkly.config.ts`.
+two-minute `eu-west-1` defaults from `checkly.config.ts`.
 
 ## Safety
 
@@ -23,8 +23,15 @@ two-minute Frankfurt-region defaults from `checkly.config.ts`.
   secret whose value matches the admin staging
   `SYNTHETIC_RETENTION_SECRET`. It can invoke only the strict synthetic
   retention route and is never shared with the outbox worker.
+- `CHECKLY_ACTIVATION_PROFILE` controls scheduling and defaults to
+  `disabled`. Use `alert-test` only for the controlled
+  `staging-admin-readiness` failure/recovery exercise. Use `staging` while
+  production remains on the pre-foundation release. Use `enabled` only after
+  both production checks and all staging checks have been verified.
 - Secrets belong in Checkly encrypted environment variables, never in this
   repository.
+- Failure, recovery, and certificate-expiry alerts are managed as code and
+  delivered to the confirmed operational inbox, `shapewebs@gmail.com`.
 
 ## Commands
 
@@ -34,9 +41,14 @@ two-minute Frankfurt-region defaults from `checkly.config.ts`.
   or recording them; it requires a connected Checkly account.
 - `pnpm exec checkly test --no-record` executes the checks without retaining a
   Checkly test session.
-- `pnpm exec checkly deploy` updates the connected Checkly project. Deployment
-  requires `CHECKLY_ACCOUNT_ID` and `CHECKLY_API_KEY`.
+- `CHECKLY_ACTIVATION_PROFILE=disabled pnpm exec checkly deploy` deploys
+  resources without enabling their schedules.
+- `CHECKLY_ACTIVATION_PROFILE=staging pnpm exec checkly deploy` enables only
+  the protected staging checks.
+- `CHECKLY_ACTIVATION_PROFILE=enabled pnpm exec checkly deploy` enables the
+  verified schedules.
+- Local deployment uses the authenticated Checkly CLI session. Non-interactive
+  automation will require separately approved Checkly credentials.
 
-Alert channels, escalation policy, and a controlled-failure exercise must be
-configured and recorded before these checks satisfy the production launch
-gate.
+The controlled failure/recovery evidence and active schedules must be recorded
+before these checks satisfy the production launch gate.

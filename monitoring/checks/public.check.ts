@@ -1,5 +1,8 @@
 import { ApiCheck, AssertionBuilder, Frequency } from "checkly/constructs";
 
+import { operationalEmailAlerts } from "../lib/alert-channels";
+import { isChecklyCheckActivated } from "../lib/environment";
+
 function getPublicBaseUrl(): URL {
   const configuredUrl =
     process.env.CHECKLY_WEB_BASE_URL ?? "https://shapewebs.com";
@@ -22,10 +25,13 @@ function getPublicBaseUrl(): URL {
 }
 
 const publicBaseUrl = getPublicBaseUrl();
+const publicHomeCheckId = "public-home-availability";
+const publicReadinessCheckId = "public-readiness";
 
-new ApiCheck("public-home-availability", {
+new ApiCheck(publicHomeCheckId, {
   name: "Public home availability",
-  activated: true,
+  activated: isChecklyCheckActivated(publicHomeCheckId),
+  alertChannels: [operationalEmailAlerts],
   frequency: Frequency.EVERY_2M,
   locations: ["eu-west-1"],
   degradedResponseTime: 1_500,
@@ -41,9 +47,10 @@ new ApiCheck("public-home-availability", {
   tags: ["availability", "production", "public"],
 });
 
-new ApiCheck("public-readiness", {
+new ApiCheck(publicReadinessCheckId, {
   name: "Public database readiness",
-  activated: true,
+  activated: isChecklyCheckActivated(publicReadinessCheckId),
+  alertChannels: [operationalEmailAlerts],
   frequency: Frequency.EVERY_2M,
   locations: ["eu-west-1"],
   degradedResponseTime: 1_500,

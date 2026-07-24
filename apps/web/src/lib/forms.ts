@@ -11,6 +11,7 @@ import {
   type ContactFormInput,
   type ProjectInquiryInput,
 } from "@shapewebs/validation";
+import { isTurnstileVerificationAccepted } from "./turnstile";
 
 export { consumeRateLimit } from "./rate-limit";
 export { getClientIp } from "./request-identity";
@@ -166,10 +167,12 @@ export async function verifyTurnstileToken(input: {
 
     return {
       mode: "enforced" as const,
-      success:
-        payload.success === true &&
-        payload.hostname === expectedHostname &&
-        payload.action === "lead_submission",
+      success: isTurnstileVerificationAccepted({
+        environment: process.env,
+        expectedHostname,
+        payload,
+        secret,
+      }),
     };
   } catch {
     return {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listDocuments } from "@shapewebs/db";
 import { documentFiltersSchema } from "@shapewebs/validation";
 import { requireAdminSession } from "@/lib/auth";
+import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
 import styles from "./page.module.css";
 
 type ContentPageProps = {
@@ -15,11 +16,12 @@ type ContentPageProps = {
 export default async function ContentPage({ searchParams }: ContentPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const filters = documentFiltersSchema.parse(params ?? {});
-  const runtime = await requireAdminSession({
+  await requireAdminSession({
     redirectTo: "/content",
     roles: ["owner", "editor"],
   });
-  const documents = await listDocuments(runtime.supabase, filters);
+  const supabase = await getTransitionalAdminSupabaseClient();
+  const documents = await listDocuments(supabase, filters);
 
   return (
     <main className={styles.rootP6m2k1}>

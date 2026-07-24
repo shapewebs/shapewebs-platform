@@ -48,6 +48,7 @@ const sharedEnvSchema = z.object({
   SHAPEWEBS_ORGANIZATION_ID: z.string().uuid().optional(),
   TURNSTILE_EXPECTED_HOSTNAME: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  TURNSTILE_TEST_MODE: z.enum(["true", "false"]).optional(),
   SENTRY_DSN: z.string().min(1).optional(),
 });
 
@@ -61,6 +62,7 @@ export const webEnvSchema = sharedEnvSchema.pick({
   SHAPEWEBS_ORGANIZATION_ID: true,
   TURNSTILE_EXPECTED_HOSTNAME: true,
   TURNSTILE_SECRET_KEY: true,
+  TURNSTILE_TEST_MODE: true,
   PREVIEW_TOKEN_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
   SENTRY_DSN: true,

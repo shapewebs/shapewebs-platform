@@ -1,17 +1,23 @@
 import { BrowserCheck, Frequency } from "checkly/constructs";
 
-import { getOptionalExactHttpsOrigin } from "../lib/environment";
+import { operationalEmailAlerts } from "../lib/alert-channels";
+import {
+  getOptionalExactHttpsOrigin,
+  isChecklyCheckActivated,
+} from "../lib/environment";
 
 const stagingBaseUrl = getOptionalExactHttpsOrigin(
   "CHECKLY_STAGING_WEB_BASE_URL",
 );
 
 if (stagingBaseUrl) {
+  const checkId = "staging-lead-journey";
   const contactUrl = new URL("/contact", stagingBaseUrl).toString();
 
-  new BrowserCheck("staging-lead-journey", {
+  new BrowserCheck(checkId, {
     name: "Staging lead acceptance journey",
-    activated: true,
+    activated: isChecklyCheckActivated(checkId),
+    alertChannels: [operationalEmailAlerts],
     frequency: Frequency.EVERY_10M,
     locations: ["eu-west-1"],
     code: {

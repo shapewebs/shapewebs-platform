@@ -1,15 +1,22 @@
 import { ApiCheck, AssertionBuilder, Frequency } from "checkly/constructs";
 
-import { getOptionalExactHttpsOrigin } from "../lib/environment";
+import { operationalEmailAlerts } from "../lib/alert-channels";
+import {
+  getOptionalExactHttpsOrigin,
+  isChecklyCheckActivated,
+} from "../lib/environment";
 
 const stagingAdminBaseUrl = getOptionalExactHttpsOrigin(
   "CHECKLY_STAGING_ADMIN_BASE_URL",
 );
 
 if (stagingAdminBaseUrl) {
-  new ApiCheck("staging-synthetic-retention", {
+  const checkId = "staging-synthetic-retention";
+
+  new ApiCheck(checkId, {
     name: "Staging synthetic lead retention",
-    activated: true,
+    activated: isChecklyCheckActivated(checkId),
+    alertChannels: [operationalEmailAlerts],
     frequency: Frequency.EVERY_24H,
     locations: ["eu-west-1"],
     maxResponseTime: 10_000,

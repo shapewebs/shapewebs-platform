@@ -1,15 +1,22 @@
 import { ApiCheck, AssertionBuilder, Frequency } from "checkly/constructs";
 
-import { getOptionalExactHttpsOrigin } from "../lib/environment";
+import { operationalEmailAlerts } from "../lib/alert-channels";
+import {
+  getOptionalExactHttpsOrigin,
+  isChecklyCheckActivated,
+} from "../lib/environment";
 
 const stagingAdminBaseUrl = getOptionalExactHttpsOrigin(
   "CHECKLY_STAGING_ADMIN_BASE_URL",
 );
 
 if (stagingAdminBaseUrl) {
-  new ApiCheck("staging-admin-readiness", {
+  const checkId = "staging-admin-readiness";
+
+  new ApiCheck(checkId, {
     name: "Staging admin readiness",
-    activated: true,
+    activated: isChecklyCheckActivated(checkId),
+    alertChannels: [operationalEmailAlerts],
     frequency: Frequency.EVERY_2M,
     locations: ["eu-west-1"],
     degradedResponseTime: 1_500,
