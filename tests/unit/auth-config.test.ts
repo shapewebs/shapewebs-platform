@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createShapewebsAuth } from "../../packages/auth/src/create-auth";
+import { createVerifiedGoogleUserInfo } from "../../packages/auth/src/google-user-info";
 
 const validOptions = {
   baseUrl: "http://localhost:3001",
@@ -84,7 +85,105 @@ describe("Better Auth security configuration", () => {
     expect(auth.options.session?.disableSessionRefresh).toBe(true);
     expect(auth.options.emailAndPassword?.enabled).toBe(false);
     expect(auth.options.disabledPaths).toEqual(
-      expect.arrayContaining(["/sign-in/email", "/sign-up/email"]),
+      expect.arrayContaining([
+        "/sign-in/email",
+        "/sign-up/email",
+        "/two-factor/disable",
+        "/two-factor/generate-backup-codes",
+        "/two-factor/get-totp-uri",
+        "/two-factor/send-otp",
+        "/two-factor/verify-backup-code",
+        "/two-factor/verify-otp",
+        "/two-factor/verify-totp",
+      ]),
     );
+    expect(auth.options.hooks?.before).toBeTypeOf("function");
+  });
+
+  it("accepts Google profile claims only after exact-audience token verification", async () => {
+    const verifier = async ({
+      audience,
+      token,
+    }: {
+      audience: string | string[];
+      nonce?: string;
+      token: string;
+    }) => {
+      expect(audience).toBe("shapewebs-google-client");
+      expect(token).toBe("signed-google-token");
+
+      return {
+        aud: audience,
+        email: "owner@shapewebs.com",
+        email_verified: true,
+        exp: Math.floor(Date.now() / 1000) + 300,
+        iss: "https://accounts.google.com",
+        name: "Shapewebs Owner",
+        picture: "https://example.test/owner.png",
+        sub: "google-subject",
+      };
+    };
+    const getUserInfo = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      verifier,
+    );
+
+    await expect(
+      getUserInfo({ idToken: "signed-google-token" }),
+    ).resolves.toEqual({
+      data: expect.objectContaining({
+        aud: "shapewebs-google-client",
+        iss: "https://accounts.google.com",
+      }),
+      user: {
+        email: "owner@shapewebs.com",
+        emailVerified: true,
+        id: "google-subject",
+        image: "https://example.test/owner.png",
+        name: "Shapewebs Owner",
+      },
+    });
+  });
+
+  it("rejects missing, invalid, unverified, and malformed Google identity claims", async () => {
+    const rejectToken = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => null,
+    );
+    const unverifiedEmail = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "owner@shapewebs.com",
+        email_verified: false,
+        sub: "google-subject",
+      }),
+    );
+    const malformedEmail = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "not-an-email",
+        email_verified: true,
+        sub: "google-subject",
+      }),
+    );
+    const missingSubject = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "owner@shapewebs.com",
+        email_verified: true,
+      }),
+    );
+
+    await expect(rejectToken({})).resolves.toBeNull();
+    await expect(rejectToken({ idToken: "invalid" })).resolves.toBeNull();
+    await expect(
+      unverifiedEmail({ idToken: "unverified-email" }),
+    ).resolves.toBeNull();
+    await expect(
+      malformedEmail({ idToken: "malformed-email" }),
+    ).resolves.toBeNull();
+    await expect(
+      missingSubject({ idToken: "missing-subject" }),
+    ).resolves.toBeNull();
   });
 });
