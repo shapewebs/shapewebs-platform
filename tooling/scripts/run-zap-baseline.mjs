@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -13,28 +20,23 @@ const zapImage =
 const target = requireStagingTarget("ZAP_TARGET_URL");
 const automationBypassSecret = requireAutomationBypassSecret();
 const reportDirectory = path.resolve("test-results/zap");
-const containerUserId = process.getuid?.();
-const containerGroupId = process.getgid?.();
-
-if (!Number.isInteger(containerUserId) || !Number.isInteger(containerGroupId)) {
-  throw new Error(
-    "ZAP release verification requires a host with numeric user and group IDs.",
-  );
-}
 
 const secretDirectory = mkdtempSync(
   path.join(os.tmpdir(), "shapewebs-zap-secrets-"),
 );
-const zapHomeDirectory = mkdtempSync(
-  path.join(os.tmpdir(), "shapewebs-zap-home-"),
-);
 const secretConfigPath = path.join(secretDirectory, "vercel-bypass.properties");
 
 mkdirSync(reportDirectory, { recursive: true });
+const reportDirectoryMode = statSync(reportDirectory).mode & 0o777;
 
 let result;
 
 try {
+  // The official image runs as its non-root `zap` user (UID 1000). GitHub's
+  // runner has a different UID, so grant that container user access only while
+  // the isolated scan is running, then restore the host directory mode.
+  chmodSync(reportDirectory, 0o777);
+  chmodSync(secretDirectory, 0o711);
   writeFileSync(
     secretConfigPath,
     [
@@ -46,7 +48,7 @@ try {
       `replacer.full_list(0).replacement=${automationBypassSecret}`,
       "",
     ].join("\n"),
-    { encoding: "utf8", mode: 0o600 },
+    { encoding: "utf8", mode: 0o444 },
   );
 
   result = spawnSync(
@@ -54,18 +56,12 @@ try {
     [
       "run",
       "--rm",
-      "--user",
-      `${containerUserId}:${containerGroupId}`,
-      "--env",
-      "HOME=/home/zap",
       "--workdir",
       "/zap/wrk",
       "--volume",
       `${reportDirectory}:/zap/wrk:rw`,
       "--volume",
       `${secretDirectory}:/zap/secrets:ro`,
-      "--volume",
-      `${zapHomeDirectory}:/home/zap:rw`,
       zapImage,
       "/zap/zap-baseline.py",
       "-t",
@@ -82,13 +78,13 @@ try {
       // generated artifact stays inside the explicitly mounted report path.
       "--autooff",
       "-z",
-      "-configfile /zap/secrets/vercel-bypass.properties",
+      "-dir /zap/wrk/zap-home -configfile /zap/secrets/vercel-bypass.properties",
     ],
     { stdio: "inherit" },
   );
 } finally {
+  chmodSync(reportDirectory, reportDirectoryMode);
   rmSync(secretDirectory, { force: true, recursive: true });
-  rmSync(zapHomeDirectory, { force: true, recursive: true });
 }
 
 if (result?.error?.code === "ENOENT") {
