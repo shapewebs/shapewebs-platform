@@ -6,7 +6,9 @@ import {
   type SupabaseCookieAdapter,
 } from "./shared";
 
-export function createServerSupabaseClient(cookieAdapter: SupabaseCookieAdapter) {
+export function createServerSupabaseClient(
+  cookieAdapter: SupabaseCookieAdapter,
+) {
   const config = getAdminSupabaseConfig();
 
   if (!config) {

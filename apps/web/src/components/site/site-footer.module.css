@@ -81,7 +81,7 @@
 
 @media (min-width: 1024px) {
   .gridL5p9r {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

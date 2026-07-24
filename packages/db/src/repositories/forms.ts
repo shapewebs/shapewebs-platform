@@ -1,10 +1,17 @@
-import type { ContactFormInput, ProjectInquiryInput } from "@shapewebs/validation";
-function isConfigured(supabase: any): supabase is NonNullable<any> {
+import type {
+  ContactFormInput,
+  ProjectInquiryInput,
+} from "@shapewebs/validation";
+import type { ShapewebsSupabaseClient } from "../supabase/shared";
+
+function isConfigured(
+  supabase: ShapewebsSupabaseClient | null,
+): supabase is ShapewebsSupabaseClient {
   return supabase !== null;
 }
 
 export async function createContactSubmission(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: ContactFormInput | ProjectInquiryInput,
   options: {
     formType: "contact" | "project_inquiry";
@@ -28,7 +35,7 @@ export async function createContactSubmission(
       company: input.company ?? null,
       message: input.message,
       service_interest:
-        "serviceInterest" in input ? input.serviceInterest ?? null : null,
+        "serviceInterest" in input ? (input.serviceInterest ?? null) : null,
       locale_code: input.localeCode,
       country_code: options.countryCode ?? null,
       consent_snapshot_json: {

@@ -96,7 +96,10 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                 : "#";
 
             return (
-              <article className={styles.rowB9m3q7} key={`${document.documentId}:${document.localeCode}`}>
+              <article
+                className={styles.rowB9m3q7}
+                key={`${document.documentId}:${document.localeCode}`}
+              >
                 <div className={styles.titleCellY7m1q8}>
                   <strong>{document.title}</strong>
                   <span>{document.slug}</span>

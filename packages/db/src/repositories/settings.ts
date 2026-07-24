@@ -3,13 +3,16 @@ import type {
   ContactSubmissionRecord,
   SettingsSnapshot,
 } from "../types/documents";
+import type { ShapewebsSupabaseClient } from "../supabase/shared";
 
-function isConfigured(supabase: any): supabase is NonNullable<any> {
+function isConfigured(
+  supabase: ShapewebsSupabaseClient | null,
+): supabase is ShapewebsSupabaseClient {
   return supabase !== null;
 }
 
 export async function getSettingsSnapshot(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
 ): Promise<SettingsSnapshot> {
   if (!isConfigured(supabase)) {
     return mockSettingsSnapshot;
@@ -52,34 +55,34 @@ export async function getSettingsSnapshot(
   return {
     source: "supabase",
     locales:
-      locales?.map((locale: any) => ({
+      locales?.map((locale) => ({
         code: locale.code as SettingsSnapshot["locales"][number]["code"],
         label: locale.label,
         isDefault: locale.is_default,
       })) ?? [],
     regionProfiles:
-      regionProfiles?.map((profile: any) => ({
+      regionProfiles?.map((profile) => ({
         code: profile.code,
         displayName: profile.display_name,
         ruleSetKey: profile.rule_set_key,
       })) ?? [],
     featureFlags:
-      featureFlags?.map((flag: any) => ({
+      featureFlags?.map((flag) => ({
         key: flag.key,
         enabled: flag.enabled,
       })) ?? [],
     consentRuleSets:
-      consentRuleSets?.map((ruleSet: any) => ({
+      consentRuleSets?.map((ruleSet) => ({
         key: ruleSet.rule_set_key,
         defaultMode: ruleSet.default_mode,
       })) ?? [],
     cookiePolicyVersions:
-      cookiePolicyVersions?.map((policy: any) => policy.policy_version) ?? [],
+      cookiePolicyVersions?.map((policy) => policy.policy_version) ?? [],
   };
 }
 
 export async function listContactSubmissions(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
 ): Promise<ContactSubmissionRecord[]> {
   if (!isConfigured(supabase)) {
     return mockContactSubmissions;
@@ -98,7 +101,7 @@ export async function listContactSubmissions(
     return [];
   }
 
-  return data.map((row: any) => ({
+  return data.map((row) => ({
     id: row.id,
     name: row.name,
     email: row.email,

@@ -30,5 +30,7 @@ const newPageState: DocumentEditorState = {
 export default async function NewPageEditorPage() {
   const runtime = await getAdminRuntimeState();
 
-  return <PageEditorForm editorState={newPageState} setupMode={runtime.setupMode} />;
+  return (
+    <PageEditorForm editorState={newPageState} setupMode={runtime.setupMode} />
+  );
 }

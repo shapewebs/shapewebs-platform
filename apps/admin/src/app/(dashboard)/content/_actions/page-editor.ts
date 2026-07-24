@@ -2,10 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { contentDocumentSchema } from "@shapewebs/content-schema";
-import {
-  createDraftRevision,
-  createPreviewToken,
-} from "@shapewebs/db";
+import { createDraftRevision, createPreviewToken } from "@shapewebs/db";
 import { pageEditorInputSchema } from "@shapewebs/validation";
 import { getAdminRuntimeState } from "@/lib/auth";
 
@@ -63,7 +60,9 @@ export async function savePageEditorAction(formData: FormData) {
     summary: normalizeOptionalValue(formData.get("summary")),
     metaTitle: normalizeOptionalValue(formData.get("metaTitle")),
     metaDescription: normalizeOptionalValue(formData.get("metaDescription")),
-    canonicalUrlOverride: normalizeOptionalValue(formData.get("canonicalUrlOverride")),
+    canonicalUrlOverride: normalizeOptionalValue(
+      formData.get("canonicalUrlOverride"),
+    ),
     robotsIndex: formData.get("robotsIndex") === "true",
     contentJson,
     changeNote: normalizeOptionalValue(formData.get("changeNote")),
@@ -100,7 +99,9 @@ export async function savePageEditorAction(formData: FormData) {
     const latestRevision = editorState.revisions[0];
 
     if (!latestRevision) {
-      redirect(`/content/pages/${editorState.documentId}?locale=${editorState.localeCode}&error=preview`);
+      redirect(
+        `/content/pages/${editorState.documentId}?locale=${editorState.localeCode}&error=preview`,
+      );
     }
 
     const preview = await createPreviewToken(runtime.supabase, {

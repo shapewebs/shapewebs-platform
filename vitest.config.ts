@@ -1,0 +1,32 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    coverage: {
+      exclude: [
+        "**/*.d.ts",
+        "**/*.config.*",
+        "**/generated/**",
+        "**/mock/**",
+        "**/node_modules/**",
+        "**/tests/**",
+      ],
+      include: [
+        "apps/admin/src/lib/redirect.ts",
+        "apps/web/src/lib/rate-limit.ts",
+        "packages/config/src/security.ts",
+      ],
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      thresholds: {
+        branches: 90,
+        functions: 90,
+        lines: 90,
+        statements: 90,
+      },
+    },
+    environment: "node",
+    include: ["tests/unit/**/*.test.ts"],
+    restoreMocks: true,
+  },
+});

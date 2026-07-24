@@ -1,16 +1,27 @@
 import { createHash } from "node:crypto";
-import { createAdminSupabaseClient, createContactSubmission } from "@shapewebs/db";
+import {
+  createAdminSupabaseClient,
+  createContactSubmission,
+} from "@shapewebs/db";
 import {
   contactFormSchema,
   projectInquirySchema,
   type ContactFormInput,
   type ProjectInquiryInput,
 } from "@shapewebs/validation";
-
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+export { consumeRateLimit } from "./rate-limit";
 
 function getHashedIdentifier(value: string) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 export function getClientIp(headers: Headers) {
@@ -22,35 +33,18 @@ export function getClientIp(headers: Headers) {
   return headers.get("x-real-ip") ?? "unknown";
 }
 
-export function consumeRateLimit(key: string, options = { maxRequests: 5, windowMs: 15 * 60 * 1000 }) {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-
-  if (!entry || entry.resetAt <= now) {
-    rateLimitStore.set(key, {
-      count: 1,
-      resetAt: now + options.windowMs,
-    });
-    return { allowed: true };
-  }
-
-  if (entry.count >= options.maxRequests) {
-    return {
-      allowed: false,
-      retryAfterMs: entry.resetAt - now,
-    };
-  }
-
-  entry.count += 1;
-  rateLimitStore.set(key, entry);
-  return { allowed: true };
-}
-
 export async function verifyTurnstileToken(input: {
   ip: string;
   token?: string | null;
 }) {
   if (!process.env.TURNSTILE_SECRET_KEY) {
+    if (process.env.NODE_ENV !== "development") {
+      return {
+        mode: "unconfigured" as const,
+        success: false,
+      };
+    }
+
     return {
       mode: "skipped" as const,
       success: true,
@@ -64,18 +58,21 @@ export async function verifyTurnstileToken(input: {
     };
   }
 
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+  const response = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: input.token,
+        remoteip: input.ip,
+      }),
+      cache: "no-store",
     },
-    body: new URLSearchParams({
-      secret: process.env.TURNSTILE_SECRET_KEY,
-      response: input.token,
-      remoteip: input.ip,
-    }),
-    cache: "no-store",
-  });
+  );
 
   if (!response.ok) {
     return {
@@ -107,13 +104,13 @@ export async function sendSubmissionNotification(input: {
   const projectFields =
     input.formType === "project_inquiry" && "budgetBand" in input.payload
       ? `
-          <p><strong>Budget:</strong> ${input.payload.budgetBand ?? "Not provided"}</p>
-          <p><strong>Timeline:</strong> ${input.payload.timeline ?? "Not provided"}</p>
-          <p><strong>Service interest:</strong> ${input.payload.serviceInterest ?? "Not provided"}</p>
+          <p><strong>Budget:</strong> ${escapeHtml(input.payload.budgetBand ?? "Not provided")}</p>
+          <p><strong>Timeline:</strong> ${escapeHtml(input.payload.timeline ?? "Not provided")}</p>
+          <p><strong>Service interest:</strong> ${escapeHtml(input.payload.serviceInterest ?? "Not provided")}</p>
         `
       : "";
 
-  await fetch("https://api.resend.com/emails", {
+  const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -128,19 +125,19 @@ export async function sendSubmissionNotification(input: {
           : "New Shapewebs contact form submission",
       html: `
         <h1>${input.formType === "project_inquiry" ? "Project inquiry" : "Contact submission"}</h1>
-        <p><strong>Name:</strong> ${input.payload.name}</p>
-        <p><strong>Email:</strong> ${input.payload.email}</p>
-        <p><strong>Company:</strong> ${input.payload.company ?? "Not provided"}</p>
+        <p><strong>Name:</strong> ${escapeHtml(input.payload.name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(input.payload.email)}</p>
+        <p><strong>Company:</strong> ${escapeHtml(input.payload.company ?? "Not provided")}</p>
         ${projectFields}
         <p><strong>Message:</strong></p>
-        <p>${input.payload.message}</p>
+        <p>${escapeHtml(input.payload.message).replaceAll("\n", "<br>")}</p>
       `,
     }),
     cache: "no-store",
   });
 
   return {
-    sent: true,
+    sent: response.ok,
   };
 }
 

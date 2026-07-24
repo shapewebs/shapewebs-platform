@@ -3,29 +3,34 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Buttons } from "@shapewebs/ui";
-import { createBrowserSupabaseClient } from "@shapewebs/db";
+import { createBrowserSupabaseClient } from "@shapewebs/db/browser";
+import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 import styles from "./page.module.css";
 
 type LoginFormProps = {
   isConfigured: boolean;
 };
 
-function getSafeRedirectTarget(redirectTo: string) {
-  return redirectTo.startsWith("/") ? redirectTo : "/dashboard";
+function getRouteErrorMessage(errorCode: string | null) {
+  switch (errorCode) {
+    case "unauthorized":
+      return "Your account is not authorized for the Shapewebs admin portal.";
+    case "setup":
+      return "Authentication still needs to be configured for this environment.";
+    default:
+      return null;
+  }
 }
-
-const errorMessages: Record<string, string> = {
-  unauthorized: "Your account is not authorized for the Shapewebs admin portal.",
-  setup: "Supabase auth still needs to be configured for this environment.",
-};
 
 export function LoginForm({ isConfigured }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const redirectTo = getSafeRedirectTarget(searchParams.get("redirectTo") ?? "/dashboard");
-  const routeError = searchParams.get("error");
+  const redirectTo = getSafeAdminRedirectTarget(
+    searchParams.get("redirectTo") ?? "/dashboard",
+  );
+  const routeErrorMessage = getRouteErrorMessage(searchParams.get("error"));
 
   return (
     <form
@@ -34,7 +39,9 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
         event.preventDefault();
 
         if (!isConfigured) {
-          setErrorMessage("Supabase auth is not configured in this environment yet.");
+          setErrorMessage(
+            "Authentication is not configured in this environment.",
+          );
           return;
         }
 
@@ -44,7 +51,9 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
         const supabase = createBrowserSupabaseClient();
 
         if (!supabase) {
-          setErrorMessage("Supabase auth is not configured in this environment yet.");
+          setErrorMessage(
+            "Authentication is not configured in this environment.",
+          );
           return;
         }
 
@@ -61,20 +70,21 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
             return;
           }
 
-          const { data: assurance } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          const { data: assurance } =
+            await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
           if (
             assurance?.currentLevel !== "aal2" &&
             assurance?.nextLevel === "aal2"
           ) {
             router.replace(
-              `/login/mfa?redirectTo=${encodeURIComponent(getSafeRedirectTarget(redirectTo))}`,
+              `/login/mfa?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(redirectTo))}`,
             );
             router.refresh();
             return;
           }
 
-          router.replace(getSafeRedirectTarget(redirectTo));
+          router.replace(getSafeAdminRedirectTarget(redirectTo));
           router.refresh();
         });
       }}
@@ -107,13 +117,18 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
         <p className={styles.errorStateC6d2r9} role="alert">
           {errorMessage}
         </p>
-      ) : routeError && errorMessages[routeError] ? (
+      ) : routeErrorMessage ? (
         <p className={styles.errorStateC6d2r9} role="alert">
-          {errorMessages[routeError]}
+          {routeErrorMessage}
         </p>
       ) : null}
 
-      <Buttons.Button disabled={!isConfigured || isPending} kind="primary" size="medium" type="submit">
+      <Buttons.Button
+        disabled={!isConfigured || isPending}
+        kind="primary"
+        size="medium"
+        type="submit"
+      >
         {isPending ? "Signing in..." : "Continue"}
       </Buttons.Button>
     </form>

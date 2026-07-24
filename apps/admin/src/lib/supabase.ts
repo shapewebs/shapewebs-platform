@@ -9,7 +9,11 @@ export function hasAdminSupabaseConfig() {
   return getAdminSupabaseConfig() !== null;
 }
 
-export async function createAdminCookieAdapter(): Promise<SupabaseCookieAdapter> {
+export function isLocalAdminSetupMode() {
+  return process.env.NODE_ENV === "development" && !hasAdminSupabaseConfig();
+}
+
+async function createAdminCookieAdapter(): Promise<SupabaseCookieAdapter> {
   const cookieStore = await cookies();
 
   return {

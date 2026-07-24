@@ -10,7 +10,17 @@ import {
 } from "@/lib/forms";
 
 export async function POST(request: NextRequest) {
-  const payload = parseProjectInquiryPayload(await request.json());
+  let payload: ReturnType<typeof parseProjectInquiryPayload>;
+
+  try {
+    payload = parseProjectInquiryPayload(await request.json());
+  } catch {
+    return NextResponse.json(
+      { error: "The project inquiry payload is invalid." },
+      { status: 400 },
+    );
+  }
+
   const ip = getClientIp(request.headers);
   const rateLimit = consumeRateLimit(
     buildRateLimitKey("project_inquiry", ip, payload.email),
@@ -30,16 +40,28 @@ export async function POST(request: NextRequest) {
 
   if (!captcha.success) {
     return NextResponse.json(
-      { error: "Captcha verification failed." },
-      { status: 400 },
+      {
+        error:
+          captcha.mode === "unconfigured"
+            ? "The project inquiry form is temporarily unavailable."
+            : "Captcha verification failed.",
+      },
+      { status: captcha.mode === "unconfigured" ? 503 : 400 },
     );
   }
 
-  await storeContactSubmission({
+  const submission = await storeContactSubmission({
     formType: "project_inquiry",
     payload,
     spamScore: captcha.mode === "skipped" ? null : 0,
   });
+
+  if (!submission.stored) {
+    return NextResponse.json(
+      { error: "The project inquiry form is temporarily unavailable." },
+      { status: 503 },
+    );
+  }
 
   await sendSubmissionNotification({
     formType: "project_inquiry",

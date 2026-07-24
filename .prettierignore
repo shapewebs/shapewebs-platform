@@ -1,0 +1,11 @@
+.next
+**/.next
+.turbo
+**/.turbo
+.lighthouseci
+coverage
+playwright-report
+test-results
+packages/db/src/generated
+drizzle/meta
+pnpm-lock.yaml

@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Buttons } from "@shapewebs/ui";
-import { createBrowserSupabaseClient } from "@shapewebs/db";
+import { createBrowserSupabaseClient } from "@shapewebs/db/browser";
+import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 import styles from "./page.module.css";
 
 type TotpFactor = {
@@ -29,10 +30,6 @@ function toSvgDataUri(qrCode: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(qrCode)}`;
 }
 
-function getSafeRedirectTarget(redirectTo: string) {
-  return redirectTo.startsWith("/") ? redirectTo : "/dashboard";
-}
-
 export function MfaScreen({ isConfigured }: MfaScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,10 +39,13 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
   }, [isConfigured]);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [enrolledFactor, setEnrolledFactor] = useState<EnrolledFactorState | null>(null);
+  const [enrolledFactor, setEnrolledFactor] =
+    useState<EnrolledFactorState | null>(null);
   const [verifiedFactor, setVerifiedFactor] = useState<TotpFactor | null>(null);
   const [setupCode, setSetupCode] = useState("");
-  const redirectTo = getSafeRedirectTarget(searchParams.get("redirectTo") ?? "/dashboard");
+  const redirectTo = getSafeAdminRedirectTarget(
+    searchParams.get("redirectTo") ?? "/dashboard",
+  );
 
   useEffect(() => {
     if (!supabase) {
@@ -72,7 +72,7 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
       }
 
       if (assurance?.currentLevel === "aal2") {
-        router.replace(getSafeRedirectTarget(redirectTo));
+        router.replace(getSafeAdminRedirectTarget(redirectTo));
         router.refresh();
         return;
       }
@@ -83,12 +83,16 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
         return;
       }
 
-      const factors = [
-        ...(factorData?.all ?? []),
-      ].filter((factor) => factor.factor_type === "totp");
+      const factors = [...(factorData?.all ?? [])].filter(
+        (factor) => factor.factor_type === "totp",
+      );
 
-      const activeFactor = factors.find((factor) => factor.status === "verified");
-      const pendingFactor = factors.find((factor) => factor.status === "unverified");
+      const activeFactor = factors.find(
+        (factor) => factor.status === "verified",
+      );
+      const pendingFactor = factors.find(
+        (factor) => factor.status === "unverified",
+      );
 
       setVerifiedFactor(
         activeFactor
@@ -153,7 +157,9 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
           </p>
         ) : null}
 
-        {isLoading ? <p className={styles.mutedH8p2q5}>Checking MFA status...</p> : null}
+        {isLoading ? (
+          <p className={styles.mutedH8p2q5}>Checking MFA status...</p>
+        ) : null}
 
         {!isLoading && isConfigured ? (
           <>
@@ -177,7 +183,9 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
                     });
 
                     if (error || !data || !("totp" in data)) {
-                      setErrorMessage(error?.message ?? "Could not start MFA enrollment.");
+                      setErrorMessage(
+                        error?.message ?? "Could not start MFA enrollment.",
+                      );
                       return;
                     }
 
@@ -211,7 +219,8 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
                     />
                   ) : (
                     <div className={styles.qrPlaceholderV8m2n3}>
-                      Existing factor found. Use your authenticator app code to verify.
+                      Existing factor found. Use your authenticator app code to
+                      verify.
                     </div>
                   )}
                 </div>
@@ -223,7 +232,9 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
                   </p>
 
                   {enrolledFactor.secret ? (
-                    <div className={styles.secretBoxJ7m2r8}>{enrolledFactor.secret}</div>
+                    <div className={styles.secretBoxJ7m2r8}>
+                      {enrolledFactor.secret}
+                    </div>
                   ) : null}
 
                   <label className={styles.fieldT5m3n9}>
@@ -241,7 +252,11 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
                   </label>
 
                   <Buttons.Button
-                    disabled={!activeFactorId || setupCode.trim().length < 6 || isPending}
+                    disabled={
+                      !activeFactorId ||
+                      setupCode.trim().length < 6 ||
+                      isPending
+                    }
                     kind="primary"
                     onClick={() => {
                       const supabase = createBrowserSupabaseClient();
@@ -253,17 +268,18 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
                       startTransition(async () => {
                         setErrorMessage(null);
 
-                        const { error } = await supabase.auth.mfa.challengeAndVerify({
-                          factorId: activeFactorId,
-                          code: setupCode.trim(),
-                        });
+                        const { error } =
+                          await supabase.auth.mfa.challengeAndVerify({
+                            factorId: activeFactorId,
+                            code: setupCode.trim(),
+                          });
 
                         if (error) {
                           setErrorMessage(error.message);
                           return;
                         }
 
-                        router.replace(getSafeRedirectTarget(redirectTo));
+                        router.replace(getSafeAdminRedirectTarget(redirectTo));
                         router.refresh();
                       });
                     }}
@@ -278,8 +294,8 @@ export function MfaScreen({ isConfigured }: MfaScreenProps) {
 
             {verifiedFactor ? (
               <p className={styles.noticeStateW5m1d9}>
-                A verified factor is already enrolled. Enter a fresh authenticator
-                code to finish this login.
+                A verified factor is already enrolled. Enter a fresh
+                authenticator code to finish this login.
               </p>
             ) : null}
           </>

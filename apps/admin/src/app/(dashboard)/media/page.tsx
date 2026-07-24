@@ -5,8 +5,8 @@ export default function MediaPage() {
     <main className={styles.rootM3q7k2}>
       <h1>Media</h1>
       <p>
-        This section will host the image-first media library, metadata, and
-        safe upload pipeline.
+        This section will host the image-first media library, metadata, and safe
+        upload pipeline.
       </p>
     </main>
   );

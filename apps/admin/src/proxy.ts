@@ -3,14 +3,31 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { getAdminSupabaseConfig } from "@shapewebs/db";
 
-const protectedPrefixes = ["/dashboard", "/content", "/media", "/settings"];
+const protectedPrefixes = [
+  "/audit",
+  "/content",
+  "/dashboard",
+  "/media",
+  "/settings",
+  "/submissions",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const config = getAdminSupabaseConfig();
 
   if (!config) {
-    return NextResponse.next();
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.next();
+    }
+
+    return new NextResponse("Admin authentication is unavailable.", {
+      status: 503,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/plain; charset=utf-8",
+      },
+    });
   }
 
   const response = NextResponse.next({
@@ -65,5 +82,12 @@ export async function middleware(request: NextRequest) {
 export { middleware as proxy };
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/content/:path*", "/media/:path*", "/settings/:path*"],
+  matcher: [
+    "/audit/:path*",
+    "/content/:path*",
+    "/dashboard/:path*",
+    "/media/:path*",
+    "/settings/:path*",
+    "/submissions/:path*",
+  ],
 };

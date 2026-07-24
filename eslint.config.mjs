@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import security from "eslint-plugin-security";
 
 const nextRootSettings = {
   next: {
@@ -21,9 +22,18 @@ function withWorkspaceNextRoots(configs) {
 const eslintConfig = defineConfig([
   ...withWorkspaceNextRoots(nextVitals),
   ...withWorkspaceNextRoots(nextTs),
+  security.configs.recommended,
   {
     rules: {
       "@next/next/no-html-link-for-pages": "off",
+    },
+  },
+  {
+    files: ["tooling/scripts/**/*.mjs"],
+    rules: {
+      // Tool paths are derived from the repository root and discovered files.
+      "security/detect-non-literal-fs-filename": "off",
+      "security/detect-object-injection": "off",
     },
   },
   globalIgnores([

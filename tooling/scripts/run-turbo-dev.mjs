@@ -27,7 +27,12 @@ process.on("SIGTERM", () => {
 });
 
 child.on("exit", (code, signal) => {
-  if (interrupted || signal === "SIGINT" || signal === "SIGTERM" || code === 130) {
+  if (
+    interrupted ||
+    signal === "SIGINT" ||
+    signal === "SIGTERM" ||
+    code === 130
+  ) {
     process.exit(0);
   }
 

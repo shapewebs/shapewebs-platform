@@ -10,9 +10,21 @@ import {
 } from "@/lib/forms";
 
 export async function POST(request: NextRequest) {
-  const payload = parseContactPayload(await request.json());
+  let payload: ReturnType<typeof parseContactPayload>;
+
+  try {
+    payload = parseContactPayload(await request.json());
+  } catch {
+    return NextResponse.json(
+      { error: "The contact form payload is invalid." },
+      { status: 400 },
+    );
+  }
+
   const ip = getClientIp(request.headers);
-  const rateLimit = consumeRateLimit(buildRateLimitKey("contact", ip, payload.email));
+  const rateLimit = consumeRateLimit(
+    buildRateLimitKey("contact", ip, payload.email),
+  );
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -28,16 +40,28 @@ export async function POST(request: NextRequest) {
 
   if (!captcha.success) {
     return NextResponse.json(
-      { error: "Captcha verification failed." },
-      { status: 400 },
+      {
+        error:
+          captcha.mode === "unconfigured"
+            ? "The contact form is temporarily unavailable."
+            : "Captcha verification failed.",
+      },
+      { status: captcha.mode === "unconfigured" ? 503 : 400 },
     );
   }
 
-  await storeContactSubmission({
+  const submission = await storeContactSubmission({
     formType: "contact",
     payload,
     spamScore: captcha.mode === "skipped" ? null : 0,
   });
+
+  if (!submission.stored) {
+    return NextResponse.json(
+      { error: "The contact form is temporarily unavailable." },
+      { status: 503 },
+    );
+  }
 
   await sendSubmissionNotification({
     formType: "contact",

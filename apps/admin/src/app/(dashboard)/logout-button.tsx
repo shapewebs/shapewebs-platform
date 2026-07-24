@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Buttons } from "@shapewebs/ui";
-import { createBrowserSupabaseClient } from "@shapewebs/db";
+import { createBrowserSupabaseClient } from "@shapewebs/db/browser";
 import styles from "./layout.module.css";
 
 export function LogoutButton() {

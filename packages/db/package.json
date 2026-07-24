@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./browser": "./src/supabase/browser.ts"
   },
   "dependencies": {
     "@shapewebs/config": "workspace:*",
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/i18n": "workspace:*",
     "@shapewebs/validation": "workspace:*",
-    "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.56.0",
-    "zod": "^4.1.5"
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.8"
   }
 }

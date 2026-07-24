@@ -1,4 +1,5 @@
 import type { CookieOptions } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   hasSupabaseBrowserEnv,
   hasSupabaseServiceEnv,
@@ -6,6 +7,9 @@ import {
   parseServerEnv,
   parseWebEnv,
 } from "@shapewebs/validation";
+import type { Database } from "../generated/database.types";
+
+export type ShapewebsSupabaseClient = SupabaseClient<Database>;
 
 export type SupabaseCookie = {
   name: string;
@@ -24,7 +28,11 @@ export type SupabaseCookieAdapter = {
 export function getWebSupabaseConfig() {
   const env = parseWebEnv();
 
-  if (!hasSupabaseBrowserEnv(env) || !env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (
+    !hasSupabaseBrowserEnv(env) ||
+    !env.NEXT_PUBLIC_SUPABASE_URL ||
+    !env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
     return null;
   }
 
@@ -37,7 +45,11 @@ export function getWebSupabaseConfig() {
 export function getAdminSupabaseConfig() {
   const env = parseAdminEnv();
 
-  if (!hasSupabaseBrowserEnv(env) || !env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (
+    !hasSupabaseBrowserEnv(env) ||
+    !env.NEXT_PUBLIC_SUPABASE_URL ||
+    !env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
     return null;
   }
 

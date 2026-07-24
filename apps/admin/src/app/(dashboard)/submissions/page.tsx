@@ -11,7 +11,10 @@ export default async function SubmissionsPage() {
       <header className={styles.headerN5m2q8}>
         <p className={styles.eyebrowQ4m7p1}>Forms</p>
         <h1>Submissions</h1>
-        <p>Stored contact and project inquiry records appear here with their current review state.</p>
+        <p>
+          Stored contact and project inquiry records appear here with their
+          current review state.
+        </p>
       </header>
 
       <section className={styles.tableM4p8q2}>

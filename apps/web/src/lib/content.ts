@@ -59,7 +59,10 @@ export function buildDocumentMetadata(document: PublishedDocument) {
   return {
     ...buildPageMetadata({
       title: document.seo.metaTitle ?? document.title,
-      description: document.seo.metaDescription ?? document.summary ?? siteConfig.description,
+      description:
+        document.seo.metaDescription ??
+        document.summary ??
+        siteConfig.description,
       path: localizedPath,
       noIndex: !document.seo.robotsIndex,
       type: document.contentType === "post" ? "article" : "website",
@@ -118,7 +121,7 @@ async function getPreviewDocument() {
   return getPreviewContentByRevision(supabase, selection);
 }
 
-export async function getResolvedHomepage(localeCode = siteConfig.defaultLocale) {
+async function getResolvedHomepage(localeCode = siteConfig.defaultLocale) {
   const previewDocument = await getPreviewDocument();
 
   if (
@@ -178,7 +181,10 @@ export async function getResolvedContentList(
   return items;
 }
 
-export async function getResolvedGenericPage(slug: string, localeCode = siteConfig.defaultLocale) {
+export async function getResolvedGenericPage(
+  slug: string,
+  localeCode = siteConfig.defaultLocale,
+) {
   const homepage = await getResolvedHomepage(localeCode);
 
   if ((slug === "home" || slug === "") && homepage) {

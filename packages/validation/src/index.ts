@@ -47,31 +47,45 @@ export const serverEnvSchema = sharedEnvSchema;
 
 function stripEmptyValues(env: Record<string, string | undefined>) {
   return Object.fromEntries(
-    Object.entries(env).filter(([, value]) => value !== undefined && value !== ""),
+    Object.entries(env).filter(
+      ([, value]) => value !== undefined && value !== "",
+    ),
   );
 }
 
-export function parseWebEnv(env: Record<string, string | undefined> = process.env) {
+export function parseWebEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
   return webEnvSchema.parse(stripEmptyValues(env));
 }
 
-export function parseAdminEnv(env: Record<string, string | undefined> = process.env) {
+export function parseAdminEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
   return adminEnvSchema.parse(stripEmptyValues(env));
 }
 
-export function parseServerEnv(env: Record<string, string | undefined> = process.env) {
+export function parseServerEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
   return serverEnvSchema.parse(stripEmptyValues(env));
 }
 
-export function hasSupabaseBrowserEnv(env: Record<string, string | undefined> = process.env) {
-  return Boolean(env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+export function hasSupabaseBrowserEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return Boolean(
+    env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 }
 
-export function hasSupabaseServiceEnv(env: Record<string, string | undefined> = process.env) {
+export function hasSupabaseServiceEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
   return Boolean(
     env.NEXT_PUBLIC_SUPABASE_URL &&
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      env.SUPABASE_SERVICE_ROLE_KEY,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    env.SUPABASE_SERVICE_ROLE_KEY,
   );
 }
 
@@ -112,7 +126,12 @@ export const pageEditorInputSchema = z.object({
     .trim()
     .min(1)
     .max(180)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    .regex(/^[a-z0-9-]+$/)
+    .refine(
+      (value) =>
+        !value.startsWith("-") && !value.endsWith("-") && !value.includes("--"),
+      "Slug must use single hyphens between lowercase letters and numbers.",
+    ),
   summary: z.string().trim().max(320).optional(),
   metaTitle: z.string().trim().max(160).optional(),
   metaDescription: z.string().trim().max(320).optional(),

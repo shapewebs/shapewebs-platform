@@ -9,18 +9,29 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   trailingIcon?: ReactNode;
 };
 
-const kindClassMap = {
-  primary: styles.kindPrimary,
-  secondary: styles.kindSecondary,
-  tertiary: styles.kindTertiary,
-  ghost: styles.kindGhost,
-} as const;
+function getKindClass(kind: NonNullable<ButtonProps["kind"]>) {
+  switch (kind) {
+    case "secondary":
+      return styles.kindSecondary;
+    case "tertiary":
+      return styles.kindTertiary;
+    case "ghost":
+      return styles.kindGhost;
+    default:
+      return styles.kindPrimary;
+  }
+}
 
-const sizeClassMap = {
-  small: styles.sizeSmall,
-  medium: styles.sizeMedium,
-  large: styles.sizeLarge,
-} as const;
+function getSizeClass(size: NonNullable<ButtonProps["size"]>) {
+  switch (size) {
+    case "small":
+      return styles.sizeSmall;
+    case "large":
+      return styles.sizeLarge;
+    default:
+      return styles.sizeMedium;
+  }
+}
 
 export function Button({
   children,
@@ -36,8 +47,8 @@ export function Button({
     <button
       className={mergeClassNames(
         styles.root,
-        kindClassMap[kind],
-        sizeClassMap[size],
+        getKindClass(kind),
+        getSizeClass(size),
         className,
       )}
       data-component-status="styled"

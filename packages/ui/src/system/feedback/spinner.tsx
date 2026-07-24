@@ -3,26 +3,42 @@ import type { HTMLAttributes } from "react";
 import styles from "./spinner.module.css";
 import { mergeClassNames } from "../_internal/merge-class-names";
 
-export type SpinnerProps = Omit<HTMLAttributes<HTMLDivElement>, "children" | "color"> & {
+export type SpinnerProps = Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "children" | "color"
+> & {
   color?: "current" | "accent" | "success" | "warning" | "danger";
   label?: string;
   size?: "sm" | "md" | "lg" | "xl";
 };
 
-const colorClassMap = {
-  current: styles.colorCurrent,
-  accent: styles.colorAccent,
-  success: styles.colorSuccess,
-  warning: styles.colorWarning,
-  danger: styles.colorDanger,
-} as const;
+function getColorClass(color: NonNullable<SpinnerProps["color"]>) {
+  switch (color) {
+    case "accent":
+      return styles.colorAccent;
+    case "success":
+      return styles.colorSuccess;
+    case "warning":
+      return styles.colorWarning;
+    case "danger":
+      return styles.colorDanger;
+    default:
+      return styles.colorCurrent;
+  }
+}
 
-const sizeClassMap = {
-  sm: styles.sizeSm,
-  md: styles.sizeMd,
-  lg: styles.sizeLg,
-  xl: styles.sizeXl,
-} as const;
+function getSizeClass(size: NonNullable<SpinnerProps["size"]>) {
+  switch (size) {
+    case "sm":
+      return styles.sizeSm;
+    case "lg":
+      return styles.sizeLg;
+    case "xl":
+      return styles.sizeXl;
+    default:
+      return styles.sizeMd;
+  }
+}
 
 export function Spinner({
   ariaLabel,
@@ -43,8 +59,8 @@ export function Spinner({
       aria-label={ariaLabel}
       className={mergeClassNames(
         styles.root,
-        colorClassMap[color],
-        sizeClassMap[size],
+        getColorClass(color),
+        getSizeClass(size),
         className,
       )}
       data-component-status="styled"
@@ -59,11 +75,23 @@ export function Spinner({
         viewBox="0 0 24 24"
       >
         <defs>
-          <linearGradient id={gradientOneId} x1="50%" x2="50%" y1="5.271%" y2="91.793%">
+          <linearGradient
+            id={gradientOneId}
+            x1="50%"
+            x2="50%"
+            y1="5.271%"
+            y2="91.793%"
+          >
             <stop offset="0%" stopColor="currentColor" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
           </linearGradient>
-          <linearGradient id={gradientTwoId} x1="50%" x2="50%" y1="15.24%" y2="87.15%">
+          <linearGradient
+            id={gradientTwoId}
+            x1="50%"
+            x2="50%"
+            y1="15.24%"
+            y2="87.15%"
+          >
             <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
           </linearGradient>

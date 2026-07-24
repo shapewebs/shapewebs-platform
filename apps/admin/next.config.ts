@@ -5,6 +5,7 @@ import {
 } from "@shapewebs/config";
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   transpilePackages: [...workspaceTranspilePackages],
   async headers() {
     return [

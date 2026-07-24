@@ -1,6 +1,5 @@
 import { SiteLogo } from "./site-logo";
 import { SiteLink } from "@/components/navigation/site-link";
-import { SiteNavLink } from "./site-nav-link";
 import { siteFooterGroups } from "./site-navigation-data";
 import styles from "./site-footer.module.css";
 
@@ -14,7 +13,6 @@ export function SiteFooter() {
               aria-label="Shapewebs home"
               className={styles.logoLinkL9k4r}
               href="/"
-              showPendingHint={false}
             >
               <SiteLogo className={styles.logoQ9j6p} variant="mark" />
             </SiteLink>
@@ -36,13 +34,9 @@ export function SiteFooter() {
                         {item.label}
                       </a>
                     ) : (
-                      <SiteNavLink
-                        className={styles.linkL9k4r}
-                        href={item.href}
-                        variant="footer"
-                      >
+                      <SiteLink className={styles.linkL9k4r} href={item.href}>
                         {item.label}
-                      </SiteNavLink>
+                      </SiteLink>
                     )}
                   </li>
                 ))}

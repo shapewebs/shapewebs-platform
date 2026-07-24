@@ -37,8 +37,11 @@ export function buildPageMetadata(input: BuildPageMetadataInput): Metadata {
   const path = normalizePath(input.path);
   const description = input.description ?? siteConfig.description;
   const canonical = getAbsoluteSiteUrl(path);
-  const imageUrl = getAbsoluteSiteUrl(input.imagePath ?? siteConfig.ogImagePath);
-  const openGraphTitle = input.openGraphTitle ?? buildAbsoluteTitle(input.title);
+  const imageUrl = getAbsoluteSiteUrl(
+    input.imagePath ?? siteConfig.ogImagePath,
+  );
+  const openGraphTitle =
+    input.openGraphTitle ?? buildAbsoluteTitle(input.title);
   const openGraphDescription = input.openGraphDescription ?? description;
 
   return {

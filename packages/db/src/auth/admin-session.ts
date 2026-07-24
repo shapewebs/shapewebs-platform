@@ -1,4 +1,5 @@
 import type { AdminSessionContext } from "../types/auth";
+import type { ShapewebsSupabaseClient } from "../supabase/shared";
 
 function toRoleArray(data: unknown): AdminSessionContext["roles"] {
   if (!Array.isArray(data)) {
@@ -7,31 +8,28 @@ function toRoleArray(data: unknown): AdminSessionContext["roles"] {
 
   return data
     .map((item) =>
-      item === "owner" || item === "admin" || item === "editor" || item === "reviewer"
+      item === "owner" ||
+      item === "admin" ||
+      item === "editor" ||
+      item === "reviewer"
         ? item
         : null,
     )
     .filter((value): value is NonNullable<typeof value> => value !== null);
 }
 
-export async function getAuthenticatorAssurance(
-  supabase: any,
-) {
-  const response = await (supabase.auth.mfa as never as {
-    getAuthenticatorAssuranceLevel: () => Promise<{
-      data: {
-        currentLevel?: "aal1" | "aal2";
-        nextLevel?: "aal1" | "aal2";
-      };
-      error: { message: string } | null;
-    }>;
-  }).getAuthenticatorAssuranceLevel();
+function toAssuranceLevel(value: unknown): "aal1" | "aal2" | undefined {
+  return value === "aal1" || value === "aal2" ? value : undefined;
+}
 
-  return response;
+export async function getAuthenticatorAssurance(
+  supabase: ShapewebsSupabaseClient,
+) {
+  return supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 }
 
 export async function getAdminSessionContext(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient,
 ): Promise<AdminSessionContext | null> {
   const [{ data: userData }, { data: assuranceData }] = await Promise.all([
     supabase.auth.getUser(),
@@ -70,12 +68,13 @@ export async function getAdminSessionContext(
     profile: {
       id: data.profile_id,
       authUserId: data.auth_user_id,
-      defaultLocale: data.default_locale as AdminSessionContext["profile"]["defaultLocale"],
+      defaultLocale:
+        data.default_locale as AdminSessionContext["profile"]["defaultLocale"],
       displayName: data.display_name,
       status,
     },
     roles: toRoleArray(data.roles),
-    aal: assuranceData.currentLevel,
-    nextAal: assuranceData.nextLevel,
+    aal: toAssuranceLevel(assuranceData?.currentLevel),
+    nextAal: toAssuranceLevel(assuranceData?.nextLevel),
   };
 }

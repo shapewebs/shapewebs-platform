@@ -8,7 +8,10 @@ const sharedHeaders: Header[] = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
 ];
 
 function buildCsp(options: { allowAnalytics: boolean }) {
@@ -17,6 +20,11 @@ function buildCsp(options: { allowAnalytics: boolean }) {
     "https://*.supabase.co",
     "wss://*.supabase.co",
     ...(options.allowAnalytics ? ["https://vitals.vercel-insights.com"] : []),
+  ].join(" ");
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
   ].join(" ");
 
   return [
@@ -28,7 +36,7 @@ function buildCsp(options: { allowAnalytics: boolean }) {
     "font-src 'self' data:",
     "object-src 'none'",
     `connect-src ${connectSrc}`,
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "frame-src 'self'",
   ].join("; ");
@@ -37,7 +45,10 @@ function buildCsp(options: { allowAnalytics: boolean }) {
 export function buildWebSecurityHeaders(): Header[] {
   return [
     ...sharedHeaders,
-    { key: "Content-Security-Policy", value: buildCsp({ allowAnalytics: true }) },
+    {
+      key: "Content-Security-Policy",
+      value: buildCsp({ allowAnalytics: true }),
+    },
     {
       key: "Strict-Transport-Security",
       value: "max-age=63072000; includeSubDomains; preload",
@@ -48,7 +59,10 @@ export function buildWebSecurityHeaders(): Header[] {
 export function buildAdminSecurityHeaders(): Header[] {
   return [
     ...sharedHeaders,
-    { key: "Content-Security-Policy", value: buildCsp({ allowAnalytics: false }) },
+    {
+      key: "Content-Security-Policy",
+      value: buildCsp({ allowAnalytics: false }),
+    },
     {
       key: "Strict-Transport-Security",
       value: "max-age=63072000; includeSubDomains; preload",

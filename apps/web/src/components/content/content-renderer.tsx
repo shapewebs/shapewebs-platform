@@ -1,8 +1,5 @@
 import Link from "next/link";
-import type {
-  ContentBlock,
-  ContentDocument,
-} from "@shapewebs/content-schema";
+import type { ContentBlock, ContentDocument } from "@shapewebs/content-schema";
 import styles from "./content-renderer.module.css";
 
 type ContentRendererProps = {
@@ -21,13 +18,17 @@ function renderInlineNode(node: unknown, key: string): React.ReactNode {
 
   const content = Reflect.get(node, "content");
   if (Array.isArray(content)) {
-    return content.map((child, index) => renderInlineNode(child, `${key}-${index}`));
+    return content.map((child, index) =>
+      renderInlineNode(child, `${key}-${index}`),
+    );
   }
 
   return null;
 }
 
-function renderRichTextBlock(block: Extract<ContentBlock, { type: "rich_text" }>) {
+function renderRichTextBlock(
+  block: Extract<ContentBlock, { type: "rich_text" }>,
+) {
   return block.document.map((node, index) => {
     if (node.type === "paragraph") {
       return (
@@ -52,11 +53,18 @@ export function ContentRenderer({ document }: ContentRendererProps) {
         if (block.type === "hero") {
           return (
             <section className={styles.heroT2m9q3} key={`hero-${index}`}>
-              {block.eyebrow ? <p className={styles.eyebrowK5m1q7}>{block.eyebrow}</p> : null}
+              {block.eyebrow ? (
+                <p className={styles.eyebrowK5m1q7}>{block.eyebrow}</p>
+              ) : null}
               <h2>{block.heading}</h2>
-              {block.body ? <p className={styles.bodyP7m3q1}>{block.body}</p> : null}
+              {block.body ? (
+                <p className={styles.bodyP7m3q1}>{block.body}</p>
+              ) : null}
               {block.primaryCtaHref && block.primaryCtaLabel ? (
-                <Link className={styles.ctaLinkQ3m8r4} href={block.primaryCtaHref}>
+                <Link
+                  className={styles.ctaLinkQ3m8r4}
+                  href={block.primaryCtaHref}
+                >
                   {block.primaryCtaLabel}
                 </Link>
               ) : null}
@@ -77,7 +85,9 @@ export function ContentRenderer({ document }: ContentRendererProps) {
             <section className={styles.sectionM8q2p5} key={`cta-${index}`}>
               <div className={styles.ctaPanelV9m4q2}>
                 <h2>{block.heading}</h2>
-                {block.body ? <p className={styles.bodyP7m3q1}>{block.body}</p> : null}
+                {block.body ? (
+                  <p className={styles.bodyP7m3q1}>{block.body}</p>
+                ) : null}
                 <Link className={styles.ctaLinkQ3m8r4} href={block.href}>
                   {block.label}
                 </Link>
@@ -92,11 +102,15 @@ export function ContentRenderer({ document }: ContentRendererProps) {
               {block.heading ? <h2>{block.heading}</h2> : null}
               <div className={styles.faqListX5m2q7}>
                 {block.items.map((item, itemIndex) => (
-                  <article className={styles.faqItemH6m4q9} key={`faq-item-${itemIndex}`}>
+                  <article
+                    className={styles.faqItemH6m4q9}
+                    key={`faq-item-${itemIndex}`}
+                  >
                     <h3>{item.question}</h3>
                     {item.answer.map((answerNode, answerIndex) => (
                       <div key={`faq-answer-${itemIndex}-${answerIndex}`}>
-                        {answerNode.type === "paragraph" && Array.isArray(answerNode.content) ? (
+                        {answerNode.type === "paragraph" &&
+                        Array.isArray(answerNode.content) ? (
                           <p className={styles.paragraphB8m4q1}>
                             {answerNode.content.map((child, childIndex) =>
                               renderInlineNode(
@@ -121,7 +135,9 @@ export function ContentRenderer({ document }: ContentRendererProps) {
               <div className={styles.imagePlaceholderC4m7p2}>
                 Media pipeline pending for asset <code>{block.assetId}</code>.
               </div>
-              {block.caption ? <p className={styles.captionR6m3q8}>{block.caption}</p> : null}
+              {block.caption ? (
+                <p className={styles.captionR6m3q8}>{block.caption}</p>
+              ) : null}
             </section>
           );
         }

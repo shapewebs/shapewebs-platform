@@ -20,7 +20,10 @@ export function ToggleButton({
   const inputId = id ?? generatedId;
 
   return (
-    <label className={mergeClassNames(styles.wrapper, className)} htmlFor={inputId}>
+    <label
+      className={mergeClassNames(styles.wrapper, className)}
+      htmlFor={inputId}
+    >
       <input
         className={styles.input}
         data-component-status="styled"

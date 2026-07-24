@@ -922,6 +922,17 @@ export type Database = {
     }
     Functions: {
       current_admin_profile_id: { Args: never; Returns: string }
+      get_current_admin_session: {
+        Args: never
+        Returns: {
+          auth_user_id: string
+          default_locale: string
+          display_name: string
+          profile_id: string
+          roles: string[]
+          status: Database["cms"]["Enums"]["admin_profile_status"]
+        }[]
+      }
       has_role: { Args: { role_code: string }; Returns: boolean }
     }
     Enums: {
