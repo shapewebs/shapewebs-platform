@@ -150,7 +150,9 @@ connected to production data, or promoted to the production domains.
 - Exact inbox-preserving filters apply `Shapewebs/Admin`, `Info`, `Sales`,
   `Support`, `Security`, `Privacy`, `Billing`, or `Personal` labels to matching
   inbound addresses. Existing conversations were backfilled without
-  archiving, forwarding, deleting or marking them read.
+  archiving, forwarding, deleting or marking them read. Replies use the same
+  role address that received the message, while `admin@shapewebs.com` remains
+  the default identity for new mail.
 - `admin@shapewebs.com` remains the default Workspace sender. The additional
   `Shapewebs <info@shapewebs.com>` identity sent a controlled message whose
   authenticated From address arrived correctly at `shapewebs@gmail.com`. The

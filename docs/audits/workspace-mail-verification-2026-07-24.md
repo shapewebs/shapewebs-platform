@@ -58,7 +58,10 @@ One `Shapewebs` parent label and these eight child labels are active:
 Each address has an exact `to:` filter that applies only its matching label.
 The filters preserve the inbox and unread state: they do not archive, forward,
 delete or mark mail as read. Existing conversations were backfilled. The
-external MX fixtures visibly carry their matching labels.
+external MX fixtures visibly carry their matching labels. Gmail is configured
+to reply from the same address that received a message, so replies to role
+inboxes preserve the customer-facing identity; `admin@shapewebs.com` remains
+the default for new messages.
 
 ## Outbound identity evidence
 
