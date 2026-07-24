@@ -16,8 +16,8 @@ export default function DashboardPage() {
         <p className={styles.eyebrowN5q2t8}>Admin</p>
         <h1 className={styles.titleB6p8k3}>Shapewebs CMS</h1>
         <p className={styles.copyT4m9v1}>
-          Phase 0 foundation: the dashboard shell is ready for Supabase auth,
-          content CRUD, compliance settings, and editorial workflows.
+          The CMS is protected by allowlisted Google sign-in, Better Auth
+          sessions, Neon authorization, and TOTP step-up verification.
         </p>
       </header>
 

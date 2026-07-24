@@ -2,8 +2,8 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { adminAuthClient } from "@shapewebs/auth/client";
 import { Buttons } from "@shapewebs/ui";
-import { createBrowserSupabaseClient } from "@shapewebs/db";
 import styles from "./layout.module.css";
 
 export function LogoutButton() {
@@ -15,12 +15,8 @@ export function LogoutButton() {
       className={styles.logoutButtonU7m3q1}
       kind="ghost"
       onClick={() => {
-        const supabase = createBrowserSupabaseClient();
-
         startTransition(async () => {
-          if (supabase) {
-            await supabase.auth.signOut();
-          }
+          await adminAuthClient.signOut();
 
           router.replace("/login");
           router.refresh();

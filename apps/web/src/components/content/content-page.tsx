@@ -14,7 +14,9 @@ export function ContentPage({ document }: ContentPageProps) {
         <header className={styles.headerN8m3q2}>
           <p className={styles.kickerT7m1p4}>{document.contentType}</p>
           <h1>{document.title}</h1>
-          {document.summary ? <p className={styles.summaryM4p2q8}>{document.summary}</p> : null}
+          {document.summary ? (
+            <p className={styles.summaryM4p2q8}>{document.summary}</p>
+          ) : null}
         </header>
 
         <ContentRenderer document={document.content} />

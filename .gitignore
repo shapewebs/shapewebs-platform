@@ -13,6 +13,9 @@
 
 # testing
 /coverage
+/.lighthouseci/
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -36,9 +39,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+**/.dev.vars*
 
 # vercel
 .vercel
+
+# cloudflare local state and dry-run bundles
+**/.wrangler/
 
 # supabase local state
 supabase/.temp/
@@ -46,3 +53,4 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.neon

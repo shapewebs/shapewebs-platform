@@ -1,0 +1,10 @@
+# The owner is currently the sole maintainer. Add a team before requiring a
+# non-author CODEOWNERS approval.
+/.github/ @lukasthomsen
+/SECURITY.md @lukasthomsen
+/apps/admin/ @lukasthomsen
+/drizzle/ @lukasthomsen
+/packages/auth/ @lukasthomsen
+/packages/config/ @lukasthomsen
+/packages/database/ @lukasthomsen
+/packages/observability/ @lukasthomsen

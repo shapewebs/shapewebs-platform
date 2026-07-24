@@ -9,7 +9,11 @@ export const metadata: Metadata = buildPageMetadata({
   description:
     "Selected website projects and case studies from Shapewebs, focused on presentation, clarity, and trust-building.",
   path: "/projects",
-  keywords: ["Shapewebs projects", "website case studies", "portfolio websites"],
+  keywords: [
+    "Shapewebs projects",
+    "website case studies",
+    "portfolio websites",
+  ],
 });
 
 export default async function ProjectsIndexPage() {
@@ -28,7 +32,10 @@ export default async function ProjectsIndexPage() {
             <article className={styles.cardB6m2q9} key={project.documentId}>
               <h2>{project.title}</h2>
               <p>{project.summary}</p>
-              <Link className={styles.linkN4m8p5} href={getDocumentPath(project)}>
+              <Link
+                className={styles.linkN4m8p5}
+                href={getDocumentPath(project)}
+              >
                 View project
               </Link>
             </article>

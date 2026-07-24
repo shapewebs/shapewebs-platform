@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BlankStage } from "@/components/site/blank-stage";
+import { notFound } from "next/navigation";
 import { ContentPage } from "@/components/content/content-page";
 import { buildDocumentMetadata, getResolvedGenericPage } from "@/lib/content";
 import { buildPageMetadata } from "@/lib/metadata";
@@ -19,15 +19,6 @@ type CatchAllPageProps = {
     slug: string[];
   }>;
 };
-
-export function generateStaticParams() {
-  return [
-    { slug: ["pricing"] },
-    { slug: ["customers"] },
-    { slug: ["about"] },
-    { slug: ["docs"] },
-  ];
-}
 
 export async function generateMetadata(
   props: CatchAllPageProps,
@@ -55,5 +46,5 @@ export default async function CatchAllPage(props: CatchAllPageProps) {
     return <ContentPage document={document} />;
   }
 
-  return <BlankStage routeLabel={formatSlugLabel(slug)} />;
+  notFound();
 }

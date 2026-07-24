@@ -1,69 +1,82 @@
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
-import { getAdminSupabaseConfig } from "@shapewebs/db";
+import { getSessionCookie } from "@shapewebs/auth/proxy";
+import { buildAdminContentSecurityPolicy } from "@shapewebs/config";
 
-const protectedPrefixes = ["/dashboard", "/content", "/media", "/settings"];
+import {
+  hasAdminAuthConfig,
+  isLocalAdminSetupMode,
+} from "@/lib/auth-environment";
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const config = getAdminSupabaseConfig();
+const protectedPrefixes = [
+  "/audit",
+  "/content",
+  "/dashboard",
+  "/media",
+  "/settings",
+  "/submissions",
+];
 
-  if (!config) {
-    return NextResponse.next();
-  }
-
-  const response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabase = createServerClient(
-    config.supabaseUrl,
-    config.supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll().map((cookie) => ({
-            name: cookie.name,
-            value: cookie.value,
-          }));
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach((cookie) => {
-            request.cookies.set(cookie.name, cookie.value);
-            response.cookies.set(cookie.name, cookie.value, cookie.options);
-          });
-        },
-      },
-    },
+function isProtectedPath(pathname: string): boolean {
+  return protectedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!protectedPrefixes.some((prefix) => pathname.startsWith(prefix))) {
-    if (pathname === "/login" && user) {
-      const loginUrl = new URL("/dashboard", request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    return response;
-  }
-
-  if (user) {
-    return response;
-  }
-
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("redirectTo", pathname);
-  return NextResponse.redirect(loginUrl);
 }
 
-export { middleware as proxy };
+function withSecurityHeaders(response: NextResponse, csp: string) {
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
+}
+
+export function proxy(request: NextRequest) {
+  const nonce = btoa(crypto.randomUUID());
+  const csp = buildAdminContentSecurityPolicy(nonce);
+  const requestHeaders = new Headers(request.headers);
+  const protectedPath = isProtectedPath(request.nextUrl.pathname);
+  const setupMode = isLocalAdminSetupMode();
+
+  requestHeaders.set("Content-Security-Policy", csp);
+  requestHeaders.set("x-nonce", nonce);
+
+  if (!hasAdminAuthConfig() && protectedPath && !setupMode) {
+    return withSecurityHeaders(
+      new NextResponse("Admin authentication is unavailable.", {
+        status: 503,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      }),
+      csp,
+    );
+  }
+
+  if (protectedPath && !setupMode && !getSessionCookie(request)) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl), csp);
+  }
+
+  return withSecurityHeaders(
+    NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    }),
+    csp,
+  );
+}
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/content/:path*", "/media/:path*", "/settings/:path*"],
+  matcher: [
+    {
+      source:
+        "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+  ],
 };

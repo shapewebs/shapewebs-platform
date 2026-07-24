@@ -12,13 +12,11 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata(
-  props: {
-    params: Promise<{
-      slug: string;
-    }>;
-  },
-): Promise<Metadata> {
+export async function generateMetadata(props: {
+  params: Promise<{
+    slug: string;
+  }>;
+}): Promise<Metadata> {
   const { slug } = await props.params;
   const document = await getResolvedContentBySlug("project", slug);
 
@@ -31,13 +29,11 @@ export async function generateMetadata(
   };
 }
 
-export default async function WorkDetailPage(
-  props: {
-    params: Promise<{
-      slug: string;
-    }>;
-  },
-) {
+export default async function WorkDetailPage(props: {
+  params: Promise<{
+    slug: string;
+  }>;
+}) {
   const { slug } = await props.params;
   const document = await getResolvedContentBySlug("project", slug);
 

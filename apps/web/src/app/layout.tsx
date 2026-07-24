@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@shapewebs/config";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@shapewebs/ui/styles/system-theme.css";
 import "@shapewebs/ui/styles/base.css";
 import "./brand-theme.css";
@@ -7,7 +8,10 @@ import "./brand-theme.css";
 export const viewport: Viewport = {
   colorScheme: "light dark",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColorLight },
+    {
+      media: "(prefers-color-scheme: light)",
+      color: siteConfig.themeColorLight,
+    },
     { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColorDark },
   ],
 };
@@ -41,7 +45,13 @@ export const metadata: Metadata = {
       { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/favicon-48x48.png", sizes: "48x48", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [
+      {
+        url: "/icons/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
     shortcut: ["/icons/favicon.png"],
   },
   openGraph: {
@@ -74,7 +84,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        {process.env.VERCEL === "1" ? <SpeedInsights /> : null}
+      </body>
     </html>
   );
 }

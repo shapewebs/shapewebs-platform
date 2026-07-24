@@ -1,2 +1,9 @@
-export { Link as SiteLink } from "@shapewebs/ui";
-export type { LinkProps as SiteLinkProps } from "@shapewebs/ui";
+import type { AnchorHTMLAttributes } from "react";
+
+export type SiteLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  href: string;
+};
+
+export function SiteLink(props: SiteLinkProps) {
+  return <a {...props} />;
+}

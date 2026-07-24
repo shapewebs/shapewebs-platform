@@ -1,0 +1,644 @@
+{
+  "requirements": [
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/components/content/content-renderer.tsx",
+        "packages/email/src/lead-template.ts",
+        "tests/unit/content-validation.test.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/components/content/content-renderer.tsx",
+        "packages/email/src/lead-template.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/content-schema/src/index.ts",
+        "packages/validation/src/index.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-1.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/web/src/components/content/content-renderer.tsx",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/lead-outbox.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-1.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.2.6",
+      "notes": "Shapewebs has no LDAP server, client, query path, or LDAP-backed identity integration.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.2.7",
+      "notes": "Shapewebs does not evaluate XPath or accept XML query expressions.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.2.8",
+      "notes": "Shapewebs does not process LaTeX.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.2.9",
+      "notes": "Runtime code does not construct regular expressions from untrusted input.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/content-schema/src/index.ts",
+        "apps/web/src/components/content/content-renderer.tsx",
+        "docs/foundation/architecture.md"
+      ],
+      "id": "v5.0.0-1.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": ["eslint.config.mjs"],
+      "id": "v5.0.0-1.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/validation/src/http.ts",
+        "tests/unit/content-validation.test.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.3.4",
+      "notes": "The current application has no user-supplied SVG upload or delivery path; SVG assets are reviewed repository files. Re-review is required before media upload launch.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.3.5",
+      "notes": "The CMS accepts a typed structured-content schema and does not accept Markdown, CSS, XSL, BBCode, or another scriptable expression format.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "packages/email/src/resend-delivery.ts",
+        "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts"
+      ],
+      "id": "v5.0.0-1.3.6",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/email/src/lead-template.ts",
+        "apps/web/src/components/content/content-renderer.tsx",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.3.7",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.3.8",
+      "notes": "Shapewebs is a TypeScript/Node.js platform and has no JNDI integration.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.3.9",
+      "notes": "Shapewebs does not use memcache.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.3.10",
+      "notes": "Shapewebs does not pass untrusted input to a format-string interpreter.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/email/src/resend-delivery.ts",
+        "packages/email/src/lead-template.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.3.11",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.4.1",
+      "notes": "Application code is TypeScript/JavaScript running in managed-memory runtimes and contains no pointer arithmetic or unmanaged string operations.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/http.ts",
+        "apps/web/src/lib/rate-limit.ts",
+        "packages/database/src/schema/application.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-1.4.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.4.3",
+      "notes": "Application code runs in managed-memory TypeScript/JavaScript and does not manually allocate or free memory.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.5.1",
+      "notes": "Shapewebs does not parse untrusted XML. Checked-in SVG files are static assets, not runtime XML input.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/admin/src/app/api/webhooks/resend/route.ts",
+        "packages/content-schema/src/index.ts",
+        "packages/validation/src/http.ts"
+      ],
+      "id": "v5.0.0-1.5.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/content-schema/src/index.ts",
+        "docs/foundation/architecture.md"
+      ],
+      "id": "v5.0.0-2.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/content-schema/src/index.ts",
+        "packages/validation/src/index.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-2.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "apps/web/src/lib/rate-limit.ts",
+        "docs/foundation/architecture.md",
+        "docs/reliability/service-level-objectives.md"
+      ],
+      "id": "v5.0.0-2.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
+        "packages/validation/src/index.ts"
+      ],
+      "id": "v5.0.0-2.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/content-schema/src/index.ts",
+        "packages/validation/src/index.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-2.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
+        "packages/database/src/lead-outbox.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-2.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/rate-limit.ts",
+        "apps/web/src/lib/forms.ts",
+        "packages/database/src/lead-outbox.ts",
+        "packages/validation/src/index.ts"
+      ],
+      "id": "v5.0.0-2.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/lead-outbox.ts",
+        "packages/database/scripts/verify-migration-rollback.mjs",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-2.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-2.3.4",
+      "notes": "The current Shapewebs scope has no limited inventory, booking, balance, seat, or equivalent finite-quantity business resource.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/web/src/lib/rate-limit.ts",
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "tests/e2e/security.spec.ts",
+        "docs/audits/staging-runtime-verification-2026-07-24.md"
+      ],
+      "id": "v5.0.0-2.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/admin/next.config.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-3.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/components/content/content-renderer.tsx",
+        "packages/email/src/lead-template.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-3.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-3.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/auth-environment.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "tests/unit/admin-auth-environment.test.ts"
+      ],
+      "id": "v5.0.0-3.4.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "accepted_risk",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts",
+        "tests/e2e/security.spec.ts",
+        "docs/security/asvs-matrix.md"
+      ],
+      "expiresOn": "2026-10-24",
+      "id": "v5.0.0-3.4.3",
+      "notes": "Admin HTML uses a per-response nonce and admin APIs deny all resource loading. The static public site retains script-src 'unsafe-inline' to preserve CDN rendering; arbitrary HTML and marketing scripts are prohibited, structured content is escaped, remaining directives are restrictive, and the risk is reviewed at every Next.js upgrade and before launch.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/web/next.config.ts",
+        "apps/admin/next.config.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-3.4.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "tests/unit/security-headers.test.ts"
+      ],
+      "id": "v5.0.0-3.4.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/config/src/security.ts",
+        "apps/admin/next.config.ts",
+        "apps/admin/src/proxy.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-3.4.6",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "tests/unit/admin-auth-environment.test.ts"
+      ],
+      "id": "v5.0.0-3.5.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/web/src/app/api/forms/contact/route.ts",
+        "apps/web/src/lib/forms.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-3.5.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/foundation/architecture.md",
+        "docs/audits/staging-runtime-verification-2026-07-24.md",
+        "apps/web/next.config.ts",
+        "apps/admin/next.config.ts"
+      ],
+      "id": "v5.0.0-3.5.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-3.5.5",
+      "notes": "Shapewebs does not use the browser postMessage interface.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "package.json",
+        "pnpm-lock.yaml",
+        ".github/workflows/security.yml"
+      ],
+      "id": "v5.0.0-3.7.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/redirect.ts",
+        "packages/content-schema/src/index.ts",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-3.7.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/admin/src/proxy.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-4.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/request-identity.ts",
+        "apps/web/src/lib/forms.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-4.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.3.1",
+      "notes": "Shapewebs exposes no GraphQL endpoint and accepts no client-defined data-layer query expression.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.3.2",
+      "notes": "Shapewebs exposes no GraphQL endpoint or introspection service.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.4.1",
+      "notes": "Shapewebs has no application WebSocket connections.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.4.2",
+      "notes": "Shapewebs has no WebSocket handshake endpoint.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.4.3",
+      "notes": "Shapewebs has no dedicated WebSocket session token.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-4.4.4",
+      "notes": "Shapewebs has no HTTPS-to-WebSocket session transition.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.1.1",
+      "notes": "The current Shapewebs release has no file-upload feature. The media screen explicitly identifies the upload pipeline as pending; this control must be reopened before that pipeline is implemented.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.1",
+      "notes": "The current release accepts no uploaded files. Maximum encoded and decoded file sizes remain a mandatory precondition for the planned media pipeline.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.2",
+      "notes": "The current release accepts no uploaded files. Extension, MIME signature and decoded-content validation must be implemented before media upload launch.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.3",
+      "notes": "The current release accepts no compressed file or archive input. Archive support is prohibited until entry-count and unpacked-size limits exist.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.3.1",
+      "notes": "No untrusted uploaded or generated file is stored in a public executable directory in the current release.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.3.2",
+      "notes": "The current release creates no filesystem path from a user-submitted filename or file metadata. Planned storage must use generated object identifiers.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.1",
+      "notes": "The current release accepts and serves no user-submitted filename. Content-Disposition handling must be reviewed before file delivery is added.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.2",
+      "notes": "The current release serves no untrusted filename in an HTTP response or email attachment.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.3",
+      "notes": "The current release stores and serves no file obtained from an untrusted source. Malware scanning remains a launch gate for the planned media pipeline.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.1.1",
+      "notes": "Shapewebs has no WebRTC implementation, TURN relay or media server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.1",
+      "notes": "Shapewebs has no WebRTC DTLS certificate or media server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.2",
+      "notes": "Shapewebs has no WebRTC DTLS-SRTP endpoint or cipher configuration.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.3",
+      "notes": "Shapewebs has no SRTP media processing.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.4",
+      "notes": "Shapewebs has no SRTP packet-processing path.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.3.1",
+      "notes": "Shapewebs has no WebRTC signaling server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.3.2",
+      "notes": "Shapewebs has no WebRTC signaling-message parser or signaling server.",
+      "owner": "Shapewebs owner"
+    }
+  ],
+  "version": "5.0.0"
+}

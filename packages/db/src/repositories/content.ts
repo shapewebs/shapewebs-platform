@@ -15,6 +15,8 @@ import type {
   PublishedDocument,
 } from "../types/documents";
 import type { PreviewTokenPayload } from "../types/auth";
+import type { ShapewebsSupabaseClient } from "../supabase/shared";
+import type { Json } from "../generated/database.types";
 import {
   buildContentListCacheTag,
   buildDocumentCacheTag,
@@ -22,8 +24,8 @@ import {
 } from "./content-repository";
 
 function isConfigured(
-  supabase: any,
-): supabase is NonNullable<any> {
+  supabase: ShapewebsSupabaseClient | null,
+): supabase is ShapewebsSupabaseClient {
   return supabase !== null;
 }
 
@@ -59,6 +61,10 @@ function normalizeContentDocument(value: unknown): ContentDocument {
   };
 }
 
+function serializeContentDocument(document: ContentDocument): Json {
+  return JSON.parse(JSON.stringify(document)) as Json;
+}
+
 function createSeoState(
   meta: Record<string, unknown> | null | undefined,
 ): PublishedDocument["seo"] {
@@ -76,7 +82,7 @@ function createSeoState(
 }
 
 export async function listDocuments(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   filters: {
     contentType?: ContentType;
     localeCode?: string;
@@ -132,16 +138,18 @@ export async function listDocuments(
     return [];
   }
 
-  return data.flatMap((row: any) => {
+  return data.flatMap((row) => {
     const localizations = Array.isArray(row.document_localizations)
       ? row.document_localizations
       : [];
     const pageKind =
-      Array.isArray(row.pages) && row.pages[0] && typeof row.pages[0].page_kind === "string"
+      Array.isArray(row.pages) &&
+      row.pages[0] &&
+      typeof row.pages[0].page_kind === "string"
         ? row.pages[0].page_kind
         : null;
 
-    return localizations.map((localization: any) => ({
+    return localizations.map((localization) => ({
       documentId: row.id,
       contentType: normalizeContentType(row.content_type),
       localeCode: localization.locale_code as DocumentListItem["localeCode"],
@@ -157,7 +165,7 @@ export async function listDocuments(
 }
 
 export async function getDocumentEditorState(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   options: {
     documentId: string;
     localeCode?: string;
@@ -188,40 +196,42 @@ export async function getDocumentEditorState(
     .eq("locale_code", localeCode)
     .single();
 
-  const [{ data: pageRow }, { data: revisions }, { data: seo }] = await Promise.all([
-    supabase
-      .schema("cms")
-      .from("pages")
-      .select("page_kind")
-      .eq("document_id", options.documentId)
-      .maybeSingle(),
-    supabase
-      .schema("cms")
-      .from("document_revisions")
-      .select(
-        "id, revision_number, locale_code, editor_state, change_note, created_at, created_by, content_json",
-      )
-      .eq("document_id", options.documentId)
-      .eq("locale_code", localeCode)
-      .order("revision_number", { ascending: false }),
-    localization
-      ? supabase
-          .schema("cms")
-          .from("seo_metadata")
-          .select(
-            "meta_title, meta_description, canonical_url_override, robots_index",
-          )
-          .eq("document_localization_id", localization.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+  const [{ data: pageRow }, { data: revisions }, { data: seo }] =
+    await Promise.all([
+      supabase
+        .schema("cms")
+        .from("pages")
+        .select("page_kind")
+        .eq("document_id", options.documentId)
+        .maybeSingle(),
+      supabase
+        .schema("cms")
+        .from("document_revisions")
+        .select(
+          "id, revision_number, locale_code, editor_state, change_note, created_at, created_by, content_json",
+        )
+        .eq("document_id", options.documentId)
+        .eq("locale_code", localeCode)
+        .order("revision_number", { ascending: false }),
+      localization
+        ? supabase
+            .schema("cms")
+            .from("seo_metadata")
+            .select(
+              "meta_title, meta_description, canonical_url_override, robots_index",
+            )
+            .eq("document_localization_id", localization.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   const latestRevision = revisions?.[0] ?? null;
 
   return {
     documentId: document.id,
     contentType: normalizeContentType(document.content_type),
-    defaultLocale: document.default_locale as DocumentEditorState["defaultLocale"],
+    defaultLocale:
+      document.default_locale as DocumentEditorState["defaultLocale"],
     localeCode: localeCode as DocumentEditorState["localeCode"],
     pageKind:
       typeof pageRow?.page_kind === "string" ? pageRow.page_kind : "standard",
@@ -234,7 +244,7 @@ export async function getDocumentEditorState(
     seo: createSeoState(seo as Record<string, unknown> | null | undefined),
     content: normalizeContentDocument(latestRevision?.content_json),
     revisions:
-      revisions?.map((revision: any) => ({
+      revisions?.map((revision) => ({
         revisionId: revision.id,
         revisionNumber: revision.revision_number,
         localeCode: revision.locale_code as DocumentEditorState["localeCode"],
@@ -247,7 +257,7 @@ export async function getDocumentEditorState(
 }
 
 export async function createDraftRevision(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: {
     canonicalUrlOverride?: string | null;
     changeNote?: string | null;
@@ -330,7 +340,7 @@ export async function createDraftRevision(
       locale_code: input.localeCode,
       revision_number: nextRevisionNumber,
       editor_state: nextState,
-      content_json: input.content,
+      content_json: serializeContentDocument(input.content),
       change_note: input.changeNote ?? null,
     })
     .select("id")
@@ -360,7 +370,9 @@ export async function createDraftRevision(
     .single();
 
   if (localizationError || !localization) {
-    throw new Error(localizationError?.message ?? "Failed to update localization.");
+    throw new Error(
+      localizationError?.message ?? "Failed to update localization.",
+    );
   }
 
   const { error: seoError } = await supabase
@@ -388,10 +400,8 @@ export async function createDraftRevision(
     .from("documents")
     .update({
       state: nextState,
-      published_at:
-        nextState === "published" ? new Date().toISOString() : null,
-      published_revision_id:
-        nextState === "published" ? revision.id : null,
+      published_at: nextState === "published" ? new Date().toISOString() : null,
+      published_revision_id: nextState === "published" ? revision.id : null,
     })
     .eq("id", documentId);
 
@@ -406,7 +416,7 @@ export async function createDraftRevision(
         ? "document.submit_for_review"
         : "document.save_draft";
 
-  await supabase.rpc("append_audit_log", {
+  await supabase.schema("ops").rpc("append_audit_log", {
     p_action: auditAction,
     p_entity_type: "document",
     p_entity_id: documentId,
@@ -435,7 +445,7 @@ export async function createDraftRevision(
 }
 
 export async function publishDocumentRevision(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: {
     documentId: string;
     localeCode: string;
@@ -484,7 +494,7 @@ export async function publishDocumentRevision(
     .eq("document_id", input.documentId)
     .eq("locale_code", input.localeCode);
 
-  await supabase.rpc("append_audit_log", {
+  await supabase.schema("ops").rpc("append_audit_log", {
     p_action: "document.publish",
     p_entity_type: "document",
     p_entity_id: input.documentId,
@@ -505,7 +515,7 @@ export async function publishDocumentRevision(
 }
 
 export async function createPreviewToken(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: {
     documentId: string;
     localeCode: string;
@@ -551,7 +561,7 @@ export async function createPreviewToken(
 }
 
 export async function consumePreviewToken(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: {
     signature: string;
     token: string;
@@ -601,13 +611,14 @@ export async function consumePreviewToken(
 }
 
 export async function listPublishedContent(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   contentType: ContentType,
   localeCode: LocaleCode = defaultLocale as LocaleCode,
 ): Promise<PublishedDocument[]> {
   if (!isConfigured(supabase)) {
     return mockPublishedDocuments.filter(
-      (item) => item.contentType === contentType && item.localeCode === localeCode,
+      (item) =>
+        item.contentType === contentType && item.localeCode === localeCode,
     );
   }
 
@@ -652,7 +663,7 @@ export async function listPublishedContent(
     return [];
   }
 
-  return data.flatMap((row: any) => {
+  return data.flatMap((row) => {
     const localization = Array.isArray(row.document_localizations)
       ? row.document_localizations[0]
       : row.document_localizations;
@@ -666,10 +677,11 @@ export async function listPublishedContent(
       : [];
     const latestPublishedRevision = revisions
       .filter(
-        (revision: any) =>
-          revision.locale_code === localeCode && revision.editor_state === "published",
+        (revision) =>
+          revision.locale_code === localeCode &&
+          revision.editor_state === "published",
       )
-      .sort((left: any, right: any) => right.revision_number - left.revision_number)[0];
+      .sort((left, right) => right.revision_number - left.revision_number)[0];
 
     const localizationSeo =
       typeof localization === "object" &&
@@ -678,7 +690,9 @@ export async function listPublishedContent(
         ? Reflect.get(localization, "seo_metadata")
         : null;
     const pageKind =
-      Array.isArray(row.pages) && row.pages[0] && typeof row.pages[0].page_kind === "string"
+      Array.isArray(row.pages) &&
+      row.pages[0] &&
+      typeof row.pages[0].page_kind === "string"
         ? row.pages[0].page_kind
         : null;
 
@@ -698,14 +712,16 @@ export async function listPublishedContent(
             ? localizationSeo[0]
             : localizationSeo) as Record<string, unknown> | null | undefined,
         ),
-        content: normalizeContentDocument(latestPublishedRevision?.content_json),
+        content: normalizeContentDocument(
+          latestPublishedRevision?.content_json,
+        ),
       },
     ];
   });
 }
 
 export async function getPreviewContentByRevision(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   input: {
     documentId: string;
     localeCode: string;
@@ -727,34 +743,38 @@ export async function getPreviewContentByRevision(
     return null;
   }
 
-  const [{ data: localization }, { data: revision }, { data: pageRow }, { data: seo }] =
-    await Promise.all([
-      supabase
-        .schema("cms")
-        .from("document_localizations")
-        .select("id, locale_code, slug, title, summary")
-        .eq("document_id", input.documentId)
-        .eq("locale_code", input.localeCode)
-        .single(),
-      supabase
-        .schema("cms")
-        .from("document_revisions")
-        .select("id, locale_code, content_json")
-        .eq("document_id", input.documentId)
-        .eq("locale_code", input.localeCode)
-        .eq("id", input.revisionId)
-        .single(),
-      supabase
-        .schema("cms")
-        .from("pages")
-        .select("page_kind")
-        .eq("document_id", input.documentId)
-        .maybeSingle(),
-      supabase
-        .schema("cms")
-        .from("document_localizations")
-        .select(
-          `
+  const [
+    { data: localization },
+    { data: revision },
+    { data: pageRow },
+    { data: seo },
+  ] = await Promise.all([
+    supabase
+      .schema("cms")
+      .from("document_localizations")
+      .select("id, locale_code, slug, title, summary")
+      .eq("document_id", input.documentId)
+      .eq("locale_code", input.localeCode)
+      .single(),
+    supabase
+      .schema("cms")
+      .from("document_revisions")
+      .select("id, locale_code, content_json")
+      .eq("document_id", input.documentId)
+      .eq("locale_code", input.localeCode)
+      .eq("id", input.revisionId)
+      .single(),
+    supabase
+      .schema("cms")
+      .from("pages")
+      .select("page_kind")
+      .eq("document_id", input.documentId)
+      .maybeSingle(),
+    supabase
+      .schema("cms")
+      .from("document_localizations")
+      .select(
+        `
             seo_metadata (
               meta_title,
               meta_description,
@@ -762,11 +782,11 @@ export async function getPreviewContentByRevision(
               robots_index
             )
           `,
-        )
-        .eq("document_id", input.documentId)
-        .eq("locale_code", input.localeCode)
-        .single(),
-    ]);
+      )
+      .eq("document_id", input.documentId)
+      .eq("locale_code", input.localeCode)
+      .single(),
+  ]);
 
   if (!localization || !revision) {
     return null;
@@ -781,8 +801,7 @@ export async function getPreviewContentByRevision(
     documentId: document.id,
     contentType: normalizeContentType(document.content_type),
     localeCode: localization.locale_code as PublishedDocument["localeCode"],
-    pageKind:
-      typeof pageRow?.page_kind === "string" ? pageRow.page_kind : null,
+    pageKind: typeof pageRow?.page_kind === "string" ? pageRow.page_kind : null,
     publishedAt: document.published_at,
     slug: localization.slug,
     source: "supabase",
@@ -790,16 +809,14 @@ export async function getPreviewContentByRevision(
     title: localization.title,
     seo: createSeoState(
       (Array.isArray(seoData) ? seoData[0] : seoData) as
-        | Record<string, unknown>
-        | null
-        | undefined,
+        Record<string, unknown> | null | undefined,
     ),
     content: normalizeContentDocument(revision.content_json),
   };
 }
 
 export async function getPublishedContentBySlug(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   options: {
     contentType: ContentType;
     localeCode?: string;
@@ -808,23 +825,29 @@ export async function getPublishedContentBySlug(
 ): Promise<PublishedDocument | null> {
   const localeCode = (options.localeCode ?? defaultLocale) as LocaleCode;
 
-  const items = await listPublishedContent(supabase, options.contentType, localeCode);
+  const items = await listPublishedContent(
+    supabase,
+    options.contentType,
+    localeCode,
+  );
 
   return items.find((item) => item.slug === options.slug) ?? null;
 }
 
 export async function getPageByKind(
-  supabase: any,
+  supabase: ShapewebsSupabaseClient | null,
   pageKind: string,
   localeCode: LocaleCode = defaultLocale as LocaleCode,
 ) {
   if (!isConfigured(supabase)) {
-    return mockPublishedDocuments.find(
-      (item) =>
-        item.contentType === "page" &&
-        item.pageKind === pageKind &&
-        item.localeCode === localeCode,
-    ) ?? null;
+    return (
+      mockPublishedDocuments.find(
+        (item) =>
+          item.contentType === "page" &&
+          item.pageKind === pageKind &&
+          item.localeCode === localeCode,
+      ) ?? null
+    );
   }
 
   const pages = await listPublishedContent(supabase, "page", localeCode);

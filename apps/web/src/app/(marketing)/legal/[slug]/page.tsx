@@ -18,7 +18,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: LegalDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: LegalDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   const document = await getResolvedContentBySlug("legal", slug);
 
@@ -29,7 +31,9 @@ export async function generateMetadata({ params }: LegalDetailPageProps): Promis
   return buildDocumentMetadata(document);
 }
 
-export default async function LegalDetailPage({ params }: LegalDetailPageProps) {
+export default async function LegalDetailPage({
+  params,
+}: LegalDetailPageProps) {
   const { slug } = await params;
   const document = await getResolvedContentBySlug("legal", slug);
 

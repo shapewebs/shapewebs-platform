@@ -1,0 +1,33 @@
+{
+  "name": "@shapewebs/database",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin-auth": "./src/admin-auth.ts",
+    "./auth-schema": "./src/schema/auth.ts",
+    "./factory": "./src/client.ts",
+    "./schema": "./src/schema/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "db:check": "drizzle-kit check --config drizzle.config.ts",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:lifecycle-fixture": "node scripts/lifecycle-fixture.mjs",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:verify-lifecycle": "neonctl --version && node scripts/verify-neon-lifecycle.mjs",
+    "db:verify-rollback": "node scripts/verify-migration-rollback.mjs",
+    "db:verify-security": "node scripts/verify-security.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.1.0",
+    "drizzle-orm": "0.45.2",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.10",
+    "neonctl": "2.36.0",
+    "typescript": "^5"
+  }
+}

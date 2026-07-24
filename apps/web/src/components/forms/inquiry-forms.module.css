@@ -53,6 +53,29 @@
   font: inherit;
 }
 
+.sw-form-turnstile-k4m8q2 {
+  min-height: 65px;
+}
+
+.sw-form-consent-n7c2v5 {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(var(--color-text-secondary), 1);
+}
+
+.sw-form-consent-n7c2v5 input {
+  margin-top: 0.2em;
+}
+
+.sw-form-consent-n7c2v5 a {
+  color: currentColor;
+  text-underline-offset: 0.2em;
+}
+
 .successStateM3q7p4,
 .errorStateV8m2q1 {
   font-size: 13px;

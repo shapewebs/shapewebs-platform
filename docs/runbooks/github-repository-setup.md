@@ -84,7 +84,7 @@ That is the correct setting for this platform at this stage because the repo con
 
 - deployment configuration
 - infrastructure code
-- Supabase migrations
+- database migrations and internal authorization policy
 - internal admin code
 
 ## Create the repository in GitHub
@@ -123,7 +123,8 @@ Recommended settings:
 - enable **squash merge**
 - disable **merge commits**
 - disable **rebase merge**
-- leave **auto-merge** off until CI exists
+- enable **auto-merge** only after the required checks and ruleset below are
+  active
 
 Feature toggles:
 
@@ -200,12 +201,16 @@ Recommended bypass:
 
 - repository admins only
 
-Do **not** require approvals or required status checks yet unless CI is already in place. Otherwise you can lock yourself out of normal work for no benefit.
+CI now exists. Require:
 
-Once CI exists, come back and add:
+- `Verify foundation`
+- `OSV dependency scan`
+- relevant Vercel deployment checks
+- conversation resolution
 
-- require status checks to pass before merging
-- require conversation resolution before merging
+Require CodeQL only after it has run successfully for the repository visibility
+and GitHub plan. The supplied workflow skips CodeQL for a private repository
+unless the `ENABLE_CODEQL` repository variable is set to `true`.
 
 If you are **not** on GitHub Team or higher, note this limitation in your launch checklist and upgrade before the production hardening pass.
 
@@ -269,7 +274,7 @@ Recommended initial rules:
 - block branch deletion
 - require linear history
 - require pull request before merge
-- require status checks later, once CI is in place
+- require the current quality, OSV, and Vercel status checks
 
 For right now, as a solo builder, the minimum responsible protection is:
 
@@ -294,7 +299,7 @@ Do not give Vercel access to every repository in the organization unless you act
 
 This repository is already configured to avoid pushing local secrets:
 
-- `.env*` is ignored in [.gitignore](/Users/lukasthomsen/Desktop/shapewebs_1.1/.gitignore)
+- `.env*` is ignored in the repository [.gitignore](../../.gitignore)
 - local env files should stay untracked
 
 Before you push, verify:

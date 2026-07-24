@@ -9,7 +9,12 @@ export const metadata: Metadata = buildPageMetadata({
   description:
     "Publishing notes on website systems, content architecture, design decisions, and the thinking behind Shapewebs work.",
   path: "/blog",
-  keywords: ["Shapewebs blog", "website insights", "CMS notes", "design systems"],
+  keywords: [
+    "Shapewebs blog",
+    "website insights",
+    "CMS notes",
+    "design systems",
+  ],
 });
 
 export default async function BlogIndexPage() {

@@ -29,7 +29,10 @@ export default async function WorkPage() {
             <article className={styles.cardB6m2q9} key={project.documentId}>
               <h2>{project.title}</h2>
               <p>{project.summary}</p>
-              <Link className={styles.linkN4m8p5} href={getDocumentPath(project).replace("/projects/", "/work/")}>
+              <Link
+                className={styles.linkN4m8p5}
+                href={getDocumentPath(project).replace("/projects/", "/work/")}
+              >
                 View work entry
               </Link>
             </article>

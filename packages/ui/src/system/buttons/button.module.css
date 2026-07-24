@@ -29,13 +29,7 @@
   cursor: pointer;
   transition: 0.16s var(--sw-ui-ease-out-quad);
   transition-property:
-    border,
-    background,
-    background-color,
-    color,
-    box-shadow,
-    opacity,
-    filter;
+    border, background, background-color, color, box-shadow, opacity, filter;
 }
 
 .root > svg {

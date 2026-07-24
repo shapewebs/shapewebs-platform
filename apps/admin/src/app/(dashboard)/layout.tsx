@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { requireAdminSession } from "@/lib/auth";
 import { siteConfig } from "@shapewebs/config";
 import { LogoutButton } from "./logout-button";
@@ -20,6 +21,8 @@ type DashboardLayoutProps = Readonly<{
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
+  await connection();
+
   const runtime = await requireAdminSession({
     redirectTo: "/dashboard",
   });
@@ -41,7 +44,11 @@ export default async function DashboardLayout({
 
         <nav aria-label="Admin navigation" className={styles.navP6k3m4}>
           {sections.map((section) => (
-            <Link className={styles.linkB7m2q9} href={section.href} key={section.href}>
+            <Link
+              className={styles.linkB7m2q9}
+              href={section.href}
+              key={section.href}
+            >
               {section.label}
             </Link>
           ))}
@@ -53,8 +60,8 @@ export default async function DashboardLayout({
       <div className={styles.contentT9q4m6}>
         {runtime.setupMode ? (
           <div className={styles.setupBannerP6n2v1}>
-            Supabase auth is not configured, so the admin app is rendering in a
-            local setup mode with fallback content and read-only editorial
+            Authentication is not configured, so this development server is
+            using local setup mode with fallback content and read-only editorial
             screens.
           </div>
         ) : null}

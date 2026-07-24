@@ -1,466 +1,311 @@
-# Shapewebs Platform Setup
+# Shapewebs platform setup
 
-This is the recommended setup for the first real hosted version of Shapewebs.
+- Status: non-production database foundation executed; production pending
+- Applies after: each matching migration and authorization test is reviewed
+- Vercel team: `Shapewebs`
+- Repository: `shapewebs/shapewebs-platform`
 
-## Target setup
+Do not provision production credentials from this document until the matching
+schema, migrations, validation, and authorization tests exist in the
+repository.
+
+## Topology
 
-- One Vercel team
-- Two Vercel projects
-  - `shapewebs-web`
-  - `shapewebs-admin`
-- One Supabase organization
-- Two Supabase projects
-  - `shapewebs-staging`
-  - `shapewebs-prod`
-- One public domain
-  - `shapewebs.com`
-- One admin subdomain
-  - `admin.shapewebs.com`
-
-## What staging and production mean
-
-### Staging
-
-Staging is the safe practice environment.
-
-Use staging to:
-
-- test migrations
-- test auth and redirects
-- test content changes before they reach the live site
-- verify env vars and deployments
-
-Mistakes in staging are acceptable. It should be close to production, but it is not the real live system.
-
-### Production
-
-Production is the real live system that visitors and clients use.
-
-Use production for:
-
-- the real public website
-- the real admin CMS
-- real content
-- real domains
-- real form submissions
-
-Mistakes in production affect the live business site, so production changes should only be made after they work in staging.
-
-## Why this setup
-
-- Two Vercel projects fit the repo as it exists today: [apps/web](/Users/lukasthomsen/Desktop/shapewebs_1.1/apps/web) and [apps/admin](/Users/lukasthomsen/Desktop/shapewebs_1.1/apps/admin).
-- Two Supabase projects give you a safe staging and production split without changing application architecture later.
-- The repository remains the source of truth for schema, migrations, generated types, and app code.
-
-## Before you start
-
-You need:
-
-- a Supabase account
-- a Vercel account/team
-- access to the DNS for `shapewebs.com`
-- Docker Desktop or OrbStack for local Supabase
-- Node, pnpm, and the repo installed locally
-
-## 1. Create the Supabase organization and projects
-
-Create the organization directly in Supabase, not through the Vercel marketplace.
-
-Create:
-
-- `shapewebs-staging`
-- `shapewebs-prod`
-
-Use the same region for both projects.
-
-Recommended:
-
-- `shapewebs-staging`: lower-cost compute
-- `shapewebs-prod`: Pro plan with PITR enabled
-
-For each project, save:
-
-- project ref
-- project URL
-- publishable key
-- secret key
-- database password
-
-## 2. Configure hosted Supabase auth
-
-In each Supabase project, go to `Authentication -> URL Configuration`.
-
-### Production project
-
-Set:
-
-- Site URL: `https://admin.shapewebs.com`
-
-Add redirect URLs:
-
-- `https://admin.shapewebs.com/**`
-- `https://shapewebs.com/**`
-- `https://www.shapewebs.com/**`
-- `http://localhost:3001/**`
-- `http://localhost:3000/**`
-
-### Staging project
-
-If you do not have staging domains yet, set:
-
-- Site URL: `http://localhost:3001`
-
-Add redirect URLs:
-
-- `http://localhost:3001/**`
-- `http://localhost:3000/**`
-
-Later, add your Vercel preview domains when they exist.
-
-Important:
-
-- for now, staging can use `http://localhost:3001` as the Site URL because you are still testing locally
-- later, when you have a real staging admin URL, update the staging Site URL and redirect URLs to that hosted staging domain
-
-Also set:
-
-- disable open signup
-- keep email/password enabled
-- set up custom SMTP before going live
-
-## 2.5. Configure hosted Supabase Data API schemas
-
-The Shapewebs apps query more than the default `public` schema. The hosted project must expose the CMS schemas through the Supabase Data API.
-
-Current Supabase dashboard UI can move this setting between pages. If you see a `Data API` page in the sidebar, that is the place to check. If you do not see the exposed schema control there, do not block on the UI.
-
-This repository now includes a migration that configures the Data API and grants schema usage automatically:
-
-- [20260408184500_configure_data_api_custom_schemas.sql](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/migrations/20260408184500_configure_data_api_custom_schemas.sql)
-
-That migration:
-
-- exposes `public,storage,graphql_public,cms,ops` to PostgREST
-- sets the extra search path to `public,extensions,cms,ops`
-- grants the required schema/table/routine/sequence privileges
-- reloads the Data API config and schema cache
-
-If `cms` and `ops` are not exposed, login can appear to work but the admin app will immediately bounce back to the login screen because it cannot read the admin profile and role tables.
-
-## 3. Create the Vercel projects
-
-Create two Vercel projects from the same Git repository.
-
-When Vercel asks for GitHub access:
-
-- install the Vercel GitHub app on **Only select repositories**
-- grant it access only to `shapewebs-platform`
-
-### Project 1
-
-- Name: `shapewebs-web`
-- Root directory: `apps/web`
-
-### Project 2
-
-- Name: `shapewebs-admin`
-- Root directory: `apps/admin`
-
-Keep both projects in the same Vercel team.
-
-Recommended import behavior:
-
-- Framework preset: `Next.js`
-- Root Directory: set per app as above
-- Build/Install commands: leave default unless Vercel fails to infer the monorepo correctly
-
-Fallback commands if Vercel does not infer them correctly:
-
-### `shapewebs-web`
-
-- Install Command: `pnpm install --frozen-lockfile`
-- Build Command: `pnpm --filter @shapewebs/web build`
-
-### `shapewebs-admin`
-
-- Install Command: `pnpm install --frozen-lockfile`
-- Build Command: `pnpm --filter @shapewebs/admin build`
-
-## 3.5. Set Vercel environment variables
+Keep one monorepo and the two existing Vercel projects:
+
+| Vercel project    | Root         | Production domain     | Responsibility            |
+| ----------------- | ------------ | --------------------- | ------------------------- |
+| `shapewebs-web`   | `apps/web`   | `shapewebs.com`       | Static public studio site |
+| `shapewebs-admin` | `apps/admin` | `admin.shapewebs.com` | Auth, CMS, future portal  |
+
+Both projects deploy `main`. A pull request creates protected previews only for
+affected projects. Keep `www.shapewebs.com` as a permanent redirect to the
+apex.
+
+Use two Neon projects for hard data separation:
+
+| Neon project           | Branches                           | Data               |
+| ---------------------- | ---------------------------------- | ------------------ |
+| `shapewebs-platform`   | persistent staging + ephemeral PRs | synthetic only     |
+| `shapewebs-production` | protected production branch        | real business data |
+
+Never branch a general preview from production. Customer or lead data must not
+be copied into pull-request environments.
+
+As of 24 July 2026, `shapewebs-platform` exists in Frankfurt
+(`aws-eu-central-1`) and is the non-production project. The production Neon
+project has not been provisioned.
+
+## 1. Secure the operator accounts
+
+Before connecting services:
+
+- require phishing-resistant MFA or passkeys on GitHub, Vercel, Neon, Google
+  Cloud, the domain registrar, and the primary email account;
+- keep Shapewebs organization/team membership minimal;
+- use organization teams rather than direct grants when another person joins;
+- install GitHub and Vercel apps only on `shapewebs-platform`;
+- store recovery codes offline.
+
+## 2. Configure GitHub first
+
+Enable the repository security features available on the selected plan:
+
+- dependency graph;
+- Dependabot alerts and security updates;
+- secret scanning and push protection;
+- CodeQL default setup or the supplied workflow when Code Security is
+  licensed.
+
+Create an active `main` ruleset:
+
+- block deletion and force pushes;
+- require a pull request and linear history;
+- require conversation resolution;
+- require `Verify foundation` and `OSV dependency scan`;
+- require the relevant Vercel deployment checks;
+- allow only a tightly controlled emergency-admin bypass.
+
+The workflow files use read-only default permissions and full commit SHAs.
+Review Dependabot action updates before merging them.
+
+## 3. Configure the Vercel projects
+
+For both projects:
+
+1. connect `shapewebs/shapewebs-platform`;
+2. retain the existing root directory from the topology table;
+3. use Node.js 24;
+4. enable Turborepo/skip-unaffected-project behavior;
+5. protect Preview deployments with Vercel Authentication;
+6. create fixed `staging.shapewebs.com` and
+   `admin-staging.shapewebs.com` environments for OAuth and cross-app tests;
+7. choose the Vercel EU function region nearest the measured Neon EU region;
+8. enable Skew Protection and automatic system environment variables;
+9. enable WAF managed rules, bot controls, logs, Speed Insights, Web
+   Analytics, and Observability where the plan and privacy decision allow;
+10. configure spend and error alerts.
+
+Do not repoint production domains while the migration branch is being tested.
+Record the current production deployment IDs and verify Instant Rollback before
+promotion.
+
+## 4. Create Neon with explicit roles
+
+Choose an EU region, then create the two projects in the topology table.
+Measure application-to-database latency from a Vercel preview before fixing the
+final Vercel region.
+
+Create separate database capabilities:
+
+- `shapewebs_migrator`: owns schema changes and is used only by a protected
+  migration job;
+- `shapewebs_admin_runtime`: non-owner runtime role for auth, CMS, and portal
+  queries;
+- `shapewebs_web_runtime`: non-owner role limited to published-content reads
+  and validated lead inserts;
+- `shapewebs_public_reader`: narrowly granted published-content reads where the
+  public application needs direct database access;
+- human break-glass owner: no application connection string and no routine
+  use.
+
+Runtime roles must not own application tables and must not have `BYPASSRLS`.
+Create application roles with SQL, not the Neon Console, CLI, or API: Neon
+control-plane roles inherit `neon_superuser`, which includes `BYPASSRLS`.
+Apply migrations from reviewed, generated SQL—never from application startup.
+Force RLS on tenant-bearing tables and test both positive and negative access.
 
 Use:
 
-- **Production** environment variables for the live domains and `shapewebs-prod`
-- **Preview** environment variables for Vercel preview deployments and `shapewebs-staging`
-- local `.env.local` files for local development
+- `DATABASE_URL` for a pooled/serverless, non-owner runtime connection;
+- `DATABASE_MIGRATION_URL` only in the protected migration environment.
 
-Do not point Vercel **Preview** deployments at production Supabase.
+Do not place `DATABASE_MIGRATION_URL` in either Vercel project.
 
-### `shapewebs-web` production envs
+The current Development environment is wired with only:
 
-- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
-- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
-- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-prod project URL>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-prod publishable key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-prod secret key>`
-- `PREVIEW_TOKEN_SECRET=<production preview secret>`
-- `REVALIDATION_WEBHOOK_SECRET=<production revalidation secret>`
+- the admin runtime `DATABASE_URL` in `shapewebs-admin`;
+- the web runtime `DATABASE_URL` in `shapewebs-web`;
+- a development Better Auth secret and localhost origin in `shapewebs-admin`.
 
-Optional until enabled:
+Preview and Production variables remain intentionally unset until their
+isolated database topology is ready.
 
-- `TURNSTILE_SITE_KEY`
-- `TURNSTILE_SECRET_KEY`
-- `RESEND_API_KEY`
-- `SENTRY_DSN`
-- `SENTRY_AUTH_TOKEN`
+## 5. Integrate preview branches
 
-### `shapewebs-admin` production envs
+Connect only `shapewebs-platform` to Vercel previews:
 
-- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
-- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
-- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-prod project URL>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-prod publishable key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-prod secret key>`
-- `PREVIEW_TOKEN_SECRET=<production preview secret>`
-- `REVALIDATION_WEBHOOK_SECRET=<production revalidation secret>`
+1. create an ephemeral Neon branch per pull request;
+2. apply committed migrations;
+3. load deterministic synthetic seed data;
+4. run database and authorization tests;
+5. remove the branch when the pull request closes.
 
-Optional until enabled:
-
-- `TURNSTILE_SECRET_KEY`
-- `RESEND_API_KEY`
-- `SENTRY_DSN`
-- `SENTRY_AUTH_TOKEN`
-
-### `shapewebs-web` preview envs
-
-- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
-- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
-- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-staging project URL>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-staging publishable key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-staging secret key>`
-- `PREVIEW_TOKEN_SECRET=<staging preview secret>`
-- `REVALIDATION_WEBHOOK_SECRET=<staging revalidation secret>`
-
-### `shapewebs-admin` preview envs
-
-- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
-- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
-- `NEXT_PUBLIC_SUPABASE_URL=<shapewebs-staging project URL>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<shapewebs-staging publishable key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<shapewebs-staging secret key>`
-- `PREVIEW_TOKEN_SECRET=<staging preview secret>`
-- `REVALIDATION_WEBHOOK_SECRET=<staging revalidation secret>`
-
-Important:
-
-- the current app expects fixed site/admin origins for preview handoff and metadata
-- Vercel preview deployments are therefore for build and UI verification first
-- cross-app editorial preview is most reliable on the production domains today
-- later, add dedicated staging domains if you want fully correct hosted staging preview flows
-
-## 4. Add production domains in Vercel
-
-### Public site
-
-Add both:
-
-- `shapewebs.com`
-- `www.shapewebs.com`
-
-Recommended setup:
-
-- choose one public primary domain
-- redirect the other to it
-
-If you want the simplest brand URL, use `shapewebs.com` as primary.
-If you want the most conventional DNS setup, use `www.shapewebs.com` as primary and redirect the apex.
-
-### Admin site
-
-Add:
-
-- `admin.shapewebs.com`
-
-This domain must point to the `shapewebs-admin` project only.
-
-## 5. Add local env files
-
-Create:
-
-- `apps/web/.env.local`
-- `apps/admin/.env.local`
-
-Use [.env.example](/Users/lukasthomsen/Desktop/shapewebs_1.1/.env.example) as the value reference.
-
-For local Supabase, `pnpm supabase:status` will give you the local URL and keys.
-
-Generate these secrets yourself:
-
-```bash
-openssl rand -hex 32
-openssl rand -hex 32
-```
-
-Use them for:
-
-- `PREVIEW_TOKEN_SECRET`
-- `REVALIDATION_WEBHOOK_SECRET`
-
-## 6. Run local Supabase
-
-Start local Supabase:
-
-```bash
-pnpm supabase:start
-pnpm supabase:reset
-pnpm supabase:status
-```
-
-This repo is configured to seed from [supabase/seed/seed.sql](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/seed/seed.sql) through [supabase/config.toml](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/config.toml).
-
-Local auth is configured to use the admin app as the primary auth site:
-
-- Site URL: `http://localhost:3001`
-- Redirect URLs:
-  - `http://localhost:3001/**`
-  - `http://localhost:3000/**`
-
-## 7. Link the CLI to staging
-
-Always link the CLI to staging by default, not production.
-
-```bash
-pnpm dlx supabase@2.88.1 login
-pnpm dlx supabase@2.88.1 link --project-ref <staging-project-ref>
-pnpm dlx supabase@2.88.1 db push
-pnpm dlx supabase@2.88.1 gen types typescript --linked --schema public,cms,ops > packages/db/src/generated/database.types.ts
-```
-
-After staging is verified, repeat deliberately for production.
-
-## 8. Set Vercel environment variables
-
-Set these on both Vercel projects as needed.
-
-### `shapewebs-web`
-
-- `NEXT_PUBLIC_SITE_URL`
-- `NEXT_PUBLIC_ADMIN_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PREVIEW_TOKEN_SECRET`
-- `REVALIDATION_WEBHOOK_SECRET`
-- `TURNSTILE_SITE_KEY`
-- `TURNSTILE_SECRET_KEY`
-- `RESEND_API_KEY`
-- `SENTRY_DSN`
-
-### `shapewebs-admin`
-
-- `NEXT_PUBLIC_SITE_URL`
-- `NEXT_PUBLIC_ADMIN_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PREVIEW_TOKEN_SECRET`
-- `REVALIDATION_WEBHOOK_SECRET`
-- `TURNSTILE_SECRET_KEY`
-- `RESEND_API_KEY`
-- `SENTRY_DSN`
-
-### Value mapping
-
-For production:
-
-- `NEXT_PUBLIC_SITE_URL=https://shapewebs.com`
-- `NEXT_PUBLIC_ADMIN_URL=https://admin.shapewebs.com`
-- `NEXT_PUBLIC_SUPABASE_URL=<production project URL>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<production publishable key>`
-- `SUPABASE_SERVICE_ROLE_KEY=<production secret key>`
-
-For preview or staging:
-
-- use the staging Supabase project values
-
-## 9. Bootstrap the first admin user
-
-After the hosted migration is applied, create your auth user in Supabase and then assign the CMS owner role.
-
-Use [supabase/seed/bootstrap_owner.sql.example](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/seed/bootstrap_owner.sql.example) as the template.
-
-Without this step, login may succeed but the CMS will still deny access because the admin profile and role mapping do not exist yet.
-
-## 10. First deploy order
-
-Deploy in this order:
-
-1. local Supabase works
-2. local `web` and `admin` work
-3. staging Supabase migrated
-4. staging Vercel env vars added
-5. staging deploy succeeds
-6. first admin user created
-7. production Supabase migrated
-8. production Vercel env vars added
-9. production domains connected
-10. production deploy succeeds
-
-## 11. Update later before go-live
-
-These are intentionally allowed to be temporary during setup, but they must be revisited before launch.
-
-- replace staging `Site URL` from `http://localhost:3001` to the real staging admin domain if you create one
-- replace staging redirect URLs from localhost-only values to include the real staging web and admin URLs
-- add Vercel preview redirect URL patterns in Supabase once preview deployments exist
-- replace placeholder or empty SMTP settings with your real production mail provider
-- add real Turnstile production keys
-- add real Resend production key
-- confirm `NEXT_PUBLIC_SITE_URL` is the final production public URL
-- confirm `NEXT_PUBLIC_ADMIN_URL` is the final production admin URL
-- verify production Supabase uses production keys only, never staging keys
-- enable PITR on the production Supabase project
-
-## 11. First smoke test
-
-Check these routes:
-
-### Public
-
-- `/`
-- `/blog`
-- `/projects`
-- `/contact`
-
-### Admin
-
-- `/login`
-- `/dashboard`
-- `/content`
-- `/settings`
-
-Then test:
-
-- login
-- MFA enrollment
-- content listing
-- draft save
-- publish
-- preview
-- form submission
-
-## 12. Recommended next setup tasks after first deploy
-
-- set up custom SMTP for Supabase auth email
-- add Turnstile production keys
-- add Resend production key
-- enable production PITR
-- add Sentry to both projects
-- add Vercel deployment protection to preview environments
-- create a staging-only owner/admin account
-
-## Notes
-
-- The repository currently uses the legacy variable name `NEXT_PUBLIC_SUPABASE_ANON_KEY`, but the value should be the current Supabase publishable key.
-- Do not use the Vercel marketplace integration as the primary project-creation path for this platform.
-- If you later add the Vercel or GitHub Supabase integrations, treat them as convenience layers, not the source of truth for schema or access control.
+Staging uses a persistent non-production branch and fixed domains. Production
+uses only the protected production project. A preview must fail closed if its
+isolated database cannot be prepared.
+
+## 6. Configure Better Auth
+
+Self-host Better Auth inside `apps/admin` and mount its handler at
+`/api/auth/[...all]`.
+
+Required configuration:
+
+- a generated high-entropy `BETTER_AUTH_SECRET`;
+- exact `BETTER_AUTH_URL` and trusted origins;
+- a Google OAuth client with exact callback URLs;
+- secure host-only cookies in production;
+- database-backed sessions with rotation and revocation;
+- rate limits on authentication-adjacent endpoints;
+- append-only audit events for privileged changes.
+
+Use fixed callback hosts:
+
+- `https://admin.shapewebs.com/api/auth/callback/google`
+- `https://admin-staging.shapewebs.com/api/auth/callback/google`
+- an explicit localhost callback for development
+
+Do not register wildcard Vercel preview callbacks with Google. General previews
+can test unauthenticated and fail-closed behavior; fixed staging performs the
+complete OAuth journey.
+
+Public customer sign-up remains disabled until invitation/onboarding,
+organization membership, tenant authorization, support, export, and deletion
+flows are complete.
+
+### Admin step-up requirement
+
+Google sign-in alone is not sufficient for CMS access. Better Auth's normal 2FA
+gate does not automatically cover social sign-in, so owner/editor sessions must
+pass a custom server-enforced TOTP step-up before entering or mutating admin
+routes.
+
+Test at minimum:
+
+- anonymous access is denied;
+- an unassigned Google user cannot self-assign a role;
+- a valid Google owner without TOTP step-up is denied;
+- step-up expires and is revoked with the session;
+- an editor cannot change owner/security settings;
+- one customer cannot read another organization's records.
+
+## 7. Scope Vercel environment variables
+
+Use Vercel Sensitive values for secrets. Prefer project-specific values over
+team-wide variables.
+
+`shapewebs-web` may receive:
+
+- `NEXT_PUBLIC_SITE_URL`;
+- the pooled `shapewebs_web_runtime` `DATABASE_URL`;
+- `SHAPEWEBS_ORGANIZATION_ID` and `LEAD_IP_HASH_SECRET`;
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and an exact
+  `TURNSTILE_EXPECTED_HOSTNAME`;
+- a narrowly scoped revalidation secret;
+- public Blob credentials only when required.
+
+`shapewebs-admin` may receive:
+
+- `NEXT_PUBLIC_ADMIN_URL` and `NEXT_PUBLIC_SITE_URL`;
+- `DATABASE_URL` for the non-owner admin runtime role;
+- `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`;
+- `BETTER_AUTH_TRUSTED_ORIGINS`, `ADMIN_OWNER_EMAILS`, and
+  `SHAPEWEBS_ORGANIZATION_ID`;
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`;
+- `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`,
+  `LEAD_NOTIFICATION_FROM_EMAIL`, `LEAD_NOTIFICATION_TO_EMAIL`, and
+  `CRON_SECRET`;
+- a staging-only `SYNTHETIC_RETENTION_SECRET`, scoped to the fixed preview
+  branch and never configured in Production;
+- private/public Blob credentials scoped to their stores;
+- the server-to-server publish/revalidation secret.
+
+Never expose Better Auth secrets, Google secrets, private storage credentials,
+admin database credentials, or migration credentials to `apps/web`.
+
+## 8. Media and email
+
+- Use separate Vercel Blob stores or equivalent capability boundaries for
+  public published media and private draft/customer files.
+- Restrict uploads by role, MIME type, extension, and size.
+- Generate random server-owned object keys and trusted metadata.
+- Persist form submissions before sending Resend notifications.
+- Treat email as notification, not the system of record.
+- Add Turnstile only to public forms and keep it fail closed in production.
+
+Resend reports `shapewebs.com` verified in `eu-west-1`, with sending enabled,
+receiving disabled, and open/click tracking disabled. Google Workspace handles
+human inbound and outbound mail through the same domain. Resend remains the
+application sender and must not become a human mailbox. Complete and preserve
+the setup as follows:
+
+1. confirm Google and Resend SPF, DKIM, and Return-Path records remain healthy;
+2. keep DMARC at quarantine and tighten it only after every legitimate sender
+   passes;
+3. keep the restricted staging key only in the fixed admin Preview branch;
+4. create a separate Production key with `sending_access`, restricted to the
+   Shapewebs domain, only during protected production configuration;
+5. store `RESEND_API_KEY`, `LEAD_NOTIFICATION_FROM_EMAIL`,
+   `LEAD_NOTIFICATION_TO_EMAIL`, `RESEND_WEBHOOK_SECRET`, and `CRON_SECRET`
+   only in `shapewebs-admin`;
+6. never place a Resend API key in `shapewebs-web` or a `NEXT_PUBLIC_*`
+   variable.
+
+The implementation belongs in a server-only `packages/email` package with
+typed HTML/text templates and a provider adapter. A Neon outbox is written in
+the same transaction as the business event. Sends use idempotency keys; signed
+webhooks are deduplicated by their provider event ID and may arrive out of
+order. Lead notifications contain a protected admin link and omit the message
+body and project details.
+
+The checked-in Hobby-compatible Vercel Cron schedule runs once daily as a
+development fallback. A separate Cloudflare staging Worker invokes the exact
+protected staging outbox route every five minutes and heartbeats Checkly only
+after success. It uses a dedicated Vercel automation bypass and the same
+branch-scoped cron secret as the admin app. Production scheduling remains a
+separate launch decision and must not reuse staging credentials.
+
+Before enabling production delivery, test inbox placement, plain-text
+fallbacks, accessibility, malicious form content, duplicate worker execution,
+provider timeouts, webhook replay, bounce handling, and a disabled/rotated API
+key. Update the privacy notice because email addresses and notification
+metadata are processed by Resend, and record the approved retention policy.
+
+The Checkly lead journey is staging-only. Its daily retention check sends an
+authenticated `POST` to `/api/jobs/synthetic-retention` with a dedicated bearer secret. The route
+refuses Production and non-fixed preview origins. Database policy permits
+deletion only for owner-context contact rows older than six days whose name,
+`.invalid` email, message, and company marker all match the checked-in
+synthetic fixture. It deletes related outbox rows in the same transaction and
+cannot delete fresh, ordinary, editor-owned, or cross-tenant leads.
+
+## 9. Promotion order
+
+1. all local quality gates pass;
+2. non-production Neon is created;
+3. migrations and synthetic seeds pass on a disposable branch;
+4. fixed staging variables and OAuth callbacks are configured;
+5. negative database and authentication tests pass in staging;
+6. backup and restore are proved with non-production data;
+7. production Neon roles and secrets are created;
+8. the candidate deploys without moving the domains;
+9. smoke, Lighthouse, accessibility, security-header, and authorization checks
+   pass;
+10. promote the verified deployments and keep Instant Rollback ready;
+11. rotate and remove every superseded Supabase variable and credential.
+
+## 10. Post-launch operations
+
+- daily backups and a documented quarterly restore drill;
+- target RPO 24 hours and RTO 4 hours until portal data requires tighter
+  objectives;
+- weekly dependency and action updates;
+- continuous real-user performance and error monitoring;
+- monthly access review;
+- quarterly threat-model, authorization, accessibility, and recovery review;
+- ZAP passive scans and k6 tests only against controlled staging.
+
+The repository remains the source of truth for schemas, migrations,
+authorization tests, and configuration decisions. Provider dashboards are
+deployment surfaces, not undocumented configuration stores.

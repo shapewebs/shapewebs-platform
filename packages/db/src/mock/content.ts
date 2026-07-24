@@ -95,7 +95,8 @@ export const mockPublishedDocuments: PublishedDocument[] = [
     source: "fallback",
     seo: {
       metaTitle: "Shapewebs",
-      metaDescription: "Fallback homepage until Supabase content is configured.",
+      metaDescription:
+        "Fallback homepage until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -113,7 +114,8 @@ export const mockPublishedDocuments: PublishedDocument[] = [
     source: "fallback",
     seo: {
       metaTitle: "Website Strategy",
-      metaDescription: "Fallback service page until Supabase content is configured.",
+      metaDescription:
+        "Fallback service page until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -131,7 +133,8 @@ export const mockPublishedDocuments: PublishedDocument[] = [
     source: "fallback",
     seo: {
       metaTitle: "Building a design CMS",
-      metaDescription: "Fallback blog post until Supabase content is configured.",
+      metaDescription:
+        "Fallback blog post until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -149,7 +152,8 @@ export const mockPublishedDocuments: PublishedDocument[] = [
     source: "fallback",
     seo: {
       metaTitle: "Northline Studio",
-      metaDescription: "Fallback project page until Supabase content is configured.",
+      metaDescription:
+        "Fallback project page until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -167,7 +171,8 @@ export const mockPublishedDocuments: PublishedDocument[] = [
     source: "fallback",
     seo: {
       metaTitle: "Privacy Policy",
-      metaDescription: "Fallback legal page until Supabase content is configured.",
+      metaDescription:
+        "Fallback legal page until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -217,7 +222,8 @@ export const mockEditorStates: Record<string, DocumentEditorState> = {
     title: "Shapewebs home",
     seo: {
       metaTitle: "Shapewebs",
-      metaDescription: "Fallback homepage until Supabase content is configured.",
+      metaDescription:
+        "Fallback homepage until Supabase content is configured.",
       canonicalUrlOverride: null,
       robotsIndex: true,
     },
@@ -243,9 +249,21 @@ export const mockSettingsSnapshot: SettingsSnapshot = {
     { code: "da-DK", label: "Dansk", isDefault: false },
   ],
   regionProfiles: [
-    { code: "eea_uk_ch", displayName: "EEA / UK / CH", ruleSetKey: "eea_uk_ch" },
-    { code: "us_california", displayName: "United States / California-sensitive", ruleSetKey: "us_california" },
-    { code: "rest_of_world", displayName: "Rest of world", ruleSetKey: "rest_of_world" },
+    {
+      code: "eea_uk_ch",
+      displayName: "EEA / UK / CH",
+      ruleSetKey: "eea_uk_ch",
+    },
+    {
+      code: "us_california",
+      displayName: "United States / California-sensitive",
+      ruleSetKey: "us_california",
+    },
+    {
+      code: "rest_of_world",
+      displayName: "Rest of world",
+      ruleSetKey: "rest_of_world",
+    },
   ],
   featureFlags: [
     { key: "cms.scheduled_publishing", enabled: false },
@@ -267,7 +285,8 @@ export const mockContactSubmissions: ContactSubmissionRecord[] = [
     email: "jamie@example.com",
     formType: "contact",
     localeCode: "en",
-    message: "Looking for a new studio site with a stronger editorial workflow.",
+    message:
+      "Looking for a new studio site with a stronger editorial workflow.",
     serviceInterest: "Website strategy",
     status: "new",
     createdAt: "2026-04-08T00:00:00.000Z",

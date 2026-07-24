@@ -1,10 +1,11 @@
 import { Suspense } from "react";
-import { hasAdminSupabaseConfig } from "@/lib/supabase";
+import { hasAdminAuthConfig, isLocalAdminSetupMode } from "@/lib/better-auth";
 import { LoginForm } from "./login-form";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
-  const isConfigured = hasAdminSupabaseConfig();
+  const isConfigured = hasAdminAuthConfig();
+  const isLocalSetupMode = isLocalAdminSetupMode();
 
   return (
     <main className={styles.rootD4n8k1}>
@@ -12,16 +13,19 @@ export default function LoginPage() {
         <p className={styles.eyebrowZ3p9t2}>Shapewebs Admin</p>
         <h1 className={styles.titleR6k2m4}>CMS access</h1>
         <p className={styles.copyH2v8q6}>
-          Sign in with your admin account, then complete MFA before entering the
-          CMS. In local setup mode, content screens remain visible for schema and
-          UI work until Supabase is connected.
+          Sign in with your allowlisted Google account, then complete a TOTP
+          check before entering the CMS.
         </p>
 
-        {!isConfigured ? (
+        {isLocalSetupMode ? (
           <p className={styles.noticeStateV7m3k2}>
-            Supabase auth is not configured yet, so the admin app will run in a
-            local setup mode until `NEXT_PUBLIC_SUPABASE_URL` and
-            `NEXT_PUBLIC_SUPABASE_ANON_KEY` are available.
+            Local setup mode is active for development. Protected screens are
+            available for interface work until authentication is connected.
+          </p>
+        ) : !isConfigured ? (
+          <p className={styles.noticeStateV7m3k2} role="alert">
+            Authentication is unavailable because the required environment
+            configuration is missing.
           </p>
         ) : null}
 

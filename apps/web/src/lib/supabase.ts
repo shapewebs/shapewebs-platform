@@ -4,7 +4,7 @@ import {
   type SupabaseCookieAdapter,
 } from "@shapewebs/db";
 
-export async function createWebCookieAdapter(): Promise<SupabaseCookieAdapter> {
+async function createWebCookieAdapter(): Promise<SupabaseCookieAdapter> {
   const cookieStore = await cookies();
 
   return {

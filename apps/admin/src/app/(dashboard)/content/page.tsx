@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { listDocuments } from "@shapewebs/db";
 import { documentFiltersSchema } from "@shapewebs/validation";
-import { getAdminRuntimeState } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
+import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
 import styles from "./page.module.css";
 
 type ContentPageProps = {
@@ -15,8 +16,12 @@ type ContentPageProps = {
 export default async function ContentPage({ searchParams }: ContentPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const filters = documentFiltersSchema.parse(params ?? {});
-  const runtime = await getAdminRuntimeState();
-  const documents = await listDocuments(runtime.supabase, filters);
+  await requireAdminSession({
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
+  const supabase = await getTransitionalAdminSupabaseClient();
+  const documents = await listDocuments(supabase, filters);
 
   return (
     <main className={styles.rootP6m2k1}>
@@ -96,7 +101,10 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                 : "#";
 
             return (
-              <article className={styles.rowB9m3q7} key={`${document.documentId}:${document.localeCode}`}>
+              <article
+                className={styles.rowB9m3q7}
+                key={`${document.documentId}:${document.localeCode}`}
+              >
                 <div className={styles.titleCellY7m1q8}>
                   <strong>{document.title}</strong>
                   <span>{document.slug}</span>

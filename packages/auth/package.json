@@ -1,0 +1,27 @@
+{
+  "name": "@shapewebs/auth",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./client": "./src/client.ts",
+    "./proxy": "./src/proxy.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "auth:schema": "node scripts/generate-schema.mjs",
+    "auth:schema:check": "node scripts/generate-schema.mjs --check",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.6.25",
+    "@shapewebs/database": "workspace:*",
+    "@shapewebs/validation": "workspace:*",
+    "better-auth": "1.6.25",
+    "drizzle-orm": "0.45.2",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "auth": "1.6.25",
+    "typescript": "^5"
+  }
+}

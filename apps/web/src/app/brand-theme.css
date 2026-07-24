@@ -26,10 +26,10 @@
   --sw-ui-color-toggle: 189 192 197;
   --sw-ui-color-text-primary: 40 42 48;
   --sw-ui-color-text-secondary: 84 90 99;
-  --sw-ui-color-text-tertiary: 134 132 141;
+  --sw-ui-color-text-tertiary: 112 110 118;
   --sw-ui-color-text-quaternary: 89 90 92;
   --sw-ui-color-overlay-primary: 255 255 255 / 0.6;
-  --sw-ui-color-link-primary: 0 122 255;
+  --sw-ui-color-link-primary: 0 93 204;
   --sw-ui-color-link-hover: 66 81 222;
   --sw-ui-color-bg-brand: 100 103 197;
   --sw-ui-color-brand-text: 255 255 255;
@@ -47,33 +47,35 @@ body {
   background: rgb(var(--sw-ui-color-bg-primary) / 1);
 }
 
-.dark {
-  --sw-ui-color-button-translucent: 255 255 255 / 0.06;
-  --sw-ui-color-bg-header: 9 9 9;
-  --sw-ui-color-bg-header-active: 13 13 13;
-  --sw-ui-color-border-header: 242 242 242 / 0.08;
-  --sw-ui-color-bg-primary: 8 9 10;
-  --sw-ui-color-bg-secondary: 16 17 19;
-  --sw-ui-color-bg-tertiary: 28 28 31;
-  --sw-ui-color-bg-quaternary: 35 35 38;
-  --sw-ui-color-bg-quinary: 40 40 44;
-  --sw-ui-color-primary-inverted: 247 248 250;
-  --sw-ui-color-secondary-inverted: 236 241 245;
-  --sw-ui-color-border-primary: 35 37 42;
-  --sw-ui-color-border-secondary: 52 52 58;
-  --sw-ui-color-border-tertiary: 62 62 68;
-  --sw-ui-color-toggle: 92 102 109;
-  --sw-ui-color-text-primary: 247 248 250;
-  --sw-ui-color-text-secondary: 208 214 216;
-  --sw-ui-color-text-tertiary: 138 143 152;
-  --sw-ui-color-text-quaternary: 89 90 92;
-  --sw-ui-color-overlay-primary: 0 0 0 / 0.6;
-  --sw-ui-color-link-primary: 0 122 255;
-  --sw-ui-color-link-hover: 66 81 222;
-  --sw-ui-color-bg-brand: 100 103 197;
-  --sw-ui-color-brand-text: 255 255 255;
-  --sw-ui-color-feedback-accent: 94 164 255;
-  --sw-ui-color-feedback-success: 116 214 125;
-  --sw-ui-color-feedback-warning: 255 199 92;
-  --sw-ui-color-feedback-danger: 255 126 116;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sw-ui-color-button-translucent: 255 255 255 / 0.06;
+    --sw-ui-color-bg-header: 9 9 9;
+    --sw-ui-color-bg-header-active: 13 13 13;
+    --sw-ui-color-border-header: 242 242 242 / 0.08;
+    --sw-ui-color-bg-primary: 8 9 10;
+    --sw-ui-color-bg-secondary: 16 17 19;
+    --sw-ui-color-bg-tertiary: 28 28 31;
+    --sw-ui-color-bg-quaternary: 35 35 38;
+    --sw-ui-color-bg-quinary: 40 40 44;
+    --sw-ui-color-primary-inverted: 247 248 250;
+    --sw-ui-color-secondary-inverted: 236 241 245;
+    --sw-ui-color-border-primary: 35 37 42;
+    --sw-ui-color-border-secondary: 52 52 58;
+    --sw-ui-color-border-tertiary: 62 62 68;
+    --sw-ui-color-toggle: 92 102 109;
+    --sw-ui-color-text-primary: 247 248 250;
+    --sw-ui-color-text-secondary: 208 214 216;
+    --sw-ui-color-text-tertiary: 138 143 152;
+    --sw-ui-color-text-quaternary: 89 90 92;
+    --sw-ui-color-overlay-primary: 0 0 0 / 0.6;
+    --sw-ui-color-link-primary: 0 122 255;
+    --sw-ui-color-link-hover: 66 81 222;
+    --sw-ui-color-bg-brand: 100 103 197;
+    --sw-ui-color-brand-text: 255 255 255;
+    --sw-ui-color-feedback-accent: 94 164 255;
+    --sw-ui-color-feedback-success: 116 214 125;
+    --sw-ui-color-feedback-warning: 255 199 92;
+    --sw-ui-color-feedback-danger: 255 126 116;
+  }
 }

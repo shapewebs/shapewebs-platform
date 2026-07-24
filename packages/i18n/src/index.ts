@@ -25,7 +25,8 @@ export type LocaleDefinition = (typeof supportedLocales)[number];
 export type LocaleCode = LocaleDefinition["code"];
 export type RegionProfileCode = (typeof regionProfiles)[number]["code"];
 
-export const defaultLocale = supportedLocales.find((locale) => locale.isDefault)?.code ?? "en";
+export const defaultLocale =
+  supportedLocales.find((locale) => locale.isDefault)?.code ?? "en";
 
 export function isSupportedLocale(locale: string): locale is LocaleCode {
   return supportedLocales.some((candidate) => candidate.code === locale);

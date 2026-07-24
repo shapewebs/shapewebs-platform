@@ -18,7 +18,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: ServiceDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: ServiceDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   const document = await getResolvedContentBySlug("service", slug);
 
@@ -29,7 +31,9 @@ export async function generateMetadata({ params }: ServiceDetailPageProps): Prom
   return buildDocumentMetadata(document);
 }
 
-export default async function ServiceDetailPage({ params }: ServiceDetailPageProps) {
+export default async function ServiceDetailPage({
+  params,
+}: ServiceDetailPageProps) {
   const { slug } = await params;
   const document = await getResolvedContentBySlug("service", slug);
 

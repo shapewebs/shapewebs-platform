@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784846712741,
+      "tag": "0000_shapewebs-foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784846713382,
+      "tag": "0001_security-hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784847292096,
+      "tag": "0002_force-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784847387924,
+      "tag": "0003_policy-evaluator-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784886080660,
+      "tag": "0004_admin-session-assurance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784886737432,
+      "tag": "0005_reliable-lead-outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784897704107,
+      "tag": "0006_synthetic-retention",
+      "breakpoints": true
+    }
+  ]
+}

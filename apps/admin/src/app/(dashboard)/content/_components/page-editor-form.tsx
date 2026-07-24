@@ -58,7 +58,10 @@ export function PageEditorForm({
 
             <label className={styles.fieldY2m7q3}>
               <span>Page kind</span>
-              <input defaultValue={editorState.pageKind ?? "standard"} name="pageKind" />
+              <input
+                defaultValue={editorState.pageKind ?? "standard"}
+                name="pageKind"
+              />
             </label>
           </div>
 
@@ -76,7 +79,11 @@ export function PageEditorForm({
 
           <label className={styles.fieldY2m7q3}>
             <span>Summary</span>
-            <textarea defaultValue={editorState.summary ?? ""} name="summary" rows={3} />
+            <textarea
+              defaultValue={editorState.summary ?? ""}
+              name="summary"
+              rows={3}
+            />
           </label>
         </section>
 
@@ -86,7 +93,10 @@ export function PageEditorForm({
           <div className={styles.fieldGridF3m8v2}>
             <label className={styles.fieldY2m7q3}>
               <span>Meta title</span>
-              <input defaultValue={editorState.seo.metaTitle ?? ""} name="metaTitle" />
+              <input
+                defaultValue={editorState.seo.metaTitle ?? ""}
+                name="metaTitle"
+              />
             </label>
 
             <label className={styles.fieldY2m7q3}>
@@ -185,7 +195,10 @@ export function PageEditorForm({
             <p className={styles.mutedW2m7n4}>No revisions yet.</p>
           ) : (
             editorState.revisions.map((revision) => (
-              <article className={styles.revisionCardC5m2q8} key={revision.revisionId}>
+              <article
+                className={styles.revisionCardC5m2q8}
+                key={revision.revisionId}
+              >
                 <strong>Revision {revision.revisionNumber}</strong>
                 <span>{revision.editorState}</span>
                 <span>{revision.createdAt}</span>

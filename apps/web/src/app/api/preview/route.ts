@@ -1,9 +1,6 @@
 import { cookies, draftMode } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  consumePreviewToken,
-  createAdminSupabaseClient,
-} from "@shapewebs/db";
+import { consumePreviewToken, createAdminSupabaseClient } from "@shapewebs/db";
 import { getPublicSiteOrigin, previewCookieNames } from "@/lib/content";
 
 export async function GET(request: NextRequest) {
@@ -12,13 +9,19 @@ export async function GET(request: NextRequest) {
   const path = request.nextUrl.searchParams.get("path") ?? "/";
 
   if (!token || !signature) {
-    return NextResponse.json({ error: "Missing preview credentials." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing preview credentials." },
+      { status: 400 },
+    );
   }
 
   const supabase = createAdminSupabaseClient();
 
   if (!supabase) {
-    return NextResponse.json({ error: "Preview is not configured." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Preview is not configured." },
+      { status: 503 },
+    );
   }
 
   const previewSelection = await consumePreviewToken(supabase, {
@@ -27,7 +30,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (!previewSelection) {
-    return NextResponse.json({ error: "Invalid or expired preview token." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid or expired preview token." },
+      { status: 401 },
+    );
   }
 
   const draft = await draftMode();
@@ -53,6 +59,9 @@ export async function GET(request: NextRequest) {
     secure: process.env.NODE_ENV === "production",
   });
 
-  const redirectUrl = new URL(path.startsWith("/") ? path : "/", getPublicSiteOrigin());
+  const redirectUrl = new URL(
+    path.startsWith("/") ? path : "/",
+    getPublicSiteOrigin(),
+  );
   return NextResponse.redirect(redirectUrl);
 }
