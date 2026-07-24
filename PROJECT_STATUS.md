@@ -55,12 +55,13 @@ connected to production data, or promoted to the production domains.
   stable, sanitized payloads.
 - Checkly monitoring-as-code defines two-minute public home/readiness checks,
   protected staging admin readiness, a ten-minute synthetic lead journey and
-  daily marker-restricted cleanup. Web and admin monitoring use
-  distinct encrypted Vercel bypass credentials. All five checks notify the
-  confirmed Gmail inbox. The three staging schedules are active; public checks
+  daily marker-restricted cleanup, plus a five-minute outbox heartbeat with a
+  six-minute grace window. Web and admin monitoring use
+  distinct encrypted Vercel bypass credentials. All six checks notify the
+  confirmed Gmail inbox. The four staging schedules are active; public checks
   remain inactive until the foundation release passes their launch assertions.
 - Fixed non-secret staging origins are checked-in defaults, so a local Checkly
-  deployment always instantiates all five resources and missing shell variables
+  deployment always instantiates all six resources and missing shell variables
   cannot delete the staging checks.
 - The protected GitHub `staging` branch is mapped to fixed
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
@@ -147,6 +148,12 @@ connected to production data, or promoted to the production domains.
   Better Auth owner, `sales@shapewebs.com` as the lead recipient, and
   `Shapewebs <noreply@shapewebs.com>` as the transactional sender. No
   production application environment was changed.
+- A staging-only Cloudflare Worker invokes the protected outbox route every
+  five minutes with independent encrypted Vercel-bypass and bearer
+  credentials. Two consecutive live invocations completed successfully and
+  Checkly recorded both heartbeats at 100% availability. A final Neon read
+  found 17 of 17 synthetic outbox events suppressed, zero unresolved events
+  and zero provider message IDs; Resend recorded no new email.
 - Staging synthetic leads have a dedicated, POST-only retention route, a
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
@@ -177,7 +184,8 @@ Staging provisioning and runtime evidence is recorded in:
 
 - `docs/audits/staging-provisioning-2026-07-24.md`;
 - `docs/audits/staging-runtime-verification-2026-07-24.md`;
-- `docs/audits/checkly-monitoring-2026-07-24.md`.
+- `docs/audits/checkly-monitoring-2026-07-24.md`;
+- `docs/audits/staging-outbox-scheduler-2026-07-24.md`.
 
 ## External launch gates
 
@@ -220,15 +228,18 @@ delivered the controlled failure and recovery, and the three protected staging
 schedules are active. One operator deploy briefly recreated those three check
 objects after their then-optional origin variables were absent; commit
 `1b6924e` makes the fixed staging resources unconditional and a subsequent
-three-check session passed. The outbox heartbeat exists but remains inactive.
-A staging-only Cloudflare Worker is deployed with encrypted credentials and no
-trigger; the weak legacy cron secret was replaced atomically in Vercel and
-Cloudflare. Protected staging PR `#11`, its disposable Neon lifecycle, both
-Vercel builds, and post-merge k6/ZAP run `30116773588` passed. A read-only
-staging query then found nine due events, all exact Checkly synthetic fixtures
-and no customer leads. The pending suppression change processes those fixtures
-without contacting Resend; the trigger stays off until that change passes the
-same staging gate. Production database/auth/email variables remain
+three-check session passed. The staging-only Cloudflare Worker now runs on the
+exact five-minute trigger with encrypted credentials. The weak legacy cron
+secret was replaced atomically in Vercel and Cloudflare. Protected staging PRs
+`#11` through `#14`, their disposable Neon lifecycles, Vercel builds and
+post-merge k6/ZAP runs passed. The Worker needed both Cloudflare's public-fetch
+flag and a per-invocation, correctly bound runtime `fetch`. Its Checkly ping
+token was rotated after the heartbeat resource ID was mistakenly used as the
+private ping token. Two consecutive live executions then completed, Checkly
+recorded both heartbeats, Neon contained only suppressed synthetic outbox
+events and Resend had no new email. A deliberate missed-heartbeat notification
+exercise remains deferred pending action-time owner approval. Production
+database/auth/email variables remain
 intentionally unconfigured for the new path. Existing transitional Supabase
 production variables are not removed until the corresponding CMS and
 public-content paths have verified Neon parity.
@@ -238,8 +249,8 @@ public-content paths have verified Neon parity.
 1. Configure the Workspace-owned Google OAuth client and complete the
    Google-to-TOTP fail-closed staging journey.
 2. Complete mailbox MFA and controlled primary/alias mail-flow verification.
-3. Deploy and prove exact synthetic-notification suppression, then activate the
-   five-minute outbox schedule and record heartbeat/alert evidence.
+3. Run the controlled missed-heartbeat and recovery notification exercise
+   after explicit action-time owner approval.
 4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
 5. Build the CMS lifecycle, storage controls, final public studio design, and

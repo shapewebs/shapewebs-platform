@@ -43,12 +43,14 @@ from the macOS Keychain.
 
 Checkly project `Shapewebs platform` manages:
 
-- email alert channel `314193`, subscribed to all five checks;
+- email alert channel `314193`, subscribed to all six checks;
 - public home check `62c28a3b-527c-48b4-b476-3975a379aebd`;
 - public readiness check `97e0ff23-6acf-4344-8abb-c4b4520a5311`;
 - staging admin readiness check
   `5b16d724-9871-4f60-b0c8-e59473b6c0fa`;
 - staging lead browser check `e3334c29-1ffe-43ec-81cd-6842ad68fe6c`;
+- staging outbox heartbeat
+  `7a5abb44-5b4a-47e3-bea9-813f9751bb2a`; and
 - staging synthetic-retention check
   `a8e5b310-7657-4f2b-b4c6-fbba3dc13aee`.
 
@@ -60,8 +62,11 @@ Activation is fail-closed and explicit:
 
 - `disabled` activates no schedules;
 - `alert-test` activates only staging admin readiness;
-- `staging` activates the three protected staging checks;
-- `enabled` activates all five checks after production verification.
+- `staging` activates the three active checks and, only when
+  `CHECKLY_OUTBOX_HEARTBEAT_READY=true`, the outbox heartbeat;
+- `enabled` activates the five non-heartbeat checks after production
+  verification and the sixth only with the same explicit heartbeat-ready
+  flag.
 
 ## Controlled failure and recovery
 
@@ -114,6 +119,7 @@ The protected staging schedules are active:
 
 - admin readiness every two minutes;
 - lead acceptance journey every ten minutes;
+- outbox heartbeat every five minutes with a six-minute grace window; and
 - synthetic retention every 24 hours.
 
 The first scheduled post-enable cycle passed:
@@ -123,6 +129,20 @@ The first scheduled post-enable cycle passed:
 - synthetic retention: 524 ms at `2026-07-24T16:28:35.577Z`.
 
 No new failure notification was generated after staging activation.
+
+## Outbox heartbeat activation
+
+The Cloudflare scheduler evidence is recorded separately in
+`docs/audits/staging-outbox-scheduler-2026-07-24.md`. After the protected
+runtime fixes and a private ping-token rotation, two consecutive scheduled
+Worker invocations completed at `2026-07-24T19:35:55Z` and
+`2026-07-24T19:40:55Z`. Checkly recorded both heartbeat events at 100%
+availability.
+
+Neon contained 17 suppressed synthetic events, zero unresolved events and zero
+provider message IDs. Resend recorded no new email. The heartbeat remains
+active. A deliberate missed-heartbeat and recovery exercise is deferred until
+the owner approves the resulting operational notifications at action time.
 
 ## Safe bounce, replay and monitor-resource recovery
 
