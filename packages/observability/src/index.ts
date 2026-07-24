@@ -1,17 +1,14 @@
-export type StructuredLogLevel = "debug" | "info" | "warn" | "error";
+import "server-only";
 
-export function logStructuredEvent(
-  level: StructuredLogLevel,
-  event: string,
-  data: Record<string, unknown> = {},
-) {
-  const logger = level === "error" ? console.error : console.log;
-  logger(
-    JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level,
-      event,
-      ...data,
-    }),
-  );
-}
+export {
+  createStructuredLogger,
+  evaluateReadiness,
+  sanitizeLogValue,
+  type ReadinessCheck,
+  type ReadinessResult,
+  type ShapewebsEnvironment,
+  type ShapewebsService,
+  type StructuredEvent,
+  type StructuredEventCode,
+  type StructuredLogLevel,
+} from "./structured-logging";

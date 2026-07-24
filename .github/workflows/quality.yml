@@ -40,32 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Lint documentation
-        run: pnpm lint:docs
-
-      - name: Type-check
-        run: pnpm typecheck
-
-      - name: Run unit tests with coverage
-        run: pnpm test:coverage
-
-      - name: Check client and server boundaries
-        run: pnpm check:boundaries
-
-      - name: Check dependency ownership
-        run: pnpm check:deps
-
-      - name: Check dependency cycles
-        run: pnpm check:cycles
-
-      - name: Audit the installed dependency graph
-        run: pnpm audit
+      - name: Run deterministic verification
+        run: pnpm verify
 
       - name: Verify webpack builds
         run: pnpm build:webpack

@@ -3,12 +3,6 @@ name: Neon non-production lifecycle
 on:
   pull_request:
     branches: [main]
-    paths:
-      - ".github/workflows/neon-lifecycle.yml"
-      - "drizzle/**"
-      - "packages/database/**"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
   workflow_dispatch:
     inputs:
       confirm_project:
@@ -18,15 +12,50 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
-  group: neon-nonproduction-lifecycle
+  group: neon-nonproduction-lifecycle-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
+  changes:
+    name: Detect database changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      database: ${{ steps.changes.outputs.database }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect lifecycle-relevant changes
+        id: changes
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          CONFIRM_PROJECT: ${{ inputs.confirm_project }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$CONFIRM_PROJECT" == "shapewebs-platform" ]]
+            echo "database=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --name-only "origin/$BASE_REF"...HEAD > /tmp/shapewebs-changed-files
+          if grep -Eq '^(\.github/workflows/neon-lifecycle\.yml|drizzle/|packages/(auth|database)/|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)' /tmp/shapewebs-changed-files; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
     name: Verify disposable Neon lifecycle
-    if: ${{ github.event_name == 'pull_request' || inputs.confirm_project == 'shapewebs-platform' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.database == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: neon-nonproduction
@@ -56,3 +85,23 @@ jobs:
 
       - name: Verify disposable migration and recovery lifecycle
         run: corepack pnpm --filter @shapewebs/database db:verify-lifecycle
+
+  gate:
+    name: Neon lifecycle gate
+    if: ${{ always() && !cancelled() }}
+    needs: [changes, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce the required lifecycle result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DATABASE_CHANGED: ${{ needs.changes.outputs.database }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+        run: |
+          [[ "$CHANGES_RESULT" == "success" ]]
+          if [[ "$DATABASE_CHANGED" == "true" ]]; then
+            [[ "$VERIFY_RESULT" == "success" ]]
+          else
+            [[ "$VERIFY_RESULT" == "skipped" ]]
+          fi

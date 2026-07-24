@@ -7,6 +7,7 @@
   },
   "scripts": {
     "auth:schema": "node scripts/generate-schema.mjs",
+    "auth:schema:check": "node scripts/generate-schema.mjs --check",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

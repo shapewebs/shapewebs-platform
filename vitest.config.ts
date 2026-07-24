@@ -15,6 +15,7 @@ export default defineConfig({
         "apps/admin/src/lib/redirect.ts",
         "apps/web/src/lib/rate-limit.ts",
         "packages/config/src/security.ts",
+        "packages/observability/src/structured-logging.ts",
       ],
       provider: "v8",
       reporter: ["text", "json-summary"],

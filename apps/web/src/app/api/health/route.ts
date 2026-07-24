@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+const healthHeaders = {
+  "Cache-Control": "no-store",
+  "X-Robots-Tag": "noindex, nofollow",
+};
 
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    service: "web",
-    timestamp: new Date().toISOString(),
-  });
+  return Response.json(
+    { status: "ok" },
+    {
+      headers: healthHeaders,
+    },
+  );
 }
