@@ -76,6 +76,9 @@ try {
       "report.md",
       "-r",
       "report.html",
+      // Keep the packaged passive scan off the Automation Framework so every
+      // generated artifact stays inside the explicitly mounted report path.
+      "--autooff",
       "-z",
       "-configfile /zap/secrets/vercel-bypass.properties",
     ],
