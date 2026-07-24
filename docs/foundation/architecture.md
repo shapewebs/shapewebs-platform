@@ -456,7 +456,7 @@ Configuration:
 - Every pull request gets preview deployments for affected applications.
 - Enable “skip unaffected projects”/Turborepo-aware builds.
 - Protect preview deployments with Vercel Authentication. Use a fixed,
-  protected `staging.shapewebs.com` and `staging-admin.shapewebs.com` for full
+  protected `staging.shapewebs.com` and `admin-staging.shapewebs.com` for full
   cross-app and OAuth testing.
 - Treat Vercel Deployment Checks and required GitHub checks as promotion gates.
 - Enable Skew Protection. Rolling releases are optional once traffic justifies
