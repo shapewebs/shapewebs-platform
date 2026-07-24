@@ -13,6 +13,9 @@ outbox. Production scheduling and production credentials are out of scope.
   Vercel protection bypass, a bearer secret, and a request ID.
 - The response must be JSON, remain within 2 KiB, and contain only three
   nonnegative counters whose sum does not exceed the route batch size.
+- The Worker enables `global_fetch_strictly_public` so the same-zone
+  `admin-staging.shapewebs.com` subrequest follows the public Cloudflare path
+  and its security controls instead of an internal same-zone origin path.
 - Checkly receives a heartbeat only after the outbox call succeeds and returns
   a valid result.
 - Transport, status, response, heartbeat, configuration, and schedule failures
@@ -44,6 +47,16 @@ outbox. Production scheduling and production credentials are out of scope.
   `suppressed_synthetic`, records a safe structured event, and does not call
   Resend. This suppression change must pass the protected staging deployment
   gate before the cron is activated.
+- Protected staging PR
+  [`#12`](https://github.com/shapewebs/shapewebs-platform/pull/12), including
+  the disposable Neon lifecycle, passed and was squash-merged. Post-merge k6
+  and ZAP run
+  [`30118348398`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30118348398)
+  also passed.
+- The first live cron invocation failed closed as `outbox_unreachable` before
+  any database or email-provider change. The target is on the Worker's own
+  Cloudflare zone, so the public-fetch compatibility flag is being added
+  through the protected staging gate before another activation attempt.
 - No production Vercel, Cloudflare, Checkly, Neon, or Resend value was created
   or changed.
 
