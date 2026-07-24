@@ -79,7 +79,7 @@ For both projects:
 4. enable Turborepo/skip-unaffected-project behavior;
 5. protect Preview deployments with Vercel Authentication;
 6. create fixed `staging.shapewebs.com` and
-   `staging-admin.shapewebs.com` environments for OAuth and cross-app tests;
+   `admin-staging.shapewebs.com` environments for OAuth and cross-app tests;
 7. choose the Vercel EU function region nearest the measured Neon EU region;
 8. enable Skew Protection and automatic system environment variables;
 9. enable WAF managed rules, bot controls, logs, Speed Insights, Web
@@ -163,7 +163,7 @@ Required configuration:
 Use fixed callback hosts:
 
 - `https://admin.shapewebs.com/api/auth/callback/google`
-- `https://staging-admin.shapewebs.com/api/auth/callback/google`
+- `https://admin-staging.shapewebs.com/api/auth/callback/google`
 - an explicit localhost callback for development
 
 Do not register wildcard Vercel preview callbacks with Google. General previews

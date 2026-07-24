@@ -5,8 +5,9 @@
 - Date: 24 July 2026
 - Branch: `codex/foundation`
 - Pull request: draft `shapewebs/shapewebs-platform#7`
-- Status: short-term assurance foundation implemented; staging/provider
-  configuration and production launch remain gated
+- Status: short-term assurance foundation implemented; isolated staging
+  control plane provisioned; staging runtime verification and production launch
+  remain gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. This branch has not been merged,
@@ -47,6 +48,16 @@ connected to production data, or promoted to the production domains.
   stable, sanitized payloads.
 - Checkly monitoring-as-code defines two-minute public home/readiness checks and
   an optional ten-minute synthetic staging lead journey.
+- The protected GitHub `staging` branch is mapped to fixed
+  `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
+  domains. Branch-specific variables cannot leak into general previews.
+- A persistent synthetic-only Neon `staging` branch contains all six migrations.
+  Its runtime roles passed the complete RLS and authorization suite. Neon Free
+  cannot protect that branch, so a protected paid production branch remains a
+  launch gate.
+- Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
+  `shapewebs-leads-staging` Turnstile widget is restricted to the public staging
+  hostname, and its secret exists only in the matching Vercel branch scope.
 
 ### Authentication and authorization
 
@@ -96,21 +107,19 @@ The existing foundation and database evidence is recorded in:
 - `docs/audits/foundation-verification-2026-07-23.md`;
 - `docs/audits/database-foundation-verification-2026-07-24.md`.
 
-The current pull request must rerun all CI checks, including the disposable
-Neon migration/security/restore lifecycle, after migrations `0004` and `0005`
-are pushed. Final evidence for this implementation belongs in
-`docs/audits/assurance-implementation-2026-07-24.md`.
+The current pull request has passed all required CI checks, including the
+disposable Neon migration/security/restore lifecycle. Staging provisioning
+evidence is recorded in `docs/audits/staging-provisioning-2026-07-24.md`.
 
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
 
-- first-owner email, Google OAuth client ID/secret, and exact fixed staging and
-  production OAuth origins;
-- a protected fixed staging deployment and repository variables for Checkly,
-  k6, and ZAP;
+- first-owner Google email and Google OAuth client ID/secret;
+- protected access for the fixed staging deployment and repository variables
+  for Checkly, k6, and ZAP;
 - Checkly account/API credentials and an alert channel;
-- Turnstile site/secret keys and exact staging/production hostnames;
+- production Turnstile site/secret keys and the exact production hostname;
 - Resend API key, webhook signing secret, sending/recipient addresses, and
   webhook registration;
 - Vercel Pro or another trigger capable of meeting the 15-minute email
@@ -121,17 +130,19 @@ These are intentionally not guessed or provisioned:
 - WAF/distributed rate limits, production monitoring alerts, provider DPAs,
   approved legal retention, and an incident/restore exercise.
 
-Preview and Production database/auth/email variables remain intentionally
-unconfigured for the new path. Existing transitional Supabase production
-variables are not removed until the corresponding CMS and public-content paths
-have verified Neon parity.
+The `staging` Preview branch now has isolated Neon, URL, application-secret, and
+Turnstile variables. Google OAuth, Resend, and Checkly remain unconfigured.
+Production database/auth/email variables remain intentionally unconfigured for
+the new path. Existing transitional Supabase production variables are not
+removed until the corresponding CMS and public-content paths have verified
+Neon parity.
 
 ## Next implementation slices
 
-1. Obtain a clean pull-request run, especially the new disposable Neon
-   lifecycle and database authorization scenarios.
-2. Configure fixed staging and the account-specific Google, Turnstile, Resend,
-   Checkly, and Vercel settings listed above.
+1. Deploy the new staging branch configuration and verify public and admin
+   liveness/readiness plus the real Turnstile lead path.
+2. Configure the account-specific Google, Resend, Checkly, and Vercel settings
+   listed above.
 3. Exercise the controlled-failure alert, authenticated staging journey,
    outbox delivery, signed webhook, ZAP, and k6 gates.
 4. Replace the Supabase CMS paths one vertical slice at a time, then remove
