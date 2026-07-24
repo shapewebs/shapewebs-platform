@@ -25,7 +25,6 @@ const reportDirectory = path.resolve("test-results/zap");
 const baselineConfigPath = path.resolve("tooling/zap/baseline.conf");
 const reportNames = ["report.json", "report.md", "report.html"];
 const internalLogNames = ["zap.log", "zap.out"];
-
 const secretDirectory = mkdtempSync(
   path.join(os.tmpdir(), "shapewebs-zap-secrets-"),
 );
@@ -56,7 +55,6 @@ try {
     ].join("\n"),
     { encoding: "utf8", mode: 0o444 },
   );
-
   result = spawnSync(
     "docker",
     [
@@ -121,7 +119,6 @@ if (reportLeakDetected) {
     "ZAP report contained the staging bypass credential and was removed.",
   );
 }
-
 if (result?.error?.code === "ENOENT") {
   throw new Error(
     "Docker is not installed. ZAP release verification requires a Docker-compatible runtime.",
