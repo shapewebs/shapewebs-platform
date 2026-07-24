@@ -134,15 +134,19 @@ connected to production data, or promoted to the production domains.
 - Notification emails contain only the form type, submission ID, contact
   identity, and a protected admin link. The message and project details remain
   in Neon.
-- Inbound mail is intentionally disabled: the obsolete ImprovMX MX/SPF records
-  were removed, apex null MX and `v=spf1 -all` were added, and DMARC is
-  `quarantine` with strict DKIM alignment. Resend's DKIM and `send` subdomain
-  SPF/MX records remain intact for outbound transactional mail.
-- ADR 0003 defines the next mail boundary: one named Google Workspace user
-  (`lukasthomsen@shapewebs.com`), role aliases for customer and operational
-  mail, `shapewebs@gmail.com` as independent recovery, and
-  `noreply@shapewebs.com` as a Resend-only sender. Workspace is not yet
-  provisioned and inbound mail remains fail-closed.
+- Google Workspace Business Starter trial is active for the one licensed
+  `admin@shapewebs.com` account. The domain is verified; Google MX, apex SPF,
+  and 2048-bit DKIM signing are active; DMARC remains at quarantine; and
+  Resend's DKIM and `send` subdomain SPF/MX records remain isolated and intact.
+- `info@`, `sales@`, `support@`, `lukasthomsen@`, `security@`, `privacy@`, and
+  `billing@` are aliases into the `admin@shapewebs.com` inbox.
+  `shapewebs@gmail.com` is the independent recovery address. There is no
+  catch-all, and `noreply@shapewebs.com` remains a Resend-only sender rather
+  than a human mailbox.
+- Branch-scoped staging configuration now uses `admin@shapewebs.com` as the
+  Better Auth owner, `sales@shapewebs.com` as the lead recipient, and
+  `Shapewebs <noreply@shapewebs.com>` as the transactional sender. No
+  production application environment was changed.
 - Staging synthetic leads have a dedicated, POST-only retention route, a
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
@@ -179,16 +183,17 @@ Staging provisioning and runtime evidence is recorded in:
 
 These are intentionally not guessed or provisioned:
 
-- first-owner Google email and Google OAuth client ID/secret;
-- approval and provisioning of the paid Google Workspace mailbox before the
-  null-MX mail cutover;
+- Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
+  staging journey;
+- Workspace mailbox MFA, alias send-as/filter configuration, and controlled
+  inbound/outbound mail-flow evidence;
 - production Turnstile site/secret keys and the exact production hostname;
-- a reachable external Resend notification recipient and production Resend
-  key/webhook configuration; staging delivery, bounce and provider replay
+- production Resend key/webhook configuration; the staging recipient is now
+  `sales@shapewebs.com`, and staging delivery, bounce, and provider replay
   evidence is complete;
-- Vercel Pro or another trigger capable of meeting the 15-minute email
-  objective. Hobby Cron is configured only once daily and cannot satisfy that
-  SLO;
+- a production trigger capable of meeting the 15-minute email objective.
+  Cloudflare now provides the staging trigger; Vercel Hobby Cron remains a
+  once-daily fallback and cannot satisfy the production SLO;
 - a separate paid production Neon project, restore/rollback rehearsal, and
   production-only least-privilege credentials;
 - WAF/distributed rate limits, production monitoring alerts, provider DPAs,
@@ -215,20 +220,22 @@ delivered the controlled failure and recovery, and the three protected staging
 schedules are active. One operator deploy briefly recreated those three check
 objects after their then-optional origin variables were absent; commit
 `1b6924e` makes the fixed staging resources unconditional and a subsequent
-three-check session passed. Staging email delivery is disabled again until a
-reachable notification recipient is chosen. Production database/auth/email
-variables remain intentionally unconfigured for the new path. Existing
-transitional Supabase production variables are not removed until the
-corresponding CMS and public-content paths have verified Neon parity.
+three-check session passed. The outbox heartbeat exists but remains inactive.
+A staging-only Cloudflare Worker is deployed with encrypted credentials and no
+trigger; the weak legacy cron secret was rotated, and the protected `staging`
+branch must deploy the synchronized value before the five-minute trigger is
+activated. Production database/auth/email variables remain intentionally
+unconfigured for the new path. Existing transitional Supabase production
+variables are not removed until the corresponding CMS and public-content paths
+have verified Neon parity.
 
 ## Next implementation slices
 
-1. Configure the owner Google identity/client and complete the Google-to-TOTP
-   fail-closed staging journey.
-2. Choose a reachable external notification recipient for ordinary staging
-   and later production notifications.
-3. Provision minute-level outbox scheduling and record the retention and
-   outbox heartbeats.
+1. Configure the Workspace-owned Google OAuth client and complete the
+   Google-to-TOTP fail-closed staging journey.
+2. Complete mailbox MFA and controlled primary/alias mail-flow verification.
+3. Deploy the synchronized staging branch, activate the five-minute outbox
+   schedule, and record the outbox heartbeat and alert evidence.
 4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
 5. Build the CMS lifecycle, storage controls, final public studio design, and

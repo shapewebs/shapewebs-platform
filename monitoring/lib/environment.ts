@@ -28,6 +28,20 @@ export function isChecklyCheckActivated(
   );
 }
 
+export function isChecklyOutboxHeartbeatReady(
+  environment: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const value = environment.CHECKLY_OUTBOX_HEARTBEAT_READY;
+
+  if (value !== undefined && !["false", "true"].includes(value)) {
+    throw new Error(
+      "CHECKLY_OUTBOX_HEARTBEAT_READY must be true, false, or unset.",
+    );
+  }
+
+  return value === "true";
+}
+
 export function getExactStagingHttpsOrigin(
   environmentName: StagingOriginEnvironment,
   environment: NodeJS.ProcessEnv = process.env,

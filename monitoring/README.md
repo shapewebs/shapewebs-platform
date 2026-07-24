@@ -24,6 +24,11 @@ two-minute `eu-west-1` defaults from `checkly.config.ts`.
   secret whose value matches the admin staging
   `SYNTHETIC_RETENTION_SECRET`. It can invoke only the strict synthetic
   retention route and is never shared with the outbox worker.
+- The staging outbox heartbeat expects a successful ping every five minutes
+  and allows six additional minutes before alerting. It remains inactive
+  unless `CHECKLY_OUTBOX_HEARTBEAT_READY=true` is present at deployment time.
+  Activate it only after the Cloudflare Worker, exact cron trigger, Vercel
+  bypass, and synchronized admin cron secret have been verified.
 - `CHECKLY_ACTIVATION_PROFILE` controls scheduling and defaults to
   `disabled`. Use `alert-test` only for the controlled
   `staging-admin-readiness` failure/recovery exercise. Use `staging` while
@@ -46,6 +51,8 @@ two-minute `eu-west-1` defaults from `checkly.config.ts`.
   resources without enabling their schedules.
 - `CHECKLY_ACTIVATION_PROFILE=staging pnpm exec checkly deploy` enables only
   the protected staging checks.
+- `CHECKLY_ACTIVATION_PROFILE=staging CHECKLY_OUTBOX_HEARTBEAT_READY=true
+pnpm exec checkly deploy` also activates the verified outbox heartbeat.
 - `CHECKLY_ACTIVATION_PROFILE=staging pnpm exec checkly deploy --preview
 --output` previews a staging deployment without changing provider state.
 - `CHECKLY_ACTIVATION_PROFILE=enabled pnpm exec checkly deploy` enables the

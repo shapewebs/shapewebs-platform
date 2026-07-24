@@ -1,4 +1,4 @@
-# ADR 0003: separate named identities, role addresses, and automated senders
+# ADR 0003: central administration, role aliases, and automated senders
 
 - Status: accepted
 - Date: 24 July 2026
@@ -10,39 +10,41 @@ Shapewebs needs professional domain email for customer communication, provider
 ownership, Google OAuth administration, security notifications, and automated
 application messages.
 
-The domain currently uses Vercel's authoritative nameservers. Apex null MX and
-SPF `-all` intentionally reject inbound email, while Resend authenticates
-transactional outbound mail through isolated DKIM and `send.shapewebs.com`
-records.
+The domain uses Vercel's authoritative nameservers. Google Workspace now
+receives human mail for `shapewebs.com`; Resend authenticates application
+messages through separate DKIM and `send.shapewebs.com` records. DMARC remains
+at quarantine while both sending systems are observed.
 
-Cloudflare Email Routing cannot be added without moving the entire authoritative
-DNS zone to Cloudflare. A DNS-host migration is not justified merely to obtain
-mail forwarding. Forwarding-only services also do not provide a complete,
-DMARC-aligned human send-and-reply experience.
+Cloudflare Email Routing would require moving the authoritative DNS zone.
+Forwarding-only services also would not provide a complete, DMARC-aligned human
+send-and-reply experience. Neither is justified now that Workspace is active.
 
-Generic role addresses such as `admin@shapewebs.com` are unsuitable as shared
-human identities. They obscure which person performed an action and become
-difficult to revoke safely when the team grows.
+Shapewebs currently has one operator. The user selected a central
+`admin@shapewebs.com` Workspace account for the first licensed identity instead
+of an employee address. This is acceptable only while its credentials are not
+shared. Before a second maintainer joins, each person must receive an
+individually licensed account and routine actions must move to those named
+accounts.
 
 ## Decision
 
 Use Google Workspace for the human mailbox and identity boundary, while keeping
 Resend for application-generated mail:
 
-- Create one licensed, named Workspace user:
-  `lukasthomsen@shapewebs.com`.
+- The one licensed Workspace user and Google administration identity is
+  `admin@shapewebs.com`, with display name `Lukas Thomsen`.
 - Keep `shapewebs@gmail.com` as the independently protected recovery address.
-- Add these aliases to the named Workspace user:
+- The following aliases deliver to the `admin@shapewebs.com` inbox:
   - `info@shapewebs.com`;
   - `sales@shapewebs.com`;
-  - `admin@shapewebs.com`;
   - `support@shapewebs.com`;
+  - `lukasthomsen@shapewebs.com`;
   - `security@shapewebs.com`;
   - `privacy@shapewebs.com`;
   - `billing@shapewebs.com`.
 - Reserve `noreply@shapewebs.com` for automated Resend messages. It is not a
-  mailbox or login, and application messages must set a useful role address or
-  customer address as `Reply-To`.
+  Workspace mailbox, alias, or login. Application messages must set a useful
+  role address or customer address as `Reply-To`.
 - Do not enable a catch-all address. Unknown recipients should fail clearly
   instead of creating an unbounded spam and typo surface.
 - Use Google Workspace's required `postmaster` handling. Add `abuse` as a
@@ -57,7 +59,8 @@ more than one person needs independent access and auditability.
 
 | Purpose                                   | Address                      |
 | ----------------------------------------- | ---------------------------- |
-| Named owner and routine provider login    | `lukasthomsen@shapewebs.com` |
+| Workspace and Google Cloud administration | `admin@shapewebs.com`        |
+| Named owner correspondence                | `lukasthomsen@shapewebs.com` |
 | Independent account recovery              | `shapewebs@gmail.com`        |
 | Provider operational notices              | `admin@shapewebs.com`        |
 | Security alerts and vulnerability reports | `security@shapewebs.com`     |
@@ -75,15 +78,19 @@ email must not replace named membership or personal MFA.
 
 ## Google administration and OAuth
 
-The first Better Auth owner allowlist uses
-`lukasthomsen@shapewebs.com`, not an alias. Workspace aliases are not Google
-Accounts and cannot sign in to Google services.
+The first Better Auth owner allowlist uses `admin@shapewebs.com`. It is the
+actual Google Account, unlike the Workspace aliases, which cannot sign in to
+Google services.
 
-Initially the named account may administer the one-person Workspace and Google
-Cloud organization with phishing-resistant MFA. Before a second maintainer or a
-commercial customer portal launches, add a non-routine break-glass
-administrator identity, store its recovery material offline, and remove daily
-super-administrator use from the named account.
+The central account may administer the one-person Workspace and Google Cloud
+organization with phishing-resistant MFA. Its credentials must never be
+shared. Before a second maintainer or commercial customer portal launches:
+
+1. create individually licensed, named users for every maintainer;
+2. remove routine super-administrator use from `admin@shapewebs.com`;
+3. keep `admin@shapewebs.com` as a controlled administrative or break-glass
+   identity; and
+4. store its recovery material offline and test recovery.
 
 The Google OAuth client belongs to a dedicated Shapewebs Google Cloud project.
 Its consent screen, support contact, developer contact, JavaScript origins, and
@@ -92,20 +99,20 @@ origins are prohibited.
 
 ## DNS and deliverability contract
 
-The Workspace cutover must:
+The Workspace cutover completed in this order:
 
-1. verify domain ownership before changing mail delivery;
-2. create the named user and aliases before publishing Google's MX record;
-3. replace the null MX with Google's current Workspace MX value;
-4. replace apex SPF `-all` with one SPF record authorizing Google;
-5. preserve Resend's DKIM and `send.shapewebs.com` SPF/MX records;
-6. generate a 2048-bit Google DKIM key, publish it, and enable signing;
-7. retain DMARC quarantine during verification and review aggregate reports
-   before considering `reject`;
-8. test inbound and authenticated outbound mail for the primary identity and
-   every human-facing alias;
-9. keep `noreply@shapewebs.com` inbound-disabled and test its Resend path
-   separately.
+1. Google verified domain ownership;
+2. the licensed user was created;
+3. the null MX was replaced with Google's Workspace MX;
+4. apex SPF was changed from `-all` to authorize Google;
+5. Resend's DKIM and `send.shapewebs.com` SPF/MX records were preserved;
+6. a 2048-bit Google DKIM key was published and signing was activated; and
+7. DMARC quarantine was preserved.
+
+The remaining deliverability work is to test inbound and authenticated outbound
+mail for the primary account and every human-facing alias, then review aggregate
+DMARC evidence before considering `reject`. The Resend-only `noreply@` path is
+tested independently and must remain inbound-disabled.
 
 DNS changes are made through Vercel, which remains authoritative. A Cloudflare
 nameserver migration is a separate architecture decision.
@@ -125,35 +132,50 @@ Configure each human-facing alias as a Gmail `From` address and reply from the
 address that received the message. Do not send customer correspondence from
 `admin@`, `security@`, or `noreply@`.
 
+## Implementation status
+
+As of 24 July 2026:
+
+- the Workspace Business Starter trial is active;
+- `shapewebs.com` is verified;
+- Gmail, Google SPF, and 2048-bit Google DKIM are active;
+- the licensed account, aliases, and recovery address above are configured;
+- `admin@shapewebs.com` is the branch-scoped Better Auth owner;
+- staging lead notifications target `sales@shapewebs.com`;
+- staging transactional mail sends as
+  `Shapewebs <noreply@shapewebs.com>`;
+- no catch-all or additional paid user was created; and
+- mailbox MFA, alias send-as/filter setup, end-to-end mail-flow testing, and
+  the Google Cloud OAuth client remain to be completed.
+
+No payment method, plan upgrade, or production application environment was
+changed during this cutover.
+
 ## Consequences
 
 Benefits:
 
-- one paid mailbox supports the current solo business without shared
-  credentials;
-- every provider action remains attributable to a named person;
-- aliases can become groups or delegated mailboxes without changing public
-  addresses;
-- Google OAuth and Google Cloud ownership use the same verified company
-  identity;
-- Resend remains isolated to transactional application delivery;
-- Vercel DNS and the existing website routing remain unchanged.
+- one paid mailbox supports the current solo business;
+- public role addresses can become groups or delegated mailboxes without
+  changing customer-facing addresses;
+- Google OAuth and Google Cloud ownership use the verified company identity;
+- Resend remains isolated to transactional application delivery; and
+- Vercel DNS and website routing remain unchanged.
 
-Costs:
+Costs and risks:
 
-- Google Workspace is a paid subscription;
-- Workspace setup and DKIM activation require console steps and may take time
-  to propagate;
-- Gmail filters and send-as identities require one-time configuration;
-- provider account email changes must be performed carefully to avoid account
-  recovery gaps.
+- Google Workspace becomes a paid subscription after the trial unless
+  cancelled;
+- a central administrative login provides weaker person-level attribution than
+  named employee accounts and must not be shared;
+- Gmail filters and send-as identities require one-time configuration; and
+- provider account email changes must avoid recovery gaps.
 
 ## Rollback
 
-Before MX replacement, export the exact existing mail-related DNS records.
-During initial cutover, keep a short DNS TTL and do not delete Resend records.
-
-If Workspace activation fails, restore null MX and apex SPF `-all`; this returns
-the domain to the known fail-closed inbound state without affecting web traffic
-or Resend's isolated outbound subdomain. Do not restore an unreviewed
-forwarding provider as an implicit fallback.
+Export the exact active mail-related DNS records before any future mail
+migration. If Workspace must be abandoned, restore null MX and apex SPF `-all`
+only after confirming no human mail still depends on Workspace. This returns
+the domain to fail-closed inbound behavior without affecting web traffic or
+Resend's isolated outbound subdomain. Do not restore an unreviewed forwarding
+provider as an implicit fallback.

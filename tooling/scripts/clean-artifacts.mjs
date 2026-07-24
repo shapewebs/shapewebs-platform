@@ -10,6 +10,7 @@ const generatedPaths = [
   "coverage",
   "playwright-report",
   "test-results",
+  "workers/outbox-scheduler/.wrangler/build",
 ];
 
 for (const generatedPath of generatedPaths) {

@@ -235,15 +235,15 @@ admin database credentials, or migration credentials to `apps/web`.
 - Add Turnstile only to public forms and keep it fail closed in production.
 
 Resend reports `shapewebs.com` verified in `eu-west-1`, with sending enabled,
-receiving disabled, and open/click tracking disabled. A Development key with
-`sending_access` restricted to that domain exists at the provider, but it is
-not stored in either application or Vercel. Complete the setup as follows:
+receiving disabled, and open/click tracking disabled. Google Workspace handles
+human inbound and outbound mail through the same domain. Resend remains the
+application sender and must not become a human mailbox. Complete and preserve
+the setup as follows:
 
-1. confirm the generated SPF, DKIM, and Return-Path records remain healthy;
-2. begin DMARC in monitoring mode and tighten it only after every legitimate
-   sender passes;
-3. store the existing Development key only when the server-only email package
-   is ready;
+1. confirm Google and Resend SPF, DKIM, and Return-Path records remain healthy;
+2. keep DMARC at quarantine and tighten it only after every legitimate sender
+   passes;
+3. keep the restricted staging key only in the fixed admin Preview branch;
 4. create a separate Production key with `sending_access`, restricted to the
    Shapewebs domain, only during protected production configuration;
 5. store `RESEND_API_KEY`, `LEAD_NOTIFICATION_FROM_EMAIL`,
@@ -259,11 +259,12 @@ webhooks are deduplicated by their provider event ID and may arrive out of
 order. Lead notifications contain a protected admin link and omit the message
 body and project details.
 
-The checked-in Hobby-compatible Vercel Cron schedule runs once daily. It is a
-development fallback only and does not satisfy the 15-minute notification SLO.
-Upgrade to a Vercel plan with minute-level Cron or approve another
-authenticated scheduler before commercial launch; then schedule the protected
-outbox endpoint at least every ten minutes.
+The checked-in Hobby-compatible Vercel Cron schedule runs once daily as a
+development fallback. A separate Cloudflare staging Worker invokes the exact
+protected staging outbox route every five minutes and heartbeats Checkly only
+after success. It uses a dedicated Vercel automation bypass and the same
+branch-scoped cron secret as the admin app. Production scheduling remains a
+separate launch decision and must not reuse staging credentials.
 
 Before enabling production delivery, test inbox placement, plain-text
 fallbacks, accessibility, malicious form content, duplicate worker execution,

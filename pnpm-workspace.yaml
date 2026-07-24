@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - workers/*
 
 verifyDepsBeforeRun: false
 
@@ -25,6 +26,7 @@ ignoredBuiltDependencies:
 
 onlyBuiltDependencies:
   - esbuild
+  - workerd
 
 minimumReleaseAgeExclude:
   - "@better-auth/core@1.6.25"

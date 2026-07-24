@@ -16,6 +16,7 @@ export default defineConfig({
         "apps/web/src/lib/rate-limit.ts",
         "packages/config/src/security.ts",
         "packages/observability/src/structured-logging.ts",
+        "workers/outbox-scheduler/src/scheduler.ts",
       ],
       provider: "v8",
       reporter: ["text", "json-summary"],

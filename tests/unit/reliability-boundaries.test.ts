@@ -4,7 +4,10 @@ import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
 import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
 import { getClientIp } from "../../apps/web/src/lib/request-identity";
-import { getExactStagingHttpsOrigin } from "../../monitoring/lib/environment";
+import {
+  getExactStagingHttpsOrigin,
+  isChecklyOutboxHeartbeatReady,
+} from "../../monitoring/lib/environment";
 import {
   escapeEmailHtml,
   renderLeadHtml,
@@ -198,6 +201,25 @@ describe("reliability and provider boundaries", () => {
         "CHECKLY_STAGING_ADMIN_BASE_URL must be one exact HTTPS origin.",
       );
     }
+  });
+
+  it("keeps the outbox heartbeat inactive until explicitly ready", () => {
+    expect(isChecklyOutboxHeartbeatReady({})).toBe(false);
+    expect(
+      isChecklyOutboxHeartbeatReady({
+        CHECKLY_OUTBOX_HEARTBEAT_READY: "false",
+      }),
+    ).toBe(false);
+    expect(
+      isChecklyOutboxHeartbeatReady({
+        CHECKLY_OUTBOX_HEARTBEAT_READY: "true",
+      }),
+    ).toBe(true);
+    expect(() =>
+      isChecklyOutboxHeartbeatReady({
+        CHECKLY_OUTBOX_HEARTBEAT_READY: "yes",
+      }),
+    ).toThrow("CHECKLY_OUTBOX_HEARTBEAT_READY must be true, false, or unset.");
   });
 
   it("rejects request bodies declared or streamed beyond the byte limit", async () => {
