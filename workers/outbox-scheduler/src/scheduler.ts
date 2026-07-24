@@ -57,21 +57,27 @@ class SchedulerFailure extends Error {
   }
 }
 
-const defaultDependencies: SchedulerDependencies = {
-  fetch: globalThis.fetch,
-  log(record) {
-    const serializedRecord = JSON.stringify(record);
+export function bindRuntimeFetch(fetchImplementation: typeof fetch) {
+  return fetchImplementation.bind(globalThis) as typeof fetch;
+}
 
-    if (record.level === "error") {
-      console.error(serializedRecord);
-      return;
-    }
+export function createRuntimeDependencies(): SchedulerDependencies {
+  return {
+    fetch: bindRuntimeFetch(globalThis.fetch),
+    log(record) {
+      const serializedRecord = JSON.stringify(record);
 
-    console.log(serializedRecord);
-  },
-  now: () => Date.now(),
-  randomUUID: () => crypto.randomUUID(),
-};
+      if (record.level === "error") {
+        console.error(serializedRecord);
+        return;
+      }
+
+      console.log(serializedRecord);
+    },
+    now: () => Date.now(),
+    randomUUID: () => crypto.randomUUID(),
+  };
+}
 
 function isBoundedSecret(value: string): boolean {
   return value.length >= 32 && value.length <= maximumSecretLength;
@@ -278,7 +284,7 @@ async function sendHeartbeat(
 export async function runOutboxSchedule(
   controller: SchedulerController,
   environment: SchedulerBindings,
-  dependencies: SchedulerDependencies = defaultDependencies,
+  dependencies: SchedulerDependencies = createRuntimeDependencies(),
 ): Promise<void> {
   const startedAt = dependencies.now();
   let requestId = "unavailable";
