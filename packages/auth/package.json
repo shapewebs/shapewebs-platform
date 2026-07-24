@@ -1,0 +1,22 @@
+{
+  "name": "@shapewebs/auth",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "auth:schema": "node scripts/generate-schema.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.6.25",
+    "@shapewebs/database": "workspace:*",
+    "better-auth": "1.6.25",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "auth": "1.6.25",
+    "typescript": "^5"
+  }
+}
