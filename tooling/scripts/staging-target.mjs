@@ -37,3 +37,15 @@ export function requireStagingTarget(targetName) {
 
   return target;
 }
+
+export function requireAutomationBypassSecret() {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "";
+
+  if (!/^[A-Za-z0-9_-]{32,128}$/.test(secret)) {
+    throw new Error(
+      "VERCEL_AUTOMATION_BYPASS_SECRET must be a valid protected-staging credential.",
+    );
+  }
+
+  return secret;
+}

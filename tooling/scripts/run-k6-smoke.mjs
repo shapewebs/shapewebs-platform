@@ -2,9 +2,13 @@ import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-import { requireStagingTarget } from "./staging-target.mjs";
+import {
+  requireAutomationBypassSecret,
+  requireStagingTarget,
+} from "./staging-target.mjs";
 
 const target = requireStagingTarget("K6_TARGET_URL");
+requireAutomationBypassSecret();
 const reportDirectory = path.resolve("test-results/k6");
 const summaryPath = path.join(reportDirectory, "summary.json");
 

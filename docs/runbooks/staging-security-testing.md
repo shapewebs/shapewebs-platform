@@ -11,17 +11,25 @@ test against production or an unrelated host.
 SHAPEWEBS_STAGING_HOSTS=staging.example.com
 K6_TARGET_URL=https://staging.example.com/
 ZAP_TARGET_URL=https://staging.example.com/
+VERCEL_AUTOMATION_BYPASS_SECRET=<protected-staging-secret>
 CHECKLY_STAGING_WEB_BASE_URL=https://staging.example.com
 ```
 
 Use comma-separated exact hostnames when more than one protected staging
 deployment is in scope. Credentials, URL queries, and URL fragments are
-rejected.
+rejected. Store the automation bypass as a secret, never as a repository
+variable. k6 sends it only in the `x-vercel-protection-bypass` request header.
+ZAP receives it through a mode-`0600` temporary configuration file that is
+mounted read-only and removed when the container exits; it never appears in
+the container command line or uploaded report directory.
 
-The scheduled GitHub workflow reads `SHAPEWEBS_STAGING_HOSTS`,
-`K6_TARGET_URL`, and `ZAP_TARGET_URL` from repository variables. If any value
-is absent, the workflow refuses to scan. Checkly reads its separate exact
-origin only when the synthetic lead check is deliberately enabled.
+The GitHub workflow runs after protected `staging` updates and on its regular
+schedule. It reads `SHAPEWEBS_STAGING_HOSTS`, `K6_TARGET_URL`, and
+`ZAP_TARGET_URL` from repository variables, and
+`VERCEL_AUTOMATION_BYPASS_SECRET` from an Actions secret. If any value is
+absent, the workflow refuses to scan. Rotate or revoke the bypass immediately
+if it appears in logs or reports. Checkly reads its separate exact origin only
+when the synthetic lead check is deliberately enabled.
 
 ## Toolchain
 
