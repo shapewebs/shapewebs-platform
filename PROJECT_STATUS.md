@@ -6,8 +6,8 @@
 - Branch: `codex/foundation`
 - Pull request: draft `shapewebs/shapewebs-platform#7`
 - Status: short-term assurance foundation implemented; isolated staging
-  control plane provisioned; staging runtime verification and production launch
-  remain gated
+  control plane and active staging monitoring provisioned; production launch
+  remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. This branch has not been merged,
@@ -56,7 +56,9 @@ connected to production data, or promoted to the production domains.
 - Checkly monitoring-as-code defines two-minute public home/readiness checks,
   optional protected staging admin readiness, a ten-minute synthetic lead
   journey and daily marker-restricted cleanup. Web and admin monitoring use
-  distinct encrypted Vercel bypass credentials.
+  distinct encrypted Vercel bypass credentials. All five checks notify the
+  confirmed Gmail inbox. The three staging schedules are active; public checks
+  remain inactive until the foundation release passes their launch assertions.
 - The protected GitHub `staging` branch is mapped to fixed
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
@@ -66,8 +68,10 @@ connected to production data, or promoted to the production domains.
   cannot protect the persistent branch, so a protected paid production branch
   remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
-  `shapewebs-leads-staging` Turnstile widget is restricted to the public staging
-  hostname, and its secret exists only in the matching Vercel branch scope.
+  `shapewebs-leads-staging` Turnstile widget remains restricted to the public
+  staging hostname. Automated staging uses Cloudflare's official test pair in
+  the matching Vercel branch scope; preview-only code rejects that mode in
+  Vercel production.
 
 ### Authentication and authorization
 
@@ -130,7 +134,9 @@ connected to production data, or promoted to the production domains.
   Checkly definition. Only the exact checked-in synthetic identity can be
   deleted after six days; fresh, ordinary and cross-tenant leads fail closed.
 - The admin submissions view now reads minimal DTOs through the Neon repository
-  layer. The remaining Supabase CMS paths are still transitional.
+  layer. Better Auth session resolution no longer initializes Supabase.
+  Transitional Supabase access is server-only and limited by an automated
+  allowlist to the remaining CMS and settings paths.
 
 ## Verified evidence
 
@@ -152,14 +158,14 @@ security headers when accessed through Vercel's rotated automation bypass.
 Staging provisioning and runtime evidence is recorded in:
 
 - `docs/audits/staging-provisioning-2026-07-24.md`;
-- `docs/audits/staging-runtime-verification-2026-07-24.md`.
+- `docs/audits/staging-runtime-verification-2026-07-24.md`;
+- `docs/audits/checkly-monitoring-2026-07-24.md`.
 
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
 
 - first-owner Google email and Google OAuth client ID/secret;
-- Checkly account/API credentials and an alert channel;
 - production Turnstile site/secret keys and the exact production hostname;
 - a reachable external Resend notification recipient and production Resend
   key/webhook configuration; staging delivery evidence is complete, while a
@@ -171,6 +177,8 @@ These are intentionally not guessed or provisioned:
   production-only least-privilege credentials;
 - WAF/distributed rate limits, production monitoring alerts, provider DPAs,
   approved legal retention, and an incident/restore exercise.
+- non-interactive Checkly automation credentials if monitoring deployment is
+  later moved from the encrypted local CLI session into CI;
 - requirement-level review and evidence disposition for all 253 target ASVS
   5.0.0 controls.
 
@@ -184,8 +192,10 @@ inspection was revoked before activation and replaced. Neon CLI then echoed the
 staging migrator connection string despite a requested JSON format; that
 non-production role password was reset immediately and the replacement
 connection was verified. No temporary local Keychain copy remains. Google
-OAuth and Checkly remain unconfigured. Staging email delivery is disabled
-again until a reachable notification recipient is chosen. Production
+OAuth remains unconfigured. Checkly is authenticated locally, its Gmail alert
+channel delivered the controlled failure and recovery, and the three protected
+staging schedules are active. Staging email delivery is disabled again until a
+reachable notification recipient is chosen. Production
 database/auth/email variables remain intentionally unconfigured for the new
 path. Existing transitional Supabase production variables are not removed
 until the corresponding CMS and public-content paths have verified Neon parity.
@@ -194,15 +204,13 @@ until the corresponding CMS and public-content paths have verified Neon parity.
 
 1. Configure the owner Google identity/client and complete the Google-to-TOTP
    fail-closed staging journey.
-2. Configure Checkly credentials and an alert destination, then exercise one
-   controlled readiness failure.
-3. Choose a reachable external notification recipient, then exercise a
+2. Choose a reachable external notification recipient, then exercise a
    provider replay and safe bounced-event journey against the registered
    staging webhook.
-4. Provision minute-level outbox scheduling and record the retention and
+3. Provision minute-level outbox scheduling and record the retention and
    outbox heartbeats.
-5. Replace the Supabase CMS paths one vertical slice at a time, then remove
+4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
-6. Build the CMS lifecycle, storage controls, final public studio design, and
+5. Build the CMS lifecycle, storage controls, final public studio design, and
    production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
