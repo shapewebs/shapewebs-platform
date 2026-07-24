@@ -26,7 +26,7 @@ if (["export", "restore"].includes(command) && !exportPath) {
 const sql = neon(databaseUrl);
 
 const fixture = {
-  version: 1,
+  version: 2,
   users: [
     {
       id: "lifecycle-owner",
@@ -49,6 +49,36 @@ const fixture = {
       slug: "lifecycle-studio",
       name: "Lifecycle Studio",
       active: true,
+    },
+  ],
+  organizationSettings: [
+    {
+      organizationId: "10000000-0000-4000-8000-000000000001",
+      locales: [
+        { code: "en", isDefault: true, label: "English" },
+        { code: "da-DK", isDefault: false, label: "Dansk" },
+      ],
+      regionProfiles: [
+        {
+          code: "eea_uk_ch",
+          displayName: "EEA / UK / CH",
+          ruleSetKey: "eea_uk_ch",
+        },
+        {
+          code: "rest_of_world",
+          displayName: "Rest of world",
+          ruleSetKey: "rest_of_world",
+        },
+      ],
+      featureFlags: [
+        { enabled: false, key: "cms.scheduled_publishing" },
+        { enabled: true, key: "web.region_sensitive_consent" },
+      ],
+      consentRuleSets: [
+        { defaultMode: "opt_in", key: "eea_uk_ch" },
+        { defaultMode: "inform", key: "rest_of_world" },
+      ],
+      cookiePolicyVersions: ["v1-eea", "v1-global"],
     },
   ],
   memberships: [
@@ -128,7 +158,7 @@ const fixture = {
       email: "lifecycle-lead@example.test",
       message: "Synthetic lead retained through recovery",
       payload: { source: "lifecycle-test" },
-      requestFingerprint: "lifecycle-fixture-v1",
+      requestFingerprint: "lifecycle-fixture-v2",
     },
   ],
   files: [
@@ -150,8 +180,8 @@ const fixture = {
       actorUserId: "lifecycle-owner",
       action: "lifecycle.fixture.created",
       targetType: "lifecycle_test",
-      targetId: "fixture-v1",
-      requestId: "lifecycle-request-v1",
+      targetId: "fixture-v2",
+      requestId: "lifecycle-request-v2",
       metadata: { synthetic: true },
       occurredAt: "2026-01-01T00:00:00.000Z",
     },
@@ -188,6 +218,7 @@ async function seedFixture(value) {
 
   const [owner, customer] = value.users;
   const [organization] = value.organizations;
+  const [organizationSetting] = value.organizationSettings;
   const [customerMembership, ownerMembership] = value.memberships;
   const [project] = value.projects;
   const [projectMembership] = value.projectMemberships;
@@ -242,6 +273,24 @@ async function seedFixture(value) {
         ${organization.name},
         ${organization.active},
         ${timestamp}::timestamptz,
+        ${timestamp}::timestamptz
+      )`,
+    sql`insert into app.organization_settings (
+        organization_id,
+        locales,
+        region_profiles,
+        feature_flags,
+        consent_rule_sets,
+        cookie_policy_versions,
+        updated_at
+      )
+      values (
+        ${organizationSetting.organizationId},
+        ${JSON.stringify(organizationSetting.locales)}::jsonb,
+        ${JSON.stringify(organizationSetting.regionProfiles)}::jsonb,
+        ${JSON.stringify(organizationSetting.featureFlags)}::jsonb,
+        ${JSON.stringify(organizationSetting.consentRuleSets)}::jsonb,
+        ${JSON.stringify(organizationSetting.cookiePolicyVersions)}::jsonb,
         ${timestamp}::timestamptz
       )`,
     sql`insert into app.memberships (
@@ -446,6 +495,7 @@ async function readFixture() {
   const [
     users,
     organizations,
+    organizationSettings,
     memberships,
     projects,
     projectMemberships,
@@ -468,6 +518,15 @@ async function readFixture() {
     sql`select id, slug, name, active
       from app.organizations
       where id = ${fixture.organizations[0].id}`,
+    sql`select
+        organization_id,
+        locales,
+        region_profiles,
+        feature_flags,
+        consent_rule_sets,
+        cookie_policy_versions
+      from app.organization_settings
+      where organization_id = ${fixture.organizationSettings[0].organizationId}`,
     sql`select organization_id, user_id, role, status
       from app.memberships
       where organization_id = ${fixture.organizations[0].id}
@@ -556,7 +615,7 @@ async function readFixture() {
   ]);
 
   return {
-    version: 1,
+    version: 2,
     users: users.map((row) => ({
       id: row.id,
       name: row.name,
@@ -569,6 +628,14 @@ async function readFixture() {
       slug: row.slug,
       name: row.name,
       active: row.active,
+    })),
+    organizationSettings: organizationSettings.map((row) => ({
+      organizationId: row.organization_id,
+      locales: row.locales,
+      regionProfiles: row.region_profiles,
+      featureFlags: row.feature_flags,
+      consentRuleSets: row.consent_rule_sets,
+      cookiePolicyVersions: row.cookie_policy_versions,
     })),
     memberships: memberships.map((row) => ({
       organizationId: row.organization_id,

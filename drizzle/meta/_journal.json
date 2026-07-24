@@ -50,6 +50,20 @@
       "when": 1784897704107,
       "tag": "0006_synthetic-retention",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784927910961,
+      "tag": "0007_organization-settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784929139974,
+      "tag": "0008_organization-settings-backfill",
+      "breakpoints": true
     }
   ]
 }

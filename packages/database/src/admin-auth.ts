@@ -6,8 +6,10 @@ import {
   auditEvents,
   memberships,
   membershipRole,
+  organizationSettings,
   session as authSession,
 } from "./schema";
+import { defaultOrganizationSettingsValue } from "./settings-defaults";
 
 const inactivityLimitMs = 30 * 60 * 1_000;
 
@@ -65,6 +67,13 @@ export async function provisionOwnerAdminSession(
         role: "owner",
         status: "active",
         userId: identity.userId,
+      })
+      .onConflictDoNothing(),
+    database
+      .insert(organizationSettings)
+      .values({
+        ...defaultOrganizationSettingsValue,
+        organizationId: identity.organizationId,
       })
       .onConflictDoNothing(),
     database

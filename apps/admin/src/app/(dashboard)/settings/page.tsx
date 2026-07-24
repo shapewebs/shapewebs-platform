@@ -1,15 +1,29 @@
-import { getSettingsSnapshot } from "@shapewebs/db";
+import {
+  getDefaultOrganizationSettingsSnapshot,
+  getOrganizationSettingsSnapshot,
+} from "@shapewebs/database/server";
 import { requireAdminSession } from "@/lib/auth";
-import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
+import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import styles from "./page.module.css";
 
 export default async function SettingsPage() {
-  await requireAdminSession({
+  const runtime = await requireAdminSession({
     redirectTo: "/settings",
     roles: ["owner"],
   });
-  const supabase = await getTransitionalAdminSupabaseClient();
-  const settings = await getSettingsSnapshot(supabase);
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (!runtime.setupMode && (!databaseUrl || !runtime.authorization)) {
+    throw new Error("Organization settings are unavailable.");
+  }
+
+  const settings =
+    runtime.setupMode || !databaseUrl || !runtime.authorization
+      ? getDefaultOrganizationSettingsSnapshot()
+      : await getOrganizationSettingsSnapshot(
+          databaseUrl,
+          runtime.authorization,
+        );
 
   return (
     <main className={styles.rootQ3m8p1}>
@@ -18,7 +32,7 @@ export default async function SettingsPage() {
         <h1>Platform settings snapshot</h1>
         <p>
           Locales, region profiles, consent rule sets, cookie policy versions,
-          and feature flags are now coming through the shared settings
+          and feature flags are read from the owner-scoped Neon settings
           repository.
         </p>
       </header>

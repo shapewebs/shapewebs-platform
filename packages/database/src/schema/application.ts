@@ -21,6 +21,7 @@ import {
   webRuntimeRole,
 } from "./roles";
 import { user } from "./auth";
+import type { OrganizationSettingsValue } from "@shapewebs/validation";
 
 export const appSchema = pgSchema("app");
 
@@ -120,6 +121,64 @@ export const organizations = appSchema.table(
       to: adminRuntimeRole,
       using: sql`${table.id} = ${currentOrganizationId} and ${isOwner}`,
       withCheck: sql`${table.id} = ${currentOrganizationId} and ${isOwner}`,
+    }),
+  ],
+);
+
+export const organizationSettings = appSchema.table(
+  "organization_settings",
+  {
+    organizationId: uuid("organization_id")
+      .primaryKey()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    locales: jsonb("locales")
+      .$type<OrganizationSettingsValue["locales"]>()
+      .notNull(),
+    regionProfiles: jsonb("region_profiles")
+      .$type<OrganizationSettingsValue["regionProfiles"]>()
+      .notNull(),
+    featureFlags: jsonb("feature_flags")
+      .$type<OrganizationSettingsValue["featureFlags"]>()
+      .notNull(),
+    consentRuleSets: jsonb("consent_rule_sets")
+      .$type<OrganizationSettingsValue["consentRuleSets"]>()
+      .notNull(),
+    cookiePolicyVersions: jsonb("cookie_policy_versions")
+      .$type<OrganizationSettingsValue["cookiePolicyVersions"]>()
+      .notNull(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "organization_settings_locales_array",
+      sql`jsonb_typeof(${table.locales}) = 'array'`,
+    ),
+    check(
+      "organization_settings_region_profiles_array",
+      sql`jsonb_typeof(${table.regionProfiles}) = 'array'`,
+    ),
+    check(
+      "organization_settings_feature_flags_array",
+      sql`jsonb_typeof(${table.featureFlags}) = 'array'`,
+    ),
+    check(
+      "organization_settings_consent_rule_sets_array",
+      sql`jsonb_typeof(${table.consentRuleSets}) = 'array'`,
+    ),
+    check(
+      "organization_settings_cookie_policy_versions_array",
+      sql`jsonb_typeof(${table.cookiePolicyVersions}) = 'array'`,
+    ),
+    pgPolicy("owner reads current organization settings", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+    }),
+    pgPolicy("owner manages current organization settings", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
     }),
   ],
 );

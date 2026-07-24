@@ -240,6 +240,67 @@ async function seed() {
         (${ids.publishedDocumentA}, ${ids.organizationA}, 'page', 'published-a', 'published', ${ids.adminUser}, now()),
         (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now())`,
   ]);
+
+  await migrator.transaction([
+    migrator`create policy "migrator backfills organization settings"
+      on app.organizations
+      for select
+      to shapewebs_migrator
+      using (true)`,
+    migrator`create policy "migrator inserts organization settings backfill"
+      on app.organization_settings
+      for insert
+      to shapewebs_migrator
+      with check (true)`,
+    migrator`create policy "migrator reads organization settings backfill conflicts"
+      on app.organization_settings
+      for select
+      to shapewebs_migrator
+      using (true)`,
+    migrator`insert into app.organization_settings (
+        organization_id,
+        locales,
+        region_profiles,
+        feature_flags,
+        consent_rule_sets,
+        cookie_policy_versions
+      )
+      select
+        id,
+        '[{"code":"en","isDefault":true,"label":"English"},{"code":"da-DK","isDefault":false,"label":"Dansk"}]'::jsonb,
+        '[{"code":"eea_uk_ch","displayName":"EEA / UK / CH","ruleSetKey":"eea_uk_ch"},{"code":"us_california","displayName":"United States / California-sensitive","ruleSetKey":"us_california"},{"code":"rest_of_world","displayName":"Rest of world","ruleSetKey":"rest_of_world"}]'::jsonb,
+        '[{"enabled":false,"key":"cms.scheduled_publishing"},{"enabled":false,"key":"cms.translation_dashboard"},{"enabled":true,"key":"web.region_sensitive_consent"}]'::jsonb,
+        '[{"defaultMode":"opt_in","key":"eea_uk_ch"},{"defaultMode":"mixed","key":"us_california"},{"defaultMode":"inform","key":"rest_of_world"}]'::jsonb,
+        '["v1-eea","v1-us","v1-global"]'::jsonb
+      from app.organizations
+      where id in (${ids.organizationA}, ${ids.organizationB})
+      on conflict (organization_id) do nothing`,
+    migrator`drop policy "migrator reads organization settings backfill conflicts"
+      on app.organization_settings`,
+    migrator`drop policy "migrator inserts organization settings backfill"
+      on app.organization_settings`,
+    migrator`drop policy "migrator backfills organization settings"
+      on app.organizations`,
+  ]);
+
+  await fixtureAdmin.transaction([
+    fixtureAdmin`update app.organization_settings
+      set
+        locales = '[{"code":"en","isDefault":true,"label":"Organization A"}]'::jsonb,
+        region_profiles = '[{"code":"organization_a","displayName":"Organization A","ruleSetKey":"organization_a"}]'::jsonb,
+        feature_flags = '[{"enabled":true,"key":"security.organization_a"}]'::jsonb,
+        consent_rule_sets = '[{"defaultMode":"inform","key":"organization_a"}]'::jsonb,
+        cookie_policy_versions = '["security-a"]'::jsonb
+      where organization_id = ${ids.organizationA}`,
+    fixtureAdmin`update app.organization_settings
+      set
+        locales = '[{"code":"en","isDefault":true,"label":"Organization B"}]'::jsonb,
+        region_profiles = '[{"code":"organization_b","displayName":"Organization B","ruleSetKey":"organization_b"}]'::jsonb,
+        feature_flags = '[{"enabled":true,"key":"security.organization_b"}]'::jsonb,
+        consent_rule_sets = '[{"defaultMode":"inform","key":"organization_b"}]'::jsonb,
+        cookie_policy_versions = '["security-b"]'::jsonb
+      where organization_id = ${ids.organizationB}`,
+  ]);
 }
 
 async function cleanup() {
@@ -318,9 +379,91 @@ async function verifyRlsCoverage() {
     [],
     "Every app and audit table must enable and force RLS",
   );
+
+  const residualBackfillPolicies = await migrator`
+    select policyname
+    from pg_policies
+    where schemaname = 'app'
+      and policyname in (
+        'migrator backfills organization settings',
+        'migrator inserts organization settings backfill',
+        'migrator reads organization settings backfill conflicts'
+      )
+  `;
+  assert.deepEqual(
+    residualBackfillPolicies,
+    [],
+    "The temporary settings-backfill policy must not survive its transaction",
+  );
 }
 
 async function verifyAdminIsolation() {
+  const organizationASettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select organization_id, feature_flags
+      from app.organization_settings`,
+  });
+  assert.deepEqual(organizationASettings, [
+    {
+      organization_id: ids.organizationA,
+      feature_flags: [{ enabled: true, key: "security.organization_a" }],
+    },
+  ]);
+
+  const editorSettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select organization_id from app.organization_settings`,
+  });
+  assert.deepEqual(
+    editorSettings,
+    [],
+    "editors must not read owner-only organization settings",
+  );
+
+  const customerSettings = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    membershipRole: "customer",
+    query: admin`select organization_id from app.organization_settings`,
+  });
+  assert.deepEqual(
+    customerSettings,
+    [],
+    "customers must not read organization settings",
+  );
+
+  const crossTenantSettingsUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.organization_settings
+      set updated_at = updated_at
+      where organization_id = ${ids.organizationB}
+      returning organization_id`,
+  });
+  assert.deepEqual(
+    crossTenantSettingsUpdate,
+    [],
+    "owners must not update another organization's settings",
+  );
+
+  const ownerSettingsUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.organization_settings
+      set updated_at = updated_at
+      where organization_id = ${ids.organizationA}
+      returning organization_id`,
+  });
+  assert.deepEqual(ownerSettingsUpdate, [
+    { organization_id: ids.organizationA },
+  ]);
+
   const organizationAProjects = await withAdminContext({
     organizationId: ids.organizationA,
     userId: ids.adminUser,
@@ -474,6 +617,10 @@ async function verifyPublicAndWebBoundaries() {
     "public auth-schema read",
   );
   await expectDenied(
+    publicReader`select organization_id from app.organization_settings`,
+    "public organization-settings read",
+  );
+  await expectDenied(
     publicReader`insert into app.lead_submissions (
       command_id,
       organization_id,
@@ -607,6 +754,10 @@ async function verifyPublicAndWebBoundaries() {
   await expectDenied(
     web`select email from app.lead_submissions`,
     "web lead personal-data read",
+  );
+  await expectDenied(
+    web`select organization_id from app.organization_settings`,
+    "web organization-settings read",
   );
   await expectDenied(web`select id from app.outbox_events`, "web outbox read");
 
@@ -918,7 +1069,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

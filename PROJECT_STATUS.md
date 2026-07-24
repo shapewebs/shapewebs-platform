@@ -3,11 +3,12 @@
 ## Current milestone
 
 - Date: 24 July 2026
-- Branch: protected `staging`; current evidence branch
-  `codex/staging-scheduler-evidence`
-- Pull requests: draft staging evidence
-  `shapewebs/shapewebs-platform#15`; draft foundation promotion
-  `shapewebs/shapewebs-platform#7`
+- Branch: protected `staging`; current implementation branch
+  `codex/neon-organization-settings`
+- Pull requests: staging scheduler evidence
+  `shapewebs/shapewebs-platform#15` merged; draft foundation promotion
+  `shapewebs/shapewebs-platform#7`; the current settings branch targets the
+  protected `staging` branch
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
@@ -70,10 +71,10 @@ connected to production data, or promoted to the production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0006`, including marker-restricted synthetic lead retention. The
-  runtime roles passed the complete RLS and authorization suite. Neon Free
-  cannot protect the persistent branch, so a protected paid production branch
-  remains a launch gate.
+  through `0008`, including marker-restricted synthetic lead retention and
+  owner-only organization settings. The runtime roles passed the complete RLS
+  and authorization suite. Neon Free cannot protect the persistent branch, so
+  a protected paid production branch remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget remains restricted to the public
   staging hostname. Automated staging uses Cloudflare's official test pair in
@@ -100,7 +101,7 @@ connected to production data, or promoted to the production domains.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains seven reviewed Drizzle migrations, forced RLS,
+- `packages/database` contains nine reviewed Drizzle migrations, forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -174,10 +175,12 @@ connected to production data, or promoted to the production domains.
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
   deleted after six days; fresh, ordinary and cross-tenant leads fail closed.
-- The admin submissions view now reads minimal DTOs through the Neon repository
-  layer. Better Auth session resolution no longer initializes Supabase.
-  Transitional Supabase access is server-only and limited by an automated
-  allowlist to the remaining CMS and settings paths.
+- The admin submissions and owner-only Settings views now read minimal,
+  validated DTOs through the Neon repository layer. Organization settings are
+  provisioned with deterministic defaults, isolated by forced RLS, and covered
+  by restore evidence. Better Auth session resolution no longer initializes
+  Supabase. Transitional Supabase access is server-only and limited by an
+  automated allowlist to the remaining CMS paths.
 
 ## Verified evidence
 
@@ -186,9 +189,9 @@ The existing foundation and database evidence is recorded in:
 - `docs/audits/foundation-verification-2026-07-23.md`;
 - `docs/audits/database-foundation-verification-2026-07-24.md`.
 
-The current pull request passed all required Quality, Security, CodeQL,
-dependency-review, Vercel and disposable Neon migration/security/restore
-checks. At commit `bb07f7c`, protected-staging run
+Merged staging pull request `#15` passed all required Quality, Security,
+CodeQL, dependency-review, Vercel and disposable Neon
+migration/security/restore checks. At commit `bb07f7c`, protected-staging run
 [`30103670868`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30103670868)
 passed k6 and ZAP: 63 passive rules passed, three reviewed findings remained
 visible as information, and no warning or failure remained. The 30 KiB
@@ -203,6 +206,22 @@ Staging provisioning and runtime evidence is recorded in:
 - `docs/audits/checkly-monitoring-2026-07-24.md`;
 - `docs/audits/staging-outbox-scheduler-2026-07-24.md`; and
 - `docs/audits/workspace-mail-verification-2026-07-24.md`.
+
+The current settings branch passed local formatting, zero-warning lint,
+TypeScript, all 77 unit tests, application-boundary checks, Drizzle consistency
+and a complete disposable Neon lifecycle. Both source and restore databases
+produced fixture hash
+`0ff6f8cb3fba6c66d6b760ebf08e5db858ee50863398789fbfe58ef815d7eaa6`;
+negative owner/editor/customer/cross-tenant/public/web checks passed, rollback
+left no journal or schema residue, and both temporary branches were deleted.
+The evidence is recorded in:
+
+- `docs/audits/neon-organization-settings-verification-2026-07-24.md`.
+
+Persistent staging now has nine journaled migrations and a one-to-one
+organization/settings backfill. A provider-owner read and pooled admin-runtime
+check proved forced RLS, one owner-visible row, zero editor-visible rows, no
+web/public SELECT privilege and zero residual migrator backfill policies.
 
 ## External launch gates
 
@@ -269,13 +288,16 @@ public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Complete mailbox MFA, recovery-address verification and the remaining
+1. Publish the Neon organization-settings slice through the protected staging
+   workflow, apply migration `0007` to the persistent staging branch with the
+   dedicated migrator, and verify the deployed owner-only route.
+2. Complete mailbox MFA, recovery-address verification and the remaining
    alias send-as/outbound identity verification.
-2. Configure the Workspace-owned Google OAuth client when the new account can
+3. Configure the Workspace-owned Google OAuth client when the new account can
    access Google Cloud, then complete the Google-to-TOTP fail-closed staging
    journey.
-3. Replace the Supabase CMS paths one vertical slice at a time, then remove
+4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
-4. Build the CMS lifecycle, storage controls, final public studio design, and
+5. Build the CMS lifecycle, storage controls, final public studio design, and
    production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

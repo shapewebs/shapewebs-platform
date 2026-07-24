@@ -276,7 +276,6 @@ const transitionalAdminSupabaseImporters = new Set(
     "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
     "apps/admin/src/app/(dashboard)/content/page.tsx",
     "apps/admin/src/app/(dashboard)/content/pages/[documentId]/page.tsx",
-    "apps/admin/src/app/(dashboard)/settings/page.tsx",
   ].map((relativePath) => path.join(workspaceRoot, relativePath)),
 );
 
@@ -298,7 +297,7 @@ for (const sourcePath of appFiles) {
       recordViolation(
         sourcePath,
         [sourcePath, resolvedImport],
-        "Transitional admin Supabase access is restricted to the explicit CMS and settings allowlist.",
+        "Transitional admin Supabase access is restricted to the explicit CMS allowlist.",
       );
     }
 
