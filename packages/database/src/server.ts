@@ -15,6 +15,7 @@ export {
 export {
   claimLeadNotification,
   completeLeadNotification,
+  deleteExpiredSyntheticLeadSubmissions,
   failLeadNotification,
   listLeadSubmissions,
   recordResendWebhook,

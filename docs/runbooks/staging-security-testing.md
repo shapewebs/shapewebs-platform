@@ -60,4 +60,7 @@ approval.
 
 The Checkly lead journey must use Cloudflare's published test keys or a
 staging-only Turnstile configuration, a synthetic `.invalid` contact identity,
-and an automated seven-day cleanup. Never aim the journey at production.
+and the daily `staging-synthetic-retention` check. The retention route has a
+separate encrypted bearer secret and database policy that matches only the
+checked-in synthetic fixture after six days, leaving one day of scheduling
+headroom before the seven-day maximum. Never aim either journey at production.

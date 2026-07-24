@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
+import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
 import {
   escapeEmailHtml,
   renderLeadHtml,
@@ -72,6 +73,44 @@ describe("reliability and provider boundaries", () => {
         NODE_ENV: "production",
       }),
     ).toBeNull();
+  });
+
+  it("enables synthetic retention only for the exact protected preview origin", () => {
+    const completeEnvironment = {
+      BETTER_AUTH_URL: "https://admin-staging.shapewebs.com",
+      DATABASE_URL: "postgresql://redacted",
+      SHAPEWEBS_ORGANIZATION_ID: "f6214344-7525-42d0-83ac-210881b1b7b6",
+      SYNTHETIC_RETENTION_SECRET:
+        "a-dedicated-retention-secret-with-sufficient-length",
+      VERCEL_ENV: "preview",
+    };
+
+    expect(
+      getSyntheticRetentionEnvironment(
+        "https://admin-staging.shapewebs.com/api/jobs/synthetic-retention",
+        completeEnvironment,
+      ),
+    ).toEqual({
+      databaseUrl: "postgresql://redacted",
+      organizationId: "f6214344-7525-42d0-83ac-210881b1b7b6",
+      secret: "a-dedicated-retention-secret-with-sufficient-length",
+    });
+
+    for (const environment of [
+      { ...completeEnvironment, VERCEL_ENV: "production" },
+      { ...completeEnvironment, SYNTHETIC_RETENTION_SECRET: "short" },
+      {
+        ...completeEnvironment,
+        BETTER_AUTH_URL: "https://admin.shapewebs.com",
+      },
+    ]) {
+      expect(
+        getSyntheticRetentionEnvironment(
+          "https://admin-staging.shapewebs.com/api/jobs/synthetic-retention",
+          environment,
+        ),
+      ).toBeNull();
+    }
   });
 
   it("rejects request bodies declared or streamed beyond the byte limit", async () => {

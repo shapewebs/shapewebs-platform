@@ -216,6 +216,8 @@ team-wide variables.
 - `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`,
   `LEAD_NOTIFICATION_FROM_EMAIL`, `LEAD_NOTIFICATION_TO_EMAIL`, and
   `CRON_SECRET`;
+- a staging-only `SYNTHETIC_RETENTION_SECRET`, scoped to the fixed preview
+  branch and never configured in Production;
 - private/public Blob credentials scoped to their stores;
 - the server-to-server publish/revalidation secret.
 
@@ -268,6 +270,14 @@ fallbacks, accessibility, malicious form content, duplicate worker execution,
 provider timeouts, webhook replay, bounce handling, and a disabled/rotated API
 key. Update the privacy notice because email addresses and notification
 metadata are processed by Resend, and record the approved retention policy.
+
+The Checkly lead journey is staging-only. Its daily retention check sends an
+authenticated `POST` to `/api/jobs/synthetic-retention` with a dedicated bearer secret. The route
+refuses Production and non-fixed preview origins. Database policy permits
+deletion only for owner-context contact rows older than six days whose name,
+`.invalid` email, message, and company marker all match the checked-in
+synthetic fixture. It deletes related outbox rows in the same transaction and
+cannot delete fresh, ordinary, editor-owned, or cross-tenant leads.
 
 ## 9. Promotion order
 

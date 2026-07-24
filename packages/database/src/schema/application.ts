@@ -478,6 +478,18 @@ export const leadSubmissions = appSchema.table(
       using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
     }),
+    pgPolicy("owners delete expired synthetic leads", {
+      for: "delete",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${isOwner}
+        and ${table.kind} = 'contact'
+        and ${table.name} = 'Checkly Synthetic Monitor'
+        and lower(${table.email}) = 'synthetic-monitor@shapewebs.invalid'
+        and ${table.message} = 'Synthetic staging reliability check. Safe to delete.'
+        and ${table.payload}->>'company' = 'CHECKLY_SYNTHETIC_DO_NOT_CONTACT'
+        and ${table.createdAt} < now() - interval '6 days'`,
+    }),
     pgPolicy("web runtime inserts leads for configured organization", {
       for: "insert",
       to: webRuntimeRole,

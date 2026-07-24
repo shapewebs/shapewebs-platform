@@ -8,6 +8,8 @@ two-minute Frankfurt-region defaults from `checkly.config.ts`.
 - `CHECKLY_WEB_BASE_URL` must be an HTTPS origin without credentials.
 - The default target is `https://shapewebs.com`.
 - `CHECKLY_STAGING_WEB_BASE_URL`, when present, must be one exact HTTPS origin.
+- `CHECKLY_STAGING_ADMIN_BASE_URL`, when present, must be the fixed protected
+  admin staging origin.
 - The lead journey targets only protected staging, uses synthetic `.invalid`
   contact data, and must be paired with staging Turnstile test keys and
   automatic cleanup within seven days.
@@ -15,6 +17,10 @@ two-minute Frankfurt-region defaults from `checkly.config.ts`.
   secret. The browser script reads it only at runtime and sends it as Vercel's
   protection-bypass header before navigation. Never reuse the GitHub Actions
   bypass.
+- `SHAPEWEBS_STAGING_RETENTION_SECRET` must be a second encrypted global
+  secret whose value matches the admin staging
+  `SYNTHETIC_RETENTION_SECRET`. It can invoke only the strict synthetic
+  retention route and is never shared with the outbox worker.
 - Secrets belong in Checkly encrypted environment variables, never in this
   repository.
 

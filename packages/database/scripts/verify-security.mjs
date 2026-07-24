@@ -45,6 +45,11 @@ const ids = {
   hiddenUpdate: randomUUID(),
   allowedLead: randomUUID(),
   allowedOutbox: randomUUID(),
+  expiredOrdinaryLead: randomUUID(),
+  expiredSyntheticLead: randomUUID(),
+  expiredSyntheticOutbox: randomUUID(),
+  freshSyntheticLead: randomUUID(),
+  otherOrganizationSyntheticLead: randomUUID(),
   deliveredWebhook: `webhook-${randomUUID()}`,
   sentWebhook: `webhook-${randomUUID()}`,
   activeAdminSession: `security-session-active-${runId}`,
@@ -735,6 +740,134 @@ async function verifyWebhookIdempotencyAndOrdering() {
   );
 }
 
+async function verifySyntheticRetentionPolicy() {
+  await fixtureAdmin.transaction([
+    fixtureAdmin`insert into app.lead_submissions (
+      id,
+      command_id,
+      organization_id,
+      kind,
+      name,
+      email,
+      message,
+      payload,
+      request_fingerprint,
+      created_at
+    ) values
+      (
+        ${ids.expiredSyntheticLead},
+        ${ids.expiredSyntheticLead},
+        ${ids.organizationA},
+        'contact',
+        'Checkly Synthetic Monitor',
+        'synthetic-monitor@shapewebs.invalid',
+        'Synthetic staging reliability check. Safe to delete.',
+        '{"company":"CHECKLY_SYNTHETIC_DO_NOT_CONTACT"}'::jsonb,
+        'expired-synthetic',
+        now() - interval '7 days'
+      ),
+      (
+        ${ids.freshSyntheticLead},
+        ${ids.freshSyntheticLead},
+        ${ids.organizationA},
+        'contact',
+        'Checkly Synthetic Monitor',
+        'synthetic-monitor@shapewebs.invalid',
+        'Synthetic staging reliability check. Safe to delete.',
+        '{"company":"CHECKLY_SYNTHETIC_DO_NOT_CONTACT"}'::jsonb,
+        'fresh-synthetic',
+        now() - interval '1 day'
+      ),
+      (
+        ${ids.expiredOrdinaryLead},
+        ${ids.expiredOrdinaryLead},
+        ${ids.organizationA},
+        'contact',
+        'Real Lead',
+        'real-lead@example.test',
+        'This ordinary lead must never be deleted by synthetic retention.',
+        '{}'::jsonb,
+        'expired-ordinary',
+        now() - interval '30 days'
+      ),
+      (
+        ${ids.otherOrganizationSyntheticLead},
+        ${ids.otherOrganizationSyntheticLead},
+        ${ids.organizationB},
+        'contact',
+        'Checkly Synthetic Monitor',
+        'synthetic-monitor@shapewebs.invalid',
+        'Synthetic staging reliability check. Safe to delete.',
+        '{"company":"CHECKLY_SYNTHETIC_DO_NOT_CONTACT"}'::jsonb,
+        'other-organization-synthetic',
+        now() - interval '7 days'
+      )`,
+    fixtureAdmin`insert into app.outbox_events (
+      id,
+      organization_id,
+      lead_id,
+      event_type,
+      idempotency_key
+    ) values (
+      ${ids.expiredSyntheticOutbox},
+      ${ids.organizationA},
+      ${ids.expiredSyntheticLead},
+      'lead.notification.requested',
+      ${`security-retention/${ids.expiredSyntheticLead}`}
+    )`,
+  ]);
+
+  const editorDelete = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`delete from app.lead_submissions
+      where id = ${ids.expiredSyntheticLead}
+      returning id`,
+  });
+  assert.deepEqual(editorDelete, [], "editors must not delete synthetic leads");
+
+  const rejectedOwnerDeletes = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`delete from app.lead_submissions
+      where id in (
+        ${ids.freshSyntheticLead},
+        ${ids.expiredOrdinaryLead},
+        ${ids.otherOrganizationSyntheticLead}
+      )
+      returning id`,
+  ]);
+  assert.deepEqual(
+    rejectedOwnerDeletes[3],
+    [],
+    "retention must preserve fresh, ordinary, and cross-tenant leads",
+  );
+
+  const deleted = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`delete from app.outbox_events
+      where organization_id = ${ids.organizationA}
+        and lead_id = ${ids.expiredSyntheticLead}`,
+    admin`delete from app.lead_submissions
+      where id = ${ids.expiredSyntheticLead}
+      returning id`,
+  ]);
+  assert.deepEqual(deleted[4], [{ id: ids.expiredSyntheticLead }]);
+
+  await expectDenied(
+    web.transaction([
+      web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      web`delete from app.lead_submissions
+        where id = ${ids.freshSyntheticLead}`,
+    ]),
+    "web synthetic retention",
+  );
+}
+
 async function verifyAuditImmutability() {
   await admin.transaction([
     admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
@@ -781,10 +914,11 @@ try {
   await verifyAdminSessionAssurance();
   await verifyAdminIsolation();
   await verifyPublicAndWebBoundaries();
+  await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, tenant isolation, public access, idempotent lead/outbox writes, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();
