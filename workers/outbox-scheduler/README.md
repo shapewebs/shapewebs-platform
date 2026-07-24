@@ -10,6 +10,8 @@ the outbox route returns a valid successful result.
   `https://admin-staging.shapewebs.com/api/jobs/outbox`.
 - The only accepted schedule is `*/5 * * * *`.
 - Production targets and unexpected cron expressions fail closed.
+- Same-zone subrequests use Cloudflare's public Internet path so the fixed
+  Vercel endpoint passes through the normal Cloudflare security controls.
 - Secrets are never stored in source, `.dev.vars`, or Wrangler configuration.
 - The Worker sends only a request ID and authentication headers. It never
   receives lead content unless the admin route violates its response contract.
