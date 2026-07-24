@@ -46,6 +46,15 @@ let restoreBranchId;
 let parentBranchId;
 let primaryFailure;
 
+class CommandExecutionError extends Error {
+  constructor(command, args, result) {
+    super(`${command} ${args.join(" ")} exited with status ${result.status}`);
+    this.name = "CommandExecutionError";
+    this.stderr = result.stderr?.trim() ?? "";
+    this.stdout = result.stdout?.trim() ?? "";
+  }
+}
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? repositoryRoot,
@@ -62,26 +71,60 @@ function run(command, args, options = {}) {
   }
 
   if (result.status !== 0) {
-    if (options.capture && result.stderr) {
-      process.stderr.write(result.stderr);
-    }
-    throw new Error(
-      `${command} ${args.join(" ")} exited with status ${result.status}`,
-    );
+    throw new CommandExecutionError(command, args, result);
   }
 
   return result.stdout?.trim() ?? "";
 }
 
-function runNeon(args) {
-  const output = run(
-    neonctl,
-    [...args, "--output", "json", "--no-color", "--no-analytics"],
-    { capture: true },
+function wait(milliseconds) {
+  Atomics.wait(
+    new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)),
+    0,
+    0,
+    milliseconds,
   );
+}
 
-  if (!["{", "[", '"'].includes(output[0])) {
-    return output;
+function isRetryableNeonConflict(error) {
+  return (
+    error instanceof CommandExecutionError &&
+    /conflicting operations|resource is locked/i.test(
+      `${error.stderr}\n${error.stdout}`,
+    )
+  );
+}
+
+function runNeon(args) {
+  const maximumAttempts = 5;
+  let output;
+
+  for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+    try {
+      output = run(
+        neonctl,
+        [...args, "--output", "json", "--no-color", "--no-analytics"],
+        { capture: true },
+      );
+      break;
+    } catch (error) {
+      if (!isRetryableNeonConflict(error) || attempt === maximumAttempts) {
+        if (error instanceof CommandExecutionError && error.stderr) {
+          process.stderr.write(`${error.stderr}\n`);
+        }
+        throw error;
+      }
+
+      const retryDelayMs = Math.min(2_000 * 2 ** (attempt - 1), 10_000);
+      console.warn(
+        `Neon has a conflicting operation; retrying in ${retryDelayMs}ms (${attempt}/${maximumAttempts}).`,
+      );
+      wait(retryDelayMs);
+    }
+  }
+
+  if (output === undefined || !["{", "[", '"'].includes(output[0])) {
+    return output ?? "";
   }
 
   try {
