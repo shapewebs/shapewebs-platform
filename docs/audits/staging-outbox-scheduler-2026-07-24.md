@@ -123,7 +123,22 @@ Live evidence:
 - Automated and deployed route controls continue to reject unauthenticated,
   malformed and stale-credential requests.
 
-One deliberately external side effect remains: a controlled missed-heartbeat
-and recovery exercise. It will intentionally send failure and recovery
-notifications to the operational inbox, so it is deferred until the owner
-gives action-time approval.
+The owner approved the deliberately external missed-heartbeat and recovery
+exercise. The staging Cron Trigger alone was removed after a healthy pre-check;
+one already queued invocation produced a final successful heartbeat at
+`2026-07-24T20:05:56Z`. Checkly exhausted the five-minute period and six-minute
+grace window, recorded the expected failure and delivered the failure alert to
+`shapewebs@gmail.com` at `2026-07-24T20:17:03Z`.
+
+The exact `*/5 * * * *` trigger was restored at
+`2026-07-24T20:17:44Z`. No manual Checkly ping was used. The next scheduled
+Worker invocation completed at `2026-07-24T20:20:57Z` in 3.885 seconds,
+processed one synthetic event and reported zero retryable and permanent
+failures. Checkly recovered at `2026-07-24T20:21:00Z`, and the recovery email
+arrived in the same operational inbox.
+
+After recovery, the trigger API again returned exactly one
+`*/5 * * * *` schedule. Checkly was healthy with nine recorded events. Neon
+contained 21 outbox events, all `sent` with `suppressed_synthetic`, zero
+unresolved events and zero provider message IDs. Resend sent no outbox
+notification during the exercise.

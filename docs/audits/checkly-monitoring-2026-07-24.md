@@ -140,9 +140,30 @@ Worker invocations completed at `2026-07-24T19:35:55Z` and
 availability.
 
 Neon contained 17 suppressed synthetic events, zero unresolved events and zero
-provider message IDs. Resend recorded no new email. The heartbeat remains
-active. A deliberate missed-heartbeat and recovery exercise is deferred until
-the owner approves the resulting operational notifications at action time.
+provider message IDs. Resend recorded no new email. The heartbeat remained
+active.
+
+The owner then approved a controlled missed-heartbeat and recovery exercise.
+Only the staging Worker's Cron Trigger was removed; its code, bindings,
+encrypted secrets, Checkly monitor and production systems were unchanged. One
+already queued invocation still produced a seventh successful heartbeat at
+`2026-07-24T20:05:56Z`. After the following expected period and grace window
+elapsed, Checkly recorded a `FAILING` event and sent the operational failure
+email at `2026-07-24T20:17:03Z`.
+
+The exact `*/5 * * * *` trigger was restored at
+`2026-07-24T20:17:44Z`. No manual heartbeat was sent. The next real Worker
+invocation completed at `2026-07-24T20:20:57Z` in 3.885 seconds, processed one
+synthetic event and reported zero retryable and permanent failures. Checkly
+recorded recovery and sent the recovery email at
+`2026-07-24T20:21:00Z`. Both notifications arrived in the confirmed
+`shapewebs@gmail.com` operational inbox.
+
+The monitor is healthy after the exercise. Its last-24-hour availability is
+intentionally 88.89% because the controlled failure remains visible as one of
+nine events. A final Neon read found 21 outbox events: all 21 were `sent` with
+`suppressed_synthetic`, zero were unresolved and zero had provider message
+IDs. Resend sent no outbox notification during recovery.
 
 ## Safe bounce, replay and monitor-resource recovery
 

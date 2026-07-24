@@ -3,8 +3,9 @@
 - Date: 24 July 2026
 - Environment: synthetic non-production staging
 - Status: control plane, protected-host assurance, Turnstile persistence,
-  outbound-provider acceptance, bounce and replay verified; Google OAuth and
-  production account configuration remain pending
+  outbound-provider acceptance, bounce, replay, Workspace inbound mail and
+  scheduler recovery verified; Google OAuth and production account
+  configuration remain pending
 
 ## GitHub and Vercel
 
@@ -55,10 +56,10 @@ secret was neither printed nor written to the repository.
 - A sending-only `Shapewebs Staging` Resend key is restricted to
   `shapewebs.com` and stored only in the admin Preview scope for Git branch
   `staging`.
-- The verified sender is `Shapewebs <website@shapewebs.com>`.
-- Provider acceptance passed; the original `shapewebs.com` recipient bounced
-  because inbound mail is intentionally unavailable, so the recipient variable
-  was removed.
+- The application sender is
+  `Shapewebs <noreply@shapewebs.com>`. The address is transactional and
+  outbound-only; it is not a human mailbox.
+- The branch-scoped notification recipient is `sales@shapewebs.com`.
 - The staging webhook is enabled for seven delivery-lifecycle events. Its
   signing secret is a sensitive, branch-scoped admin variable, and a dedicated
   staging-only Vercel bypass lets Resend reach the otherwise protected route.
@@ -71,9 +72,13 @@ secret was neither printed nor written to the repository.
   `{"status":"duplicate"}` on attempt two while Neon retained one bounce event
   and the monotonic `email.bounced` state. The exact fixture and recipient were
   removed afterward.
-- ImprovMX was removed. Apex null MX, SPF `-all`, and DMARC quarantine now
-  prevent inbound delivery and spoofing while Resend's outbound DKIM and
-  `send` subdomain records remain.
+- ImprovMX was removed. Google Workspace MX, apex SPF, 2048-bit Google DKIM and
+  DMARC quarantine now protect inbound and human outbound mail. Resend's DKIM
+  and `send` subdomain SPF/MX remain isolated for transactional delivery.
+- An external Resend MX exercise delivered successfully to
+  `admin@shapewebs.com`, the six role aliases, and the personal
+  `lukasthomsen@shapewebs.com` alias. All eight messages arrived in the
+  `admin@shapewebs.com` inbox.
 
 ## Runtime evidence
 
@@ -87,8 +92,7 @@ Detailed evidence and explicit limitations are recorded in
 
 ## Pending provider evidence
 
-- Configure an authenticated scheduler for the POST-only retention route and
-  record its first successful deletion after the six-day threshold.
+- Record the active authenticated retention schedule's first successful
+  deletion after the six-day threshold.
 - Configure Google OAuth and complete the owner-to-TOTP journey.
-- Add a reachable external Resend recipient for ordinary notifications before
-  claiming the complete staging launch gate.
+- Complete Workspace MFA plus alias send-as and filter configuration.
