@@ -20,6 +20,7 @@ jobs:
     env:
       K6_TARGET_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
       SHAPEWEBS_STAGING_HOSTS: ${{ vars.SHAPEWEBS_STAGING_HOSTS }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
       ZAP_TARGET_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
 
     steps:
@@ -38,6 +39,7 @@ jobs:
           set -euo pipefail
           [[ -n "$K6_TARGET_URL" ]]
           [[ -n "$SHAPEWEBS_STAGING_HOSTS" ]]
+          [[ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]]
 
       - name: Install checksum-verified k6
         env:
