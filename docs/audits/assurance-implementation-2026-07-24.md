@@ -70,10 +70,10 @@ configuration below.
 
 - Google OAuth owner identity, client, secret, and exact fixed origins.
 - Checkly account/API credentials, alert channel, and controlled-failure test.
-- Checkly account/API credentials, alert channel, and controlled-failure test.
 - Production Turnstile keys and exact expected hostname.
-- Reachable Resend notification recipient, webhook signing
-  secret/registration, and signed delivery/bounce evidence.
+- Reachable external Resend notification recipient and production
+  key/webhook configuration. Staging signed delivery passed; provider replay
+  and a safe bounced-event exercise remain follow-ups.
 - Minute-level protected outbox scheduling. The checked-in Hobby Cron schedule
   is daily and cannot meet the 15-minute SLO.
 - Paid production Neon/Vercel topology, production recovery rehearsal, WAF

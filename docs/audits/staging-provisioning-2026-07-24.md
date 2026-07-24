@@ -58,6 +58,13 @@ secret was neither printed nor written to the repository.
 - Provider acceptance passed; the original `shapewebs.com` recipient bounced
   because inbound mail is intentionally unavailable, so the recipient variable
   was removed.
+- The staging webhook is enabled for seven delivery-lifecycle events. Its
+  signing secret is a sensitive, branch-scoped admin variable, and a dedicated
+  staging-only Vercel bypass lets Resend reach the otherwise protected route.
+- A safe synthetic send produced signed `email.sent` and `email.delivered`
+  events. Resend received `200` on the first attempt, Neon reached
+  `email.delivered`, and the exact synthetic rows and temporary test recipient
+  were removed afterward.
 - ImprovMX was removed. Apex null MX, SPF `-all`, and DMARC quarantine now
   prevent inbound delivery and spoofing while Resend's outbound DKIM and
   `send` subdomain records remain.
@@ -77,5 +84,6 @@ Detailed evidence and explicit limitations are recorded in
 - Configure an authenticated scheduler for the POST-only retention route and
   record its first successful deletion after the six-day threshold.
 - Configure Google OAuth and Checkly.
-- Add a reachable Resend recipient, register the signed webhook and record
-  delivery/bounce state before claiming the complete staging launch gate.
+- Add a reachable external Resend recipient for ordinary notifications and
+  exercise provider replay plus a safe bounced-event journey before claiming
+  the complete staging launch gate.

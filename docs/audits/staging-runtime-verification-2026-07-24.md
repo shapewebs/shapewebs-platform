@@ -110,10 +110,34 @@ The protected outbox route claimed the persisted event exactly once. Resend
 accepted the API request and returned provider message ID
 `133339a1-72eb-4bea-960f-31a6ddacc0c8`; Neon recorded one attempt and a `sent`
 provider state. Resend subsequently classified the message as bounced because
-`lukas@shapewebs.com` had no receiving mailbox. Because the signed webhook is
-not registered, the application delivery state correctly remains without the
-provider's later bounce classification. `LEAD_NOTIFICATION_TO_EMAIL` was
-removed from staging to prevent further attempts to an unrouteable address.
+`lukas@shapewebs.com` had no receiving mailbox. `LEAD_NOTIFICATION_TO_EMAIL`
+was removed from staging to prevent further attempts to an unrouteable address.
+
+The staging webhook was then registered for `email.sent`, `email.delivered`,
+`email.delivery_delayed`, `email.bounced`, `email.complained`, `email.failed`,
+and `email.suppressed`. Its signing secret is stored only as a sensitive admin
+Preview variable scoped to Git branch `staging`. A separate non-environment
+Vercel automation bypass is embedded only in the Resend staging endpoint URL so
+the provider can reach this exact application-signed route through deployment
+protection.
+
+A second synthetic contact journey used Resend's documented safe delivered
+address. The lead/outbox transaction was acknowledged, the worker processed
+exactly one event, and Neon recorded:
+
+- outbox status `sent`, attempts `1`;
+- signed webhook events `email.sent` and `email.delivered`;
+- final delivery state `email.delivered`.
+
+Resend recorded `200 - OK`, one attempt, and
+`{"status":"accepted"}` for both events. Requests with no signature headers or
+an invalid signature reached the application through the dedicated bypass and
+returned bounded `400 {"error":"invalid_webhook"}` responses. A request without
+the bypass remained at Vercel SSO with `302`.
+
+The exact second fixture was removed in one database transaction: two provider
+webhook rows, one outbox row, and one lead row. Its temporary Resend test
+recipient was removed and the fixed admin alias was redeployed without it.
 
 With explicit owner approval that inbound forwarding is not required,
 ImprovMX's two MX records and apex SPF include were removed. Vercel's
@@ -157,12 +181,28 @@ return Vercel SSO `302`; the rotated credential reaches the sanitized
 application `200` response. The fixed branch-scoped hosts therefore remain
 protected in observed runtime behavior.
 
+## Credential containment during provider verification
+
+The first dedicated webhook bypass appeared in a dashboard snapshot before the
+webhook was created. It was treated as compromised, revoked immediately, and
+replaced. Only the replacement was registered. After verification, temporary
+local Keychain copies of the webhook bypass and rotated staging cron secret were
+deleted.
+
+Neon CLI `2.36.0` ignored `--output json` for `connection-string` and included
+the staging migrator URL in a parser error. The `shapewebs_migrator` password
+was reset immediately through the authenticated Neon API. A fresh direct
+connection subsequently returned current user `shapewebs_migrator` and
+database `shapewebs`. The leaked password is no longer valid and was not
+written to the repository.
+
 ## Explicitly incomplete evidence
 
 - Google OAuth, the owner-to-TOTP journey, Checkly alerts and the
   controlled-failure exercise remain account-specific gates;
-- Resend still requires a reachable recipient, a signed webhook registration
-  and an end-to-end delivery/bounce exercise;
+- a reachable external Resend notification recipient is still required for
+  ordinary staging notifications; staging signed-delivery evidence is complete,
+  while a provider replay and safe bounced-event exercise remain follow-ups;
 - minute-level scheduling and paid production Neon/Vercel topology remain
   launch gates;
 - no production application deployment or database was changed; the only

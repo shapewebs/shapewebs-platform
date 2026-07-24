@@ -102,10 +102,17 @@ connected to production data, or promoted to the production domains.
 - The real fixed-staging contact journey passed Cloudflare Turnstile, returned
   the deployed success state, and produced one joined Neon lead/outbox pair.
 - A restricted, domain-scoped Resend staging key is stored only in the admin
-  Preview environment for Git branch `staging`. A real worker invocation
-  claimed the persisted event once and Resend accepted the API request. The
-  provider later bounced the unrouteable `shapewebs.com` recipient; the
-  recipient variable was removed until a reachable external mailbox is chosen.
+  Preview environment for Git branch `staging`. The registered staging webhook
+  listens for seven delivery-lifecycle events and its signing secret is a
+  sensitive branch-scoped variable. A dedicated, revocable staging-only Vercel
+  bypass lets Resend reach the otherwise SSO-protected endpoint.
+- A full synthetic staging journey committed one lead/outbox pair, delivered
+  through Resend's safe `delivered@resend.dev` facility, and persisted signed
+  `email.sent` and `email.delivered` events. Resend observed `200` with
+  `{"status":"accepted"}` on the first attempt, while missing and invalid
+  signatures returned application `400`. The exact synthetic lead, outbox and
+  webhook rows were removed afterward, and no test recipient remains
+  configured.
 - Outbox delivery uses bounded claiming, application and provider idempotency,
   safe retry/backoff, a terminal/manual-review state, and protection against
   replay after the provider idempotency window.
@@ -154,8 +161,9 @@ These are intentionally not guessed or provisioned:
 - first-owner Google email and Google OAuth client ID/secret;
 - Checkly account/API credentials and an alert channel;
 - production Turnstile site/secret keys and the exact production hostname;
-- a reachable external Resend notification recipient, webhook signing secret,
-  webhook registration, and a delivered/bounced signed-webhook exercise;
+- a reachable external Resend notification recipient and production Resend
+  key/webhook configuration; staging delivery evidence is complete, while a
+  provider-level replay and bounced-event exercise remain useful follow-ups;
 - Vercel Pro or another trigger capable of meeting the 15-minute email
   objective. Hobby Cron is configured only once daily and cannot satisfy that
   SLO;
@@ -167,16 +175,20 @@ These are intentionally not guessed or provisioned:
   5.0.0 controls.
 
 The `staging` Preview branch now has isolated Neon, URL, application-secret,
-Turnstile, Resend-sender and synthetic-retention variables. The GitHub
+Turnstile, Resend-sender/webhook and synthetic-retention variables. The GitHub
 staging-assurance credential was rotated after evidence review found that ZAP
 internal logs echo replacer values; the affected artifact was deleted, all
 public-project bypass tokens were revoked, and a clean rerun proved that only
-redacted reports remain. Google OAuth and Checkly remain unconfigured. Resend
-delivery remains intentionally disabled until a reachable recipient and signed
-webhook are configured. Production database/auth/email variables remain
-intentionally unconfigured for the new path. Existing transitional Supabase
-production variables are not removed until the corresponding CMS and
-public-content paths have verified Neon parity.
+redacted reports remain. A first Resend webhook bypass exposed by dashboard
+inspection was revoked before activation and replaced. Neon CLI then echoed the
+staging migrator connection string despite a requested JSON format; that
+non-production role password was reset immediately and the replacement
+connection was verified. No temporary local Keychain copy remains. Google
+OAuth and Checkly remain unconfigured. Staging email delivery is disabled
+again until a reachable notification recipient is chosen. Production
+database/auth/email variables remain intentionally unconfigured for the new
+path. Existing transitional Supabase production variables are not removed
+until the corresponding CMS and public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
@@ -184,8 +196,9 @@ public-content paths have verified Neon parity.
    fail-closed staging journey.
 2. Configure Checkly credentials and an alert destination, then exercise one
    controlled readiness failure.
-3. Choose a reachable external notification recipient, register the signed
-   Resend webhook and exercise delivered, duplicate and out-of-order events.
+3. Choose a reachable external notification recipient, then exercise a
+   provider replay and safe bounced-event journey against the registered
+   staging webhook.
 4. Provision minute-level outbox scheduling and record the retention and
    outbox heartbeats.
 5. Replace the Supabase CMS paths one vertical slice at a time, then remove
