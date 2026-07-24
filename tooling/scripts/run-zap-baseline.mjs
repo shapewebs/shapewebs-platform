@@ -1,7 +1,9 @@
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -21,6 +23,8 @@ const target = requireStagingTarget("ZAP_TARGET_URL");
 const automationBypassSecret = requireAutomationBypassSecret();
 const reportDirectory = path.resolve("test-results/zap");
 const baselineConfigPath = path.resolve("tooling/zap/baseline.conf");
+const reportNames = ["report.json", "report.md", "report.html"];
+const internalLogNames = ["zap.log", "zap.out"];
 
 const secretDirectory = mkdtempSync(
   path.join(os.tmpdir(), "shapewebs-zap-secrets-"),
@@ -31,6 +35,7 @@ mkdirSync(reportDirectory, { recursive: true });
 const reportDirectoryMode = statSync(reportDirectory).mode & 0o777;
 
 let result;
+let reportLeakDetected = false;
 
 try {
   // The official image runs as its non-root `zap` user (UID 1000). GitHub's
@@ -66,17 +71,7 @@ try {
       "--volume",
       `${baselineConfigPath}:/zap/config/baseline.conf:ro`,
       zapImage,
-      "sh",
-      "-c",
-      [
-        "status=0",
-        '/zap/zap-baseline.py "$@" || status=$?',
-        "if [ -f /tmp/shapewebs-zap-home/zap.log ]; then",
-        "  cp /tmp/shapewebs-zap-home/zap.log /zap/wrk/zap.log || true",
-        "fi",
-        'exit "$status"',
-      ].join("\n"),
-      "shapewebs-zap",
+      "/zap/zap-baseline.py",
       "-t",
       target.toString(),
       "-m",
@@ -98,8 +93,33 @@ try {
     { stdio: "inherit" },
   );
 } finally {
+  // ZAP's internal logs echo configuration values, including replacer
+  // secrets. Keep only the reviewed reports, and fail closed if a future
+  // report format includes the credential itself.
+  for (const internalLogName of internalLogNames) {
+    rmSync(path.join(reportDirectory, internalLogName), { force: true });
+  }
+
+  for (const reportName of reportNames) {
+    const reportPath = path.join(reportDirectory, reportName);
+
+    if (
+      existsSync(reportPath) &&
+      readFileSync(reportPath).includes(automationBypassSecret)
+    ) {
+      reportLeakDetected = true;
+      rmSync(reportPath, { force: true });
+    }
+  }
+
   chmodSync(reportDirectory, reportDirectoryMode);
   rmSync(secretDirectory, { force: true, recursive: true });
+}
+
+if (reportLeakDetected) {
+  throw new Error(
+    "ZAP report contained the staging bypass credential and was removed.",
+  );
 }
 
 if (result?.error?.code === "ENOENT") {

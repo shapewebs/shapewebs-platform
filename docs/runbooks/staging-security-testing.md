@@ -57,9 +57,10 @@ The k6 thresholds fail the process when checks fall below 99%, HTTP failures
 reach 1%, or p95 request duration reaches 1.5 seconds. ZAP warning or failure
 exit codes also fail the release gate; any accepted finding must be documented
 with an owner and expiry before a narrowly scoped `INFO` rule is added. ZAP's
-internal home is ephemeral and only its diagnostic log is copied into the
-report directory, preventing caches and runtime state from inflating the
-uploaded artifact.
+internal home and diagnostic logs are ephemeral and excluded from artifacts,
+preventing configuration values, caches and runtime state from entering the
+uploaded report. The runner also fails closed and removes a report if it
+contains the exact bypass credential.
 
 Only the passive baseline scan belongs on pull-request previews. Authenticated
 active scanning, average load, spikes, and soak tests require a dedicated or
