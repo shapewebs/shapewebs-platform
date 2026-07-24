@@ -5,7 +5,12 @@ export { readBoundedText } from "./http";
 
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
-const emailAddressSchema = z.email();
+export const emailAddressSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(320)
+  .pipe(z.email());
 const notificationMailboxSchema = z
   .string()
   .trim()

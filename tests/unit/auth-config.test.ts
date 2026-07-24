@@ -67,6 +67,15 @@ describe("Better Auth security configuration", () => {
     ).toThrow("at least 32 characters");
   });
 
+  it("rejects adversarially long owner identities before email parsing", () => {
+    expect(() =>
+      createShapewebsAuth({
+        ...validOptions,
+        ownerEmails: [`owner@${"a".repeat(100_000)}.com`],
+      }),
+    ).toThrow("invalid email");
+  });
+
   it("uses fixed short-lived sessions and disables password authentication", () => {
     const auth = createShapewebsAuth(validOptions);
 
