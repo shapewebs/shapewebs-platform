@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { listDocuments } from "@shapewebs/db";
+import {
+  getDefaultContentDocumentList,
+  listContentDocuments,
+} from "@shapewebs/database/server";
 import { documentFiltersSchema } from "@shapewebs/validation";
 import { requireAdminSession } from "@/lib/auth";
-import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
+import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import styles from "./page.module.css";
 
 type ContentPageProps = {
@@ -16,12 +19,20 @@ type ContentPageProps = {
 export default async function ContentPage({ searchParams }: ContentPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const filters = documentFiltersSchema.parse(params ?? {});
-  await requireAdminSession({
+  const runtime = await requireAdminSession({
     redirectTo: "/content",
     roles: ["owner", "editor"],
   });
-  const supabase = await getTransitionalAdminSupabaseClient();
-  const documents = await listDocuments(supabase, filters);
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (!runtime.setupMode && (!databaseUrl || !runtime.authorization)) {
+    throw new Error("Content documents are unavailable.");
+  }
+
+  const documents =
+    runtime.setupMode || !databaseUrl || !runtime.authorization
+      ? getDefaultContentDocumentList(filters)
+      : await listContentDocuments(databaseUrl, runtime.authorization, filters);
 
   return (
     <main className={styles.rootP6m2k1}>

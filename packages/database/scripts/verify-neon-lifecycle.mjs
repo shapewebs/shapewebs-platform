@@ -296,6 +296,9 @@ try {
   const sourceConnections = connectionsFor(sourceBranchId);
   migrate(sourceConnections);
   runDatabaseScript(fixtureScript, ["seed"], sourceConnections);
+  run("corepack", ["pnpm", "test:database:content-list"], {
+    env: sourceConnections,
+  });
   runDatabaseScript(securityScript, [], sourceConnections);
   runDatabaseScript(rollbackScript, [], sourceConnections);
   runDatabaseScript(fixtureScript, ["export"], sourceConnections, {
@@ -305,7 +308,7 @@ try {
   // Both files contain synthetic example.test data only.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const sourceExport = readFileSync(exportPath, "utf8");
-  const sourceHashMatch = sourceExport.match(/"version": 2/);
+  const sourceHashMatch = sourceExport.match(/"version": 3/);
   assert.ok(sourceHashMatch, "The logical export is invalid");
 
   restoreBranchId = createBranch(restoreBranchName);
@@ -314,6 +317,9 @@ try {
   migrate(restoreConnections);
   runDatabaseScript(fixtureScript, ["restore"], restoreConnections, {
     LIFECYCLE_EXPORT_PATH: exportPath,
+  });
+  run("corepack", ["pnpm", "test:database:content-list"], {
+    env: restoreConnections,
   });
   runDatabaseScript(securityScript, [], restoreConnections);
   runDatabaseScript(fixtureScript, ["export"], restoreConnections, {

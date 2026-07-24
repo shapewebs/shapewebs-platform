@@ -4,7 +4,10 @@ import {
   contentDocumentSchema,
   isSafeInternalHref,
 } from "../../packages/content-schema/src/index";
-import { pageEditorInputSchema } from "../../packages/validation/src/index";
+import {
+  contentDocumentListItemSchema,
+  pageEditorInputSchema,
+} from "../../packages/validation/src/index";
 
 describe("content security validation", () => {
   it("accepts only normalized internal CMS links", () => {
@@ -92,6 +95,34 @@ describe("content security validation", () => {
           canonicalUrlOverride,
         }).success,
       ).toBe(false);
+    }
+  });
+
+  it("accepts only bounded CMS list DTOs from the database boundary", () => {
+    const listItem = {
+      contentType: "method",
+      documentId: "10000000-0000-4000-8000-000000000004",
+      localeCode: "da-DK",
+      pageKind: null,
+      publishedAt: null,
+      slug: "secure-delivery-method",
+      state: "review",
+      summary: "A reviewed, localized method.",
+      title: "Secure delivery",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    };
+
+    expect(contentDocumentListItemSchema.parse(listItem)).toEqual(listItem);
+
+    for (const unsafeItem of [
+      { ...listItem, localeCode: "unknown" },
+      { ...listItem, slug: "<script>alert(1)</script>" },
+      { ...listItem, title: "x".repeat(141) },
+      { ...listItem, updatedAt: "not-a-timestamp" },
+    ]) {
+      expect(contentDocumentListItemSchema.safeParse(unsafeItem).success).toBe(
+        false,
+      );
     }
   });
 });

@@ -59,8 +59,14 @@ const ids = {
   nonStepUpAdminSession: `security-session-no-step-up-${runId}`,
   customerSession: `security-session-customer-${runId}`,
   draftDocument: randomUUID(),
+  draftRevisionOne: randomUUID(),
+  draftRevisionTwo: randomUUID(),
   publishedDocumentA: randomUUID(),
+  publishedRevisionA: randomUUID(),
   publishedDocumentB: randomUUID(),
+  publishedRevisionB: randomUUID(),
+  workflowDocument: randomUUID(),
+  workflowRevision: randomUUID(),
   auditEvent: randomUUID(),
 };
 
@@ -238,7 +244,26 @@ async function seed() {
       values
         (${ids.draftDocument}, ${ids.organizationA}, 'page', 'draft', 'draft', ${ids.adminUser}, null),
         (${ids.publishedDocumentA}, ${ids.organizationA}, 'page', 'published-a', 'published', ${ids.adminUser}, now()),
-        (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now())`,
+        (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now()),
+        (${ids.workflowDocument}, ${ids.organizationA}, 'method', 'secure-method', 'review', ${ids.adminUser}, null)`,
+    fixtureAdmin`insert into app.content_revisions (
+        id,
+        document_id,
+        revision_number,
+        locale,
+        title,
+        summary,
+        payload,
+        seo,
+        created_by_user_id,
+        published_at
+      )
+      values
+        (${ids.draftRevisionOne}, ${ids.draftDocument}, 1, 'en', 'Draft revision one', null, '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
+        (${ids.draftRevisionTwo}, ${ids.draftDocument}, 2, 'en', 'Draft revision two', 'Latest draft', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
+        (${ids.publishedRevisionA}, ${ids.publishedDocumentA}, 1, 'en', 'Published A', 'Organization A', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
+        (${ids.publishedRevisionB}, ${ids.publishedDocumentB}, 1, 'en', 'Published B', 'Organization B', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
+        (${ids.workflowRevision}, ${ids.workflowDocument}, 1, 'da-DK', 'Sikker metode', 'Workflow enum coverage', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null)`,
   ]);
 
   await migrator.transaction([
@@ -499,6 +524,64 @@ async function verifyAdminIsolation() {
   });
   assert.deepEqual(customerMemberships, [{ user_id: ids.customerUser }]);
 
+  const organizationAContent = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`with latest_revisions as (
+        select distinct on (document_id, locale)
+          document_id,
+          locale,
+          title
+        from app.content_revisions
+        order by document_id, locale, revision_number desc, created_at desc
+      )
+      select
+        document.id,
+        document.kind,
+        document.status,
+        revision.locale,
+        revision.title
+      from app.content_documents as document
+      inner join latest_revisions as revision
+        on revision.document_id = document.id
+      order by document.slug`,
+  });
+  assert.deepEqual(organizationAContent, [
+    {
+      id: ids.draftDocument,
+      kind: "page",
+      status: "draft",
+      locale: "en",
+      title: "Draft revision two",
+    },
+    {
+      id: ids.publishedDocumentA,
+      kind: "page",
+      status: "published",
+      locale: "en",
+      title: "Published A",
+    },
+    {
+      id: ids.workflowDocument,
+      kind: "method",
+      status: "review",
+      locale: "da-DK",
+      title: "Sikker metode",
+    },
+  ]);
+
+  const editorContent = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select id from app.content_documents order by id`,
+  });
+  assert.deepEqual(
+    new Set(editorContent.map(({ id }) => id)),
+    new Set([ids.draftDocument, ids.publishedDocumentA, ids.workflowDocument]),
+  );
+
   const customerDrafts = await withAdminContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
@@ -603,13 +686,31 @@ async function verifyPublicAndWebBoundaries() {
     where id in (
       ${ids.draftDocument},
       ${ids.publishedDocumentA},
-      ${ids.publishedDocumentB}
+      ${ids.publishedDocumentB},
+      ${ids.workflowDocument}
     )
     order by id
   `;
   assert.deepEqual(
     new Set(publicDocuments.map(({ id }) => id)),
     new Set([ids.publishedDocumentA, ids.publishedDocumentB]),
+  );
+
+  const publicRevisions = await publicReader`
+    select id
+    from app.content_revisions
+    where id in (
+      ${ids.draftRevisionOne},
+      ${ids.draftRevisionTwo},
+      ${ids.publishedRevisionA},
+      ${ids.publishedRevisionB},
+      ${ids.workflowRevision}
+    )
+    order by id
+  `;
+  assert.deepEqual(
+    new Set(publicRevisions.map(({ id }) => id)),
+    new Set([ids.publishedRevisionA, ids.publishedRevisionB]),
   );
 
   await expectDenied(
@@ -1069,7 +1170,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

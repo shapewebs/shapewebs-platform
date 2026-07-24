@@ -1,0 +1,18 @@
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+index be9df86be09c7655787a65c55ae6da01858894c3..b5e36a2a485dc04b7c5cd8cdf5fd745087882cc2 100644
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -260,4 +260,13 @@ function expand_(str, max, maxLength, isTop) {
+     }
+     return acc;
+ }
++// Keep the callable CommonJS API expected by brace-expansion 1.x/2.x
++// consumers while exposing the named exports used by 5.x consumers.
++Object.assign(expand, {
++    expand,
++    EXPANSION_MAX: exports.EXPANSION_MAX,
++    EXPANSION_MAX_LENGTH: exports.EXPANSION_MAX_LENGTH,
++});
++Object.defineProperty(expand, "__esModule", { value: true });
++module.exports = expand;
+ //# sourceMappingURL=index.js.map

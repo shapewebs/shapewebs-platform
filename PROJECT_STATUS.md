@@ -2,20 +2,23 @@
 
 ## Current milestone
 
-- Date: 24 July 2026
+- Date: 25 July 2026
 - Branch: protected `staging`; current implementation branch
-  `codex/neon-organization-settings`
+  `codex/neon-content-list`
 - Pull requests: staging scheduler evidence
-  `shapewebs/shapewebs-platform#15` merged; draft foundation promotion
-  `shapewebs/shapewebs-platform#7`; the current settings branch targets the
+  `shapewebs/shapewebs-platform#15` and Neon organization settings
+  `shapewebs/shapewebs-platform#16` merged; draft foundation promotion
+  `shapewebs/shapewebs-platform#7`; the current content-list branch targets the
   protected `staging` branch
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
-Production remains on the known-good baseline. This branch has not been merged,
-connected to production data, or promoted to the production domains.
+Production remains on the known-good baseline. Pull request `#16` is merged
+into protected `staging`, while its fixed staging Vercel deployment is waiting
+for Hobby deployment quota. The current branch has not been merged, connected
+to production data, or promoted to the production domains.
 
 ## Implemented on this branch
 
@@ -37,9 +40,11 @@ connected to production data, or promoted to the production domains.
   requirements; structural
   verification is canonical, and the production gate remains fail-closed until
   every requirement is reviewed.
-- `pnpm verify` is the canonical local/CI gate. `pnpm verify:release` adds dual
-  builds, Playwright, Lighthouse, k6, and ZAP. Release-only network tests refuse
-  targets outside an exact staging allowlist.
+- `pnpm verify` is the canonical local/CI gate. It includes a deterministic
+  compatibility and resource-bound check for the tracked `brace-expansion`
+  5.0.8 security patch. `pnpm verify:release` adds dual builds, Playwright,
+  Lighthouse, k6, and ZAP. Release-only network tests refuse targets outside an
+  exact staging allowlist.
 - `pnpm clean:artifacts` removes only known generated artifacts and never
   removes environment files, provider links, dependencies, or unknown paths.
 
@@ -101,7 +106,7 @@ connected to production data, or promoted to the production domains.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains nine reviewed Drizzle migrations, forced RLS,
+- `packages/database` contains ten reviewed Drizzle migrations, forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -181,6 +186,11 @@ connected to production data, or promoted to the production domains.
   by restore evidence. Better Auth session resolution no longer initializes
   Supabase. Transitional Supabase access is server-only and limited by an
   automated allowlist to the remaining CMS paths.
+- The current content-list slice moves the CMS document index to a bounded,
+  validated Neon DTO. It selects the latest revision per document and locale,
+  supports the complete checked-in content/workflow filter contract, and
+  reduces the transitional admin Supabase allowlist to the editor page and its
+  mutations.
 
 ## Verified evidence
 
@@ -207,14 +217,10 @@ Staging provisioning and runtime evidence is recorded in:
 - `docs/audits/staging-outbox-scheduler-2026-07-24.md`; and
 - `docs/audits/workspace-mail-verification-2026-07-24.md`.
 
-The current settings branch passed local formatting, zero-warning lint,
-TypeScript, all 77 unit tests, application-boundary checks, Drizzle consistency
-and a complete disposable Neon lifecycle. Both source and restore databases
-produced fixture hash
-`0ff6f8cb3fba6c66d6b760ebf08e5db858ee50863398789fbfe58ef815d7eaa6`;
-negative owner/editor/customer/cross-tenant/public/web checks passed, rollback
-left no journal or schema residue, and both temporary branches were deleted.
-The evidence is recorded in:
+The organization-settings slice passed local formatting, zero-warning lint,
+TypeScript, its 77-test unit suite, application-boundary checks, Drizzle
+consistency and a complete disposable Neon lifecycle. Its evidence is recorded
+in:
 
 - `docs/audits/neon-organization-settings-verification-2026-07-24.md`.
 
@@ -222,6 +228,23 @@ Persistent staging now has nine journaled migrations and a one-to-one
 organization/settings backfill. A provider-owner read and pooled admin-runtime
 check proved forced RLS, one owner-visible row, zero editor-visible rows, no
 web/public SELECT privilege and zero residual migrator backfill policies.
+
+The current content-list slice has 81 passing unit tests and passed the complete
+fresh-migration, real-repository, forced-RLS, rollback, export and restore
+lifecycle with fixture hash
+`47a271ca7a76c2b45d6cc167dae7221e6caaabe6d09b4184bfa38309ac65f908`.
+The complete canonical verification gate and both admin production builds
+(Turbopack and webpack) pass. A frozen offline pnpm 10.17.1 install accepts the
+lockfile, and deterministic artifact cleanup leaves only intended changes. The
+disposable source and restore branches were deleted. Evidence is recorded in:
+
+- `docs/audits/neon-content-list-verification-2026-07-25.md`.
+
+The repository also remediates the newly published high-severity
+`brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
+legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
+Checkly compilation, Lighthouse CLI loading, the compatibility probe, and
+`pnpm audit` all pass; the audit reports zero known vulnerabilities.
 
 ## External launch gates
 
@@ -247,6 +270,10 @@ These are intentionally not guessed or provisioned:
   later moved from the encrypted local CLI session into CI;
 - requirement-level review and evidence disposition for all 253 target ASVS
   5.0.0 controls.
+- a Vercel plan appropriate for commercial production. The Hobby team reached
+  its rolling 100-deployment daily allowance while publishing pull request
+  `#16`; the exact staging retry was refused before build creation, and no
+  production deployment was attempted.
 
 The `staging` Preview branch now has isolated Neon, URL, application-secret,
 Turnstile, Resend-sender/webhook and synthetic-retention variables. The GitHub
@@ -288,16 +315,19 @@ public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Publish the Neon organization-settings slice through the protected staging
-   workflow, apply migration `0007` to the persistent staging branch with the
-   dedicated migrator, and verify the deployed owner-only route.
-2. Complete mailbox MFA, recovery-address verification and the remaining
+1. Retry the exact merged organization-settings staging deployments after the
+   Vercel daily allowance recovers or an authorized plan change, then verify
+   the owner-only route on the fixed staging domain.
+2. Publish the Neon content-list slice through the protected staging workflow,
+   apply migration `0009` with the dedicated staging migrator, and verify the
+   deployed owner/editor route.
+3. Complete mailbox MFA, recovery-address verification and the remaining
    alias send-as/outbound identity verification.
-3. Configure the Workspace-owned Google OAuth client when the new account can
+4. Configure the Workspace-owned Google OAuth client when the new account can
    access Google Cloud, then complete the Google-to-TOTP fail-closed staging
    journey.
-4. Replace the Supabase CMS paths one vertical slice at a time, then remove
+5. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
-5. Build the CMS lifecycle, storage controls, final public studio design, and
+6. Build the CMS lifecycle, storage controls, final public studio design, and
    production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
