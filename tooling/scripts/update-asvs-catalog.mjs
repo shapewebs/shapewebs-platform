@@ -91,29 +91,28 @@ const targetIds = new Set(
     .filter((requirement) => requirement.level <= 2)
     .map((requirement) => requirement.id),
 );
-let previousEvidence = new Map();
+const reviews = JSON.parse(
+  await readFile("assurance/asvs/reviews.json", "utf8"),
+);
+const reviewsById = new Map();
 
-try {
-  const existing = JSON.parse(
-    await readFile("assurance/asvs/evidence.json", "utf8"),
-  );
-  previousEvidence = new Map(
-    existing.requirements.map((requirement) => [requirement.id, requirement]),
-  );
-} catch (error) {
-  if (error?.code !== "ENOENT") {
-    throw error;
+if (reviews.version !== lock.version || !Array.isArray(reviews.requirements)) {
+  throw new Error("The ASVS reviews do not match the pinned version.");
+}
+
+for (const review of reviews.requirements) {
+  if (!targetIds.has(review.id) || reviewsById.has(review.id)) {
+    throw new Error(`The ASVS review ${review.id} is invalid or duplicated.`);
   }
+  reviewsById.set(review.id, review);
 }
 
 const evidence = {
   requirements: requirements
     .filter((requirement) => targetIds.has(requirement.id))
     .map((requirement) => {
-      const existing = previousEvidence.get(requirement.id);
-
       return (
-        existing ?? {
+        reviewsById.get(requirement.id) ?? {
           disposition: "unreviewed",
           evidence: [],
           id: requirement.id,

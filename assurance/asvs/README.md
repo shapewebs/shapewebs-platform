@@ -17,8 +17,10 @@ release and attribution remain recorded in the lock file and this document.
 
 ## Evidence states
 
-`evidence.json` contains every Level 1 and Level 2 requirement from the pinned
-catalog. Each requirement must eventually have exactly one disposition:
+`reviews.json` is the human-reviewed source of requirement decisions.
+`evidence.json` is generated deterministically from those reviews plus every
+remaining Level 1 and Level 2 requirement in the pinned catalog. Each
+requirement must eventually have exactly one disposition:
 
 - `implemented`: automated or inspected evidence proves the requirement;
 - `manual`: a named, dated manual verification is required;

@@ -1,5 +1,39 @@
 import { z } from "zod";
 
+const internalHrefControlCharacterPattern = /[\u0000-\u0020\u007f]/u;
+const internalHrefBaseUrl = "https://shapewebs.invalid";
+
+export function isSafeInternalHref(value: string): boolean {
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\") ||
+    internalHrefControlCharacterPattern.test(value)
+  ) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value, internalHrefBaseUrl);
+
+    return (
+      parsed.origin === internalHrefBaseUrl &&
+      `${parsed.pathname}${parsed.search}${parsed.hash}` === value
+    );
+  } catch {
+    return false;
+  }
+}
+
+const internalHrefSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(240)
+  .refine(isSafeInternalHref, {
+    message: "Links must use a normalized internal path beginning with '/'.",
+  });
+
 export const richTextNodeSchema = z.object({
   type: z.string(),
   attrs: z.record(z.string(), z.unknown()).optional(),
@@ -7,14 +41,22 @@ export const richTextNodeSchema = z.object({
   text: z.string().optional(),
 });
 
-export const heroBlockSchema = z.object({
-  type: z.literal("hero"),
-  eyebrow: z.string().max(80).optional(),
-  heading: z.string().min(1).max(140),
-  body: z.string().max(1200).optional(),
-  primaryCtaLabel: z.string().max(40).optional(),
-  primaryCtaHref: z.string().max(240).optional(),
-});
+export const heroBlockSchema = z
+  .object({
+    type: z.literal("hero"),
+    eyebrow: z.string().max(80).optional(),
+    heading: z.string().min(1).max(140),
+    body: z.string().max(1200).optional(),
+    primaryCtaLabel: z.string().min(1).max(40).optional(),
+    primaryCtaHref: internalHrefSchema.optional(),
+  })
+  .refine(
+    (block) => Boolean(block.primaryCtaLabel) === Boolean(block.primaryCtaHref),
+    {
+      message: "A primary CTA requires both a label and an internal link.",
+      path: ["primaryCtaHref"],
+    },
+  );
 
 export const richTextBlockSchema = z.object({
   type: z.literal("rich_text"),
@@ -33,7 +75,7 @@ export const ctaBlockSchema = z.object({
   heading: z.string().min(1).max(120),
   body: z.string().max(500).optional(),
   label: z.string().min(1).max(40),
-  href: z.string().max(240),
+  href: internalHrefSchema,
 });
 
 export const faqItemSchema = z.object({

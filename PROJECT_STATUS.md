@@ -28,8 +28,10 @@ connected to production data, or promoted to the production domains.
   are version controlled.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
-  requirements; structural verification is canonical, and the production gate
-  remains fail-closed until every requirement is reviewed.
+  requirements. The first encoding/validation review has 35 path-validated
+  dispositions and 218 explicitly unreviewed requirements; structural
+  verification is canonical, and the production gate remains fail-closed until
+  every requirement is reviewed.
 - `pnpm verify` is the canonical local/CI gate. `pnpm verify:release` adds dual
   builds, Playwright, Lighthouse, k6, and ZAP. Release-only network tests refuse
   targets outside an exact staging allowlist.

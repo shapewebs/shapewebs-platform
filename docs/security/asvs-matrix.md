@@ -26,7 +26,7 @@ unreviewed.
 | Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                                      | Owner        |
 | Minimal DTO/data exposure                    | L2     | Partial     | Lead repository returns explicit DTOs and worker fields; remaining CMS repositories are pending                       | Owner        |
 | Input validation and size limits             | L2     | Partial     | Bounded JSON/webhook bodies, Zod forms, exact UUIDs and provider validation; uploads remain pending                   | Owner        |
-| Output encoding and content safety           | L2     | Partial     | React encoding and escaped minimal emails; structured CMS enforcement remains pending                                 | Owner        |
+| Output encoding and content safety           | L2     | Partial     | React/email escaping, structured CMS rendering and internal-href protocol enforcement; remaining exact IDs pending    | Owner        |
 | CSRF protection                              | L2     | Partial     | Exact Better Auth origins, SameSite cookies and step-up Origin validation; provider E2E remains pending               | Owner        |
 | File upload safety                           | L2     | Planned     | Blob boundary and type/signature/size/dimension validation contract pending                                           | Owner        |
 | Cryptography and secrets                     | L2     | Partial     | Provider primitives, encrypted OAuth tokens, push protection and staging bypass rotation; provider drills pending     | Owner        |

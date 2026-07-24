@@ -146,6 +146,29 @@ export const documentFiltersSchema = z.object({
     .optional(),
 });
 
+const canonicalHttpsUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) => {
+      try {
+        const url = new URL(value);
+
+        return (
+          url.protocol === "https:" &&
+          url.username.length === 0 &&
+          url.password.length === 0
+        );
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: "Canonical URL overrides must use HTTPS without credentials.",
+    },
+  );
+
 export const pageEditorInputSchema = z.object({
   documentId: z.string().uuid().optional(),
   localeCode: localeCodeEnum.default("en"),
@@ -165,7 +188,7 @@ export const pageEditorInputSchema = z.object({
   summary: z.string().trim().max(320).optional(),
   metaTitle: z.string().trim().max(160).optional(),
   metaDescription: z.string().trim().max(320).optional(),
-  canonicalUrlOverride: z.string().trim().max(500).optional(),
+  canonicalUrlOverride: canonicalHttpsUrlSchema.optional(),
   robotsIndex: z.boolean().default(true),
   contentJson: z.string().trim().min(2),
   changeNote: z.string().trim().max(240).optional(),
