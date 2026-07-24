@@ -3,8 +3,10 @@
 - Date: 24 July 2026
 - Fixed public origin: `https://staging.shapewebs.com`
 - Fixed admin origin: `https://admin-staging.shapewebs.com`
-- Candidate commit: `219dc2e`
-- Production changed: no
+- Initial runtime candidate: `219dc2e`
+- Final assurance candidate: `bb07f7c`
+- Application production changed: no
+- Domain mail DNS changed: yes, with explicit owner authorization
 
 ## Pull-request evidence
 
@@ -87,9 +89,9 @@ browser errors, and the form returned the visible success state:
 A read-only Neon query then found lead
 `b1c112a5-6313-49c9-8321-29bb93c72117`, created at
 `2026-07-24 13:50:35.141334+00`, joined to exactly one
-`lead.notification.requested` outbox event. Its state was `pending` with zero
-attempts, which is expected while Resend remains unconfigured. This proves the
-deployed acknowledgement followed the atomic lead/outbox commit.
+`lead.notification.requested` outbox event. It was initially `pending` with
+zero attempts, proving the deployed acknowledgement followed the atomic
+lead/outbox commit.
 
 Migration `0006` was then applied through the dedicated direct migrator
 credential to the non-production Neon `staging` branch. Post-migration
@@ -97,17 +99,71 @@ verification returned seven migration records, one exact
 `owners delete expired synthetic leads` policy, and the fresh synthetic
 lead/outbox pair still intact. No production database or credential changed.
 
+## Resend and mail-DNS evidence
+
+A restricted `Shapewebs Staging` Resend key was created with sending-only
+permission and restricted to `shapewebs.com`. Its value exists only as a
+sensitive `shapewebs-admin` Preview variable for Git branch `staging`. The
+sender is `Shapewebs <website@shapewebs.com>`.
+
+The protected outbox route claimed the persisted event exactly once. Resend
+accepted the API request and returned provider message ID
+`133339a1-72eb-4bea-960f-31a6ddacc0c8`; Neon recorded one attempt and a `sent`
+provider state. Resend subsequently classified the message as bounced because
+`lukas@shapewebs.com` had no receiving mailbox. Because the signed webhook is
+not registered, the application delivery state correctly remains without the
+provider's later bounce classification. `LEAD_NOTIFICATION_TO_EMAIL` was
+removed from staging to prevent further attempts to an unrouteable address.
+
+With explicit owner approval that inbound forwarding is not required,
+ImprovMX's two MX records and apex SPF include were removed. Vercel's
+authoritative nameservers and public resolvers then returned:
+
+- apex null MX `0 .`;
+- apex SPF `v=spf1 -all`;
+- DMARC `p=quarantine; sp=quarantine; adkim=s; aspf=r; pct=100`.
+
+Resend's `resend._domainkey` DKIM and `send.shapewebs.com` SPF/MX records were
+preserved. This intentionally prevents inbound delivery while retaining
+outbound transactional authentication.
+
+## Protected-staging assurance and credential containment
+
+Run
+[`30103000972`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30103000972)
+was the first complete green k6/ZAP execution. Evidence review found that
+ZAP's internal `zap.out` and `zap.log` echoed the Vercel replacer value. The
+exact artifact `8600434159` was deleted immediately. Every existing public-web
+automation bypass was revoked, one fresh token was generated as Vercel's
+deployment environment bypass, and the GitHub Actions secret was updated
+through standard input.
+
+Commit `bb07f7c` excludes internal ZAP logs, places ZAP runtime state in an
+ephemeral directory, and fails closed while removing any retained report that
+contains the exact credential. Clean run
+[`30103670868`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30103670868)
+then completed successfully:
+
+- k6: nine of nine checks, zero HTTP failures;
+- ZAP: 42 URLs, 63 passing passive rules, three reviewed informational
+  dispositions, zero ignored, zero warnings and zero failures;
+- artifact: 30,165 bytes containing only `report.json`, `report.md`,
+  `report.html`, and `summary.json`;
+- artifact inspection: no replacer configuration, bypass header,
+  authorization value, cookie or bearer value.
+
+No-header and invalid-bypass requests to both fixed staging health endpoints
+return Vercel SSO `302`; the rotated credential reaches the sanitized
+application `200` response. The fixed branch-scoped hosts therefore remain
+protected in observed runtime behavior.
+
 ## Explicitly incomplete evidence
 
-The staging release gate is not green:
-
-- GitHub run `30097779661` passed the k6 smoke thresholds after replacing the
-  unsupported browser `URL` constructor with a strict k6-compatible origin
-  parser;
-- ZAP then failed before scanning because its non-root container could neither
-  write the ephemeral report bind mount nor read the ephemeral secret-config
-  bind mount. The credential was not printed, and the temporary secret was
-  removed in `finally`;
-- Google OAuth, Resend, Checkly alerts and the controlled-failure exercise
-  remain account-specific gates;
-- no production resource, domain, database or deployment was changed.
+- Google OAuth, the owner-to-TOTP journey, Checkly alerts and the
+  controlled-failure exercise remain account-specific gates;
+- Resend still requires a reachable recipient, a signed webhook registration
+  and an end-to-end delivery/bounce exercise;
+- minute-level scheduling and paid production Neon/Vercel topology remain
+  launch gates;
+- no production application deployment or database was changed; the only
+  live-domain change was the explicitly authorized mail-DNS hardening above.

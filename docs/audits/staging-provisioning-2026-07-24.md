@@ -2,8 +2,8 @@
 
 - Date: 24 July 2026
 - Environment: synthetic non-production staging
-- Status: control plane and fixed-host health verified; provider journeys
-  pending
+- Status: control plane, protected-host assurance, Turnstile persistence and
+  outbound-provider acceptance verified; account-specific journeys pending
 
 ## GitHub and Vercel
 
@@ -27,7 +27,7 @@
 - Database: `shapewebs`
 - Data classification: synthetic non-production only
 
-Migrations `0000` through `0005` were applied with
+Migrations `0000` through `0006` were applied with
 `shapewebs_migrator`. The complete database security verifier passed role-flag,
 forced-RLS, tenant-isolation, session-assurance, idempotent lead/outbox,
 webhook-ordering, and immutable-audit scenarios using the separate
@@ -49,18 +49,33 @@ paid production project with a protected branch remains a launch gate.
 The public sitekey and private secret are branch-scoped Vercel variables. The
 secret was neither printed nor written to the repository.
 
+## Resend and mail DNS
+
+- A sending-only `Shapewebs Staging` Resend key is restricted to
+  `shapewebs.com` and stored only in the admin Preview scope for Git branch
+  `staging`.
+- The verified sender is `Shapewebs <website@shapewebs.com>`.
+- Provider acceptance passed; the original `shapewebs.com` recipient bounced
+  because inbound mail is intentionally unavailable, so the recipient variable
+  was removed.
+- ImprovMX was removed. Apex null MX, SPF `-all`, and DMARC quarantine now
+  prevent inbound delivery and spoofing while Resend's outbound DKIM and
+  `send` subdomain records remain.
+
 ## Runtime evidence
 
 Both fixed hostnames resolve to their protected Git branch `staging`
-deployments. Public and admin liveness/readiness returned sanitized `200`
-responses with `no-store` and the expected security headers. Detailed evidence
-and explicit limitations are recorded in
+deployments. Without a valid bypass they redirect to Vercel SSO. With the
+rotated credential, public and admin liveness/readiness returned sanitized
+`200` responses with `no-store` and the expected security headers. GitHub run
+`30103670868` passed k6 and ZAP with a reviewed, credential-free artifact.
+Detailed evidence and explicit limitations are recorded in
 `docs/audits/staging-runtime-verification-2026-07-24.md`.
 
 ## Pending provider evidence
 
-- Complete the green protected-staging k6/ZAP run.
 - Configure an authenticated scheduler for the POST-only retention route and
   record its first successful deletion after the six-day threshold.
-- Configure Google OAuth, Resend and Checkly before claiming the complete
-  staging launch gate.
+- Configure Google OAuth and Checkly.
+- Add a reachable Resend recipient, register the signed webhook and record
+  delivery/bounce state before claiming the complete staging launch gate.

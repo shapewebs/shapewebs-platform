@@ -101,7 +101,11 @@ connected to production data, or promoted to the production domains.
   leads therefore do not depend on Resend availability.
 - The real fixed-staging contact journey passed Cloudflare Turnstile, returned
   the deployed success state, and produced one joined Neon lead/outbox pair.
-  The notification remains correctly pending until Resend is configured.
+- A restricted, domain-scoped Resend staging key is stored only in the admin
+  Preview environment for Git branch `staging`. A real worker invocation
+  claimed the persisted event once and Resend accepted the API request. The
+  provider later bounced the unrouteable `shapewebs.com` recipient; the
+  recipient variable was removed until a reachable external mailbox is chosen.
 - Outbox delivery uses bounded claiming, application and provider idempotency,
   safe retry/backoff, a terminal/manual-review state, and protection against
   replay after the provider idempotency window.
@@ -110,6 +114,10 @@ connected to production data, or promoted to the production domains.
 - Notification emails contain only the form type, submission ID, contact
   identity, and a protected admin link. The message and project details remain
   in Neon.
+- Inbound mail is intentionally disabled: the obsolete ImprovMX MX/SPF records
+  were removed, apex null MX and `v=spf1 -all` were added, and DMARC is
+  `quarantine` with strict DKIM alignment. Resend's DKIM and `send` subdomain
+  SPF/MX records remain intact for outbound transactional mail.
 - Staging synthetic leads have a dedicated, POST-only retention route, a
   branch-scoped bearer secret, a strict owner-only RLS policy, and a daily
   Checkly definition. Only the exact checked-in synthetic identity can be
@@ -124,11 +132,17 @@ The existing foundation and database evidence is recorded in:
 - `docs/audits/foundation-verification-2026-07-23.md`;
 - `docs/audits/database-foundation-verification-2026-07-24.md`.
 
-At commit `219dc2e`, the current pull request passed all required Quality,
-Security, CodeQL, dependency-review, Vercel and disposable Neon
-migration/security/restore checks. Fixed staging public and admin liveness and
+The current pull request passed all required Quality, Security, CodeQL,
+dependency-review, Vercel and disposable Neon migration/security/restore
+checks. At commit `bb07f7c`, protected-staging run
+[`30103670868`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30103670868)
+passed k6 and ZAP: 63 passive rules passed, three reviewed findings remained
+visible as information, and no warning or failure remained. The 30 KiB
+artifact contained only three ZAP reports and the k6 summary, with no
+credential or internal ZAP log. Fixed staging public and admin liveness and
 readiness returned sanitized `200` responses with `no-store` and the expected
-security headers. Staging provisioning and runtime evidence is recorded in:
+security headers when accessed through Vercel's rotated automation bypass.
+Staging provisioning and runtime evidence is recorded in:
 
 - `docs/audits/staging-provisioning-2026-07-24.md`;
 - `docs/audits/staging-runtime-verification-2026-07-24.md`.
@@ -139,10 +153,9 @@ These are intentionally not guessed or provisioned:
 
 - first-owner Google email and Google OAuth client ID/secret;
 - Checkly account/API credentials and an alert channel;
-- a complete green protected-staging ZAP run;
 - production Turnstile site/secret keys and the exact production hostname;
-- Resend API key, webhook signing secret, sending/recipient addresses, and
-  webhook registration;
+- a reachable external Resend notification recipient, webhook signing secret,
+  webhook registration, and a delivered/bounced signed-webhook exercise;
 - Vercel Pro or another trigger capable of meeting the 15-minute email
   objective. Hobby Cron is configured only once daily and cannot satisfy that
   SLO;
@@ -154,26 +167,27 @@ These are intentionally not guessed or provisioned:
   5.0.0 controls.
 
 The `staging` Preview branch now has isolated Neon, URL, application-secret,
-Turnstile and synthetic-retention variables. The GitHub staging-assurance
-credential is valid, and run `30097779661` passed the k6 staging thresholds.
-ZAP then failed before scanning because its non-root container could not access
-the two ephemeral bind mounts; the narrowly scoped permission fix is pending
-approval. Google OAuth, Resend and Checkly remain unconfigured. Production
-database/auth/email variables remain intentionally unconfigured for the new
-path. Existing transitional Supabase production variables are not removed
-until the corresponding CMS and public-content paths have verified Neon
-parity.
+Turnstile, Resend-sender and synthetic-retention variables. The GitHub
+staging-assurance credential was rotated after evidence review found that ZAP
+internal logs echo replacer values; the affected artifact was deleted, all
+public-project bypass tokens were revoked, and a clean rerun proved that only
+redacted reports remain. Google OAuth and Checkly remain unconfigured. Resend
+delivery remains intentionally disabled until a reachable recipient and signed
+webhook are configured. Production database/auth/email variables remain
+intentionally unconfigured for the new path. Existing transitional Supabase
+production variables are not removed until the corresponding CMS and
+public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Obtain approval for the focused ZAP bind-mount fix and obtain a green
-   protected-staging ZAP run.
-2. Complete the real Turnstile lead/outbox journey from an attached in-app
-   staging browser tab.
-3. Configure the account-specific Google, Resend, Checkly, and Vercel settings
-   listed above.
-4. Exercise the controlled-failure alert, authenticated staging journey,
-   outbox delivery and signed webhook gates.
+1. Configure the owner Google identity/client and complete the Google-to-TOTP
+   fail-closed staging journey.
+2. Configure Checkly credentials and an alert destination, then exercise one
+   controlled readiness failure.
+3. Choose a reachable external notification recipient, register the signed
+   Resend webhook and exercise delivered, duplicate and out-of-order events.
+4. Provision minute-level outbox scheduling and record the retention and
+   outbox heartbeats.
 5. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
 6. Build the CMS lifecycle, storage controls, final public studio design, and
