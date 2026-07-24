@@ -12,7 +12,10 @@
   "scripts": {
     "db:check": "drizzle-kit check --config drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:lifecycle-fixture": "node scripts/lifecycle-fixture.mjs",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:verify-lifecycle": "neonctl --version && node scripts/verify-neon-lifecycle.mjs",
+    "db:verify-rollback": "node scripts/verify-migration-rollback.mjs",
     "db:verify-security": "node scripts/verify-security.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "0.31.10",
+    "neonctl": "2.36.0",
     "typescript": "^5"
   }
 }

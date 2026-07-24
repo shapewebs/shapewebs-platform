@@ -241,7 +241,14 @@ async function verifyAdminIsolation() {
 
 async function verifyPublicAndWebBoundaries() {
   const publicDocuments = await publicReader`
-    select id from app.content_documents order by id
+    select id
+    from app.content_documents
+    where id in (
+      ${ids.draftDocument},
+      ${ids.publishedDocumentA},
+      ${ids.publishedDocumentB}
+    )
+    order by id
   `;
   assert.deepEqual(
     new Set(publicDocuments.map(({ id }) => id)),
