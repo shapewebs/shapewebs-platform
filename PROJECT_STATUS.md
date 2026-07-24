@@ -1,139 +1,112 @@
-# Project Status
+# Project status
 
-## Current Milestone
+## Current milestone
 
-- Date: 2026-04-08
-- Status: Phase 1 core CMS loop and public content flow implemented
-- Current repo shape: monorepo with separate public and admin apps
+- Date: 24 July 2026
+- Branch: `codex/foundation`
+- Status: hardened foundation and non-production database verified; not
+  deployed
+- Production baseline: commit `33affde`
+- Repository: `shapewebs/shapewebs-platform`
 
-## What Changed In This Pass
+Production remains on the known-good baseline. The foundation branch has not
+been merged, connected to production data, or promoted in Vercel.
 
-- Added shared Supabase client helpers in `packages/db` for browser, server, and service-role access.
-- Added shared repository methods for:
-  - document lists
-  - editor state
-  - draft/review/publish writes
-  - preview token creation/consumption
-  - published-content reads
-  - settings snapshots
-  - contact submission storage
-- Wired the admin app to the first real CMS loop:
-  - real `/login` client auth flow
-  - MFA screen on `/login/mfa`
-  - session-aware dashboard layout
-  - real `/content` list page
-  - first `/content/pages/new` and `/content/pages/[documentId]` editor flow
-  - submissions and settings pages backed by repository reads
-- Wired the public app to repository-backed content:
-  - homepage
-  - blog index/detail
-  - project index/detail
-  - work index/detail
-  - service detail
-  - legal detail
-  - generic page catch-all lookup
-- Added:
-  - content block renderer
-  - preview endpoint
-  - revalidation endpoint
-  - contact and project inquiry API handlers
-  - public contact/project inquiry page UI
-  - health endpoints for both apps
+## What is complete
 
-## Workspace Structure
+- `apps/web` and `apps/admin` remain independently deployable Next.js
+  applications.
+- The public homepage is semantic, responsive, static, cacheable, and contains
+  no page or global-shell Client Components.
+- The global header uses native HTML for its mobile interaction and follows
+  system color and reduced-motion preferences without client JavaScript.
+- Placeholder `/readme` content is removed and returns a real 404.
+- Production headers remove `X-Powered-By` and `unsafe-eval`.
+- Admin routes return 503 with no-store/noindex headers when authentication is
+  unconfigured; development alone retains an explicit setup mode.
+- Contact endpoints reject malformed payloads and return 503 when production
+  captcha or persistence controls are unavailable.
+- The in-memory fallback rate limiter has bounded memory and is unit tested; it
+  is not the final distributed production control.
+- Direct dependencies are current, the lockfile is deterministic, and both
+  pnpm audit and OSV-Scanner report no known issues.
+- The Shapewebs Neon organization contains the Frankfurt
+  `shapewebs-platform` project, currently treated as non-production.
+- `packages/database` contains the Drizzle schema, four reviewed migrations,
+  least-privilege role contracts, and a repeatable negative authorization
+  test.
+- `packages/auth` contains the Better Auth server factory, Drizzle adapter,
+  database rate limiting, Google-provider configuration, and TOTP plugin
+  foundation.
+- Application and migration roles are SQL-created roles without
+  `neon_superuser`, `BYPASSRLS`, database creation, or role creation
+  privileges. The provider-managed owner remains break-glass only.
+- RLS is enabled and forced on every `app` and `audit` table. Synthetic tests
+  verify tenant isolation, customer project assignment, published-only public
+  reads, constrained lead writes, auth-schema denial, and immutable audit
+  events.
+- Both local app directories are linked to their existing Vercel projects.
+  Development alone has least-privilege database URLs; Preview and Production
+  remain untouched.
+- Resend reports `shapewebs.com` verified in `eu-west-1`, with sending enabled,
+  receiving disabled, and open/click tracking disabled. A domain-restricted
+  Development sending key exists at the provider but is not stored in either
+  application or Vercel. The server-only email package, transactional outbox,
+  webhook, and Production key do not exist yet, so the current hard-coded
+  raw-API notification path is not release-ready.
 
-- `apps/web`: public marketing site and future public content rendering surface
-- `apps/admin`: private CMS and operations portal
-- `packages/ui`: shared design system and global foundation CSS
-- `packages/config`: site metadata, shared content enums, security headers, workspace package list
-- `packages/i18n`: locale and region-profile definitions
-- `packages/content-schema`: typed block/document schemas
-- `packages/validation`: env and form validation schemas
-- `packages/db`: database contracts, cache-tag helpers, shared DB types
-- `packages/observability`: structured logging helpers
-- `supabase/`: local Supabase config, migrations, seeds, and DB test notes
+## Automated gates
 
-## Verified Working
+The repository now contains:
 
-- `pnpm install`
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
-- `http://localhost:3000/` returns `200 OK`
-- `http://localhost:3000/blog/building-a-design-cms` returns `200 OK`
-- `http://localhost:3000/projects/northline-studio` returns `200 OK`
-- `http://localhost:3000/contact` returns `200 OK`
-- `http://localhost:3001/login` returns `200 OK`
-- `http://localhost:3001/content` returns `200 OK`
-- `POST http://localhost:3000/api/forms/contact` returns `200` with success JSON
+- Prettier formatting checks;
+- zero-warning ESLint with framework, TypeScript, and security rules;
+- markdownlint documentation checks;
+- strict TypeScript checks;
+- Vitest unit tests with 90% global coverage thresholds;
+- a TypeScript-AST client/server dependency boundary check;
+- Knip direct-dependency and cycle checks;
+- default Turbopack and separate webpack production builds;
+- Playwright critical-path, security-header, failure-mode, responsive, and axe
+  accessibility tests;
+- three-run Lighthouse CI median budgets;
+- GitHub Actions with immutable action SHAs;
+- OSV dependency scanning, conditional CodeQL, and weekly Dependabot updates.
 
-## Public App Status
+The exact local evidence is recorded in
+`docs/audits/foundation-verification-2026-07-23.md` and
+`docs/audits/database-foundation-verification-2026-07-24.md`.
 
-- Existing public shell/header/footer work was preserved and migrated into `apps/web`.
-- The public site now renders repository-backed or fallback CMS content on:
-  - `/`
-  - `/blog`
-  - `/blog/[slug]`
-  - `/projects`
-  - `/projects/[slug]`
-  - `/work`
-  - `/work/[slug]`
-  - `/services/[slug]`
-  - `/legal/[slug]`
-  - generic catch-all page lookups
-- `/contact` now contains working contact and project inquiry forms.
-- Preview and revalidation endpoints now exist at:
-  - `/api/preview`
-  - `/api/revalidate`
-- Health endpoint exists at `/api/health`.
-- Shared global styles now come from `@shapewebs/ui/styles/*`.
+## Accepted target architecture
 
-## Admin App Status
+The replacement stack is:
 
-- `apps/admin` now exists and builds independently.
-- Added and wired:
-  - `/login`
-  - `/login/mfa`
-  - `/dashboard`
-  - `/content`
-  - `/content/pages/new`
-  - `/content/pages/[documentId]`
-  - `/media`
-  - `/submissions`
-  - `/settings`
-  - `/audit`
-- Admin route protection now uses a real Supabase session refresh path in `src/proxy.ts`.
-- The admin app supports secure auth wiring when Supabase is configured, and a local setup mode when it is not.
-- Health endpoint exists at `/api/health`.
+- self-hosted Better Auth in `apps/admin`;
+- Google OAuth plus a server-enforced TOTP step-up for owner/editor sessions;
+- Neon Postgres;
+- Drizzle schemas and reviewed SQL migrations;
+- least-privilege runtime roles, with migration credentials kept out of Vercel
+  application runtimes;
+- isolated synthetic preview data;
+- Vercel Blob with separate public and private storage boundaries;
+- Resend behind a server-only email package, with a Neon transactional outbox,
+  idempotent delivery, and signed webhook processing.
 
-## Supabase Status
+Better Auth, Neon, and Drizzle are installed, and the initial clean migrations
+and negative database authorization tests pass against non-production Neon.
+The Better Auth route and Google login UI are not mounted yet. Production
+credentials will not be created until preview isolation and restore tests pass.
 
-- Initial schema scaffolding covers:
-  - admin users, roles, permissions
-  - locales and region profiles
-  - documents, localizations, revisions, SEO metadata
-  - media assets
-  - site settings and feature flags
-  - consent rules and cookie policy versions
-  - audit logs
-  - contact submissions
-  - preview tokens
-- RLS scaffolding and storage bucket policies were added.
-- The migration still needs real execution against a local or cloud Supabase instance to validate operational details.
-- Local Supabase startup is still blocked in this environment because Docker is not installed.
+## Transitional code
 
-## Important Assumptions
+The Supabase adapter, schema, and CMS prototype remain in the branch as
+temporary migration inputs. They are not considered verified production
+authorization. They will be removed—not retained in a `legacy` directory—after
+the Better Auth/Neon path passes its release gates.
 
-- English remains the default locale.
-- The second pilot locale is `da-DK`.
-- Public rendering remains static-first until CMS-backed reads replace the placeholder content.
-- Supabase Auth is for admin users only in v1.
+## Next implementation slices
 
-## Next Recommended Steps
-
-1. Execute the Supabase migration locally or in staging and validate the SQL, RLS, and storage behavior against a real project.
-2. Seed a real admin user/profile/role assignment so the secure auth path can be exercised end to end.
-3. Finish the first true write loop against a live Supabase instance from `/content/pages/new`.
-4. Add the media upload pipeline and wire image blocks to real storage assets.
-5. Add audit-log list views and settings mutation screens, not just snapshots.
-6. Wire Turnstile site keys and Resend credentials so anti-spam and notifications are active in non-fallback mode.
+The authoritative execution order is in
+`docs/plans/roadmap-2026-07-24.md`. The immediate slice is to normalize and
+publish the current foundation as a reviewable draft pull request, then prove
+the disposable Neon branch lifecycle before mounting Better Auth or Resend.

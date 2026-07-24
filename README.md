@@ -1,275 +1,136 @@
 # Shapewebs Platform
 
-Shapewebs is now structured as the foundation of a custom CMS-powered website platform:
+The Shapewebs monorepo contains two independently deployable Next.js
+applications:
 
-- `apps/web` is the public site for `shapewebs.com`
-- `apps/admin` is the private CMS surface for `admin.shapewebs.com`
-- `packages/*` contains shared platform code
-- `supabase/` contains migrations, seeds, and database security foundations
+- `apps/web` — the static-first studio website for `shapewebs.com`
+- `apps/admin` — the private CMS and future customer platform for
+  `admin.shapewebs.com`
 
-## Stack
+Shared code lives in `packages/*`. The public site and authenticated platform
+remain separate so identity and CMS dependencies cannot enter the marketing
+bundle.
 
-- Next.js 16.2.2 with the App Router
-- React 19.2.4
-- TypeScript
-- pnpm workspaces + Turborepo
-- Supabase-oriented architecture for Auth, Postgres, Storage, and RLS
-- Global foundation CSS plus component-scoped CSS Modules
+## Foundation status
 
-## Workspace Layout
+The hardened foundation and clean non-production Neon database are complete on
+`codex/foundation`; production has not been changed. The repository is being
+migrated in small, reviewable pull requests from its existing Supabase
+prototype to:
+
+- Better Auth for Google login, database sessions, and admin TOTP step-up
+- Neon Postgres with isolated preview branches
+- Drizzle schemas and reviewed SQL migrations
+- Vercel Blob for public and private media
+
+Supabase remains transitional code only until the complete replacement passes
+authentication, preview-isolation, restore, and release tests. The first
+Better Auth/Neon/Drizzle package slice and negative database authorization
+tests now pass; the admin route and Google login are the next slice. Production
+authentication and form persistence fail closed when required configuration is
+missing.
+
+See the [foundation architecture](docs/foundation/architecture.md), the
+[current-state audit](docs/audits/current-state-2026-07-23.md), and the
+[database verification](docs/audits/database-foundation-verification-2026-07-24.md),
+the [Phase 0 implementation plan](docs/plans/phase-0-foundation.md), and the
+[current execution roadmap](docs/plans/roadmap-2026-07-24.md).
+
+## Current stack
+
+- Next.js 16.2.11 and React 19.2.8
+- Better Auth 1.6.25
+- Neon Postgres with `@neondatabase/serverless`
+- Drizzle ORM and reviewed SQL migrations
+- Resend for transactional notifications; `shapewebs.com` is provider-verified,
+  while runtime integration and Production credentials remain pending
+- strict TypeScript
+- pnpm 10.17.1 through Corepack
+- Turborepo
+- CSS custom-property tokens and component-scoped CSS Modules
+- ESLint Security, Prettier, Knip, and a client/server boundary checker
+- Vitest, Playwright with axe, and Lighthouse CI
+- GitHub Actions, OSV-Scanner, CodeQL when licensed, and Dependabot
+
+## Workspace
 
 ```text
 apps/
   web/
   admin/
 packages/
+  auth/
   config/
   content-schema/
+  database/
   db/
   i18n/
   observability/
   ui/
   validation/
-supabase/
 docs/
+drizzle/
+tests/
+supabase/  # transitional implementation removed after the migration
+tooling/
+.github/
 ```
 
-## Commands
+The `db` package and `supabase/` directory remain transitional until the
+verified `database` and `auth` paths fully replace them. Git history is the
+archive; obsolete runtime code is removed instead of moved into a `legacy`
+directory.
+
+## Local commands
+
+Use the package-manager version declared in `package.json`:
 
 ```bash
-pnpm install
-pnpm dev:web
-pnpm dev:admin
-pnpm build
-pnpm lint
-pnpm typecheck
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev:web
+corepack pnpm dev:admin
+corepack pnpm format:check
+corepack pnpm lint
+corepack pnpm lint:docs
+corepack pnpm typecheck
+corepack pnpm test:coverage
+corepack pnpm check:boundaries
+corepack pnpm check:deps
+corepack pnpm check:cycles
+corepack pnpm --filter @shapewebs/database db:check
+corepack pnpm build
+corepack pnpm build:webpack
+corepack pnpm audit
 ```
 
-## Setup Notes
+Install Chromium once with
+`corepack pnpm exec playwright install chromium`, then run
+`corepack pnpm test:e2e`. Run `corepack pnpm test:performance` only after a
+production build; it performs three Lighthouse runs and enforces the median
+budget.
 
-- Copy `.env.example` values into `apps/web/.env.local` and `apps/admin/.env.local`.
-- Read [docs/runbooks/github-repository-setup.md](/Users/lukasthomsen/Desktop/shapewebs_1.1/docs/runbooks/github-repository-setup.md) before creating the GitHub repository and importing the monorepo into Vercel.
-- Read [docs/runbooks/platform-setup.md](/Users/lukasthomsen/Desktop/shapewebs_1.1/docs/runbooks/platform-setup.md) for the recommended hosted setup flow.
-- Read [supabase/seed/bootstrap_owner.sql.example](/Users/lukasthomsen/Desktop/shapewebs_1.1/supabase/seed/bootstrap_owner.sql.example) after creating your first Supabase auth user.
-- Read `PROJECT_STATUS.md` before making large changes.
-- Read `AGENTS.md` for project-specific coding-agent guidance.
+Read [AGENTS.md](AGENTS.md) before changing code and [PROJECT_STATUS.md](PROJECT_STATUS.md)
+before changing the platform architecture.
 
-## Product Direction
+## Deployment boundaries
 
-The public Shapewebs website is now treated as a **code-first marketing site**, while the admin app is treated as an **internal Shapewebs operating portal**.
+The existing Vercel projects remain the deployment targets:
 
-That means:
+- `shapewebs-web`, rooted at `apps/web`
+- `shapewebs-admin`, rooted at `apps/admin`
 
-- Core public pages should be authored in code.
-- Each public route should own its own metadata in code.
-- SEO, sitemap, structured data, canonical tags, favicons, and social sharing assets should be part of the web app implementation.
-- The admin portal should not become a generic page builder for the main site.
+Do not expose authentication secrets, migration credentials, private storage
+credentials, or admin-only database access to `apps/web`. Preview environments
+must use isolated non-production data before database-backed previews are
+enabled.
 
-## What Stays In Code
+## Product direction
 
-These things should live in the public app and be reviewed as product/design code:
+The public website is code-led: its page structure, conversion copy, metadata,
+navigation, and visual system are reviewed as product code. The custom admin
+platform owns content that naturally changes over time, such as enquiries,
+clients, projects, case studies, posts, media, and operational notes.
 
-- Homepage structure and copy
-- Services page structure and copy
-- Core legal route behavior and metadata
-- Route-level `title`, `description`, Open Graph metadata, and canonical handling
-- JSON-LD structured data
-- Sitemap generation
-- `robots.txt`
-- Header, footer, navigation, and brand presentation
-- Favicons, app icons, social images, and other brand assets
-
-For the main public site, the rule is:
-
-**If it affects brand quality, SEO, route architecture, or conversion messaging, prefer code over CMS.**
-
-## What The Admin Portal Should Be
-
-The admin app should evolve into a practical internal system for a web design studio rather than a raw page editor.
-
-Recommended first-use purpose:
-
-- internal workspace for Shapewebs employees
-- lead and inquiry handling
-- client registry
-- active project tracking
-- blog and case study management
-- asset and brand-library management
-- notes, tasks, and audit trail for delivery work
-
-This gives the admin portal a real reason to exist even before a full content-management system is finished.
-
-## Recommended Admin Modules
-
-### Phase 1: Useful Internal Portal
-
-- Dashboard
-- Leads / inquiries inbox
-- Clients
-- Projects
-- Blog posts
-- Case studies
-- Media library
-- Team notes / activity log
-- Settings
-
-### Phase 2: Agency Operations
-
-- Client contacts
-- Project milestones
-- Deliverables tracker
-- Proposal / scope records
-- Internal checklist templates
-- Launch readiness tracker
-- Maintenance plans
-- Change request log
-
-### Phase 3: Optional CMS Expansion
-
-- Structured blog publishing
-- Structured case study publishing
-- Reusable testimonial records
-- Reusable FAQ records
-- Reusable service highlights
-- Optional legal-document versioning
-
-## Current Decision
-
-We are **not** using the admin app as the primary source of truth for the main website's page-by-page metadata and layout.
-
-Instead:
-
-- the website remains code-led
-- the admin app becomes an internal business tool with selective publishing capabilities
-- editorial data in admin should focus on things that naturally change over time
-
-Examples of good admin-owned content:
-
-- blog posts
-- client records
-- project data
-- inquiries
-- case studies
-- asset metadata
-- internal notes
-
-Examples of code-owned content:
-
-- homepage SEO
-- services page SEO
-- route metadata
-- primary conversion copy
-- favicon setup
-- app icons
-- structured data strategy
-
-## Component Inventory
-
-The UI foundation already contains a large reusable component system in `packages/ui/src`.
-
-### Existing Foundation Component Groups
-
-- Buttons
-- Collections
-- Colors
-- Controls
-- Data display
-- Date and time
-- Feedback
-- Forms
-- Layout
-- Media
-- Navigation
-- Overlays
-- Pickers
-- Typography
-- Utilities
-
-These are already scaffolded and should be reused before creating one-off app components.
-
-## App Components To Build Next
-
-This is the practical build order for the product surface.
-
-### Web App Components
-
-- Site metadata and SEO helpers
-- Favicon and app-icon asset set
-- Hero sections
-- Service feature sections
-- Case study cards
-- Blog post cards
-- Contact and inquiry blocks
-- Trust and proof sections
-- CTA sections
-- Legal page layouts
-- Open Graph image system
-
-### Admin App Components
-
-- App shell navigation
-- Dashboard stat cards
-- Activity feed
-- Leads table
-- Lead detail drawer
-- Client table
-- Client profile panel
-- Project board
-- Project detail page
-- Blog post editor
-- Case study editor
-- Media asset grid
-- Upload dialog
-- Internal notes composer
-- Status badges
-- Filter toolbar
-- Search bar
-- Empty states
-- Confirmation dialogs
-
-## Recommended Build Order
-
-We should build the system in this order:
-
-1. Public site metadata and brand asset system
-2. Public site page components
-3. Admin dashboard shell refinement
-4. Leads and clients module
-5. Projects module
-6. Blog posts module
-7. Case studies module
-8. Media library
-9. Internal notes and audit improvements
-
-## Brand Assets Needed Later
-
-When brand asset implementation starts, prepare these files:
-
-- Master logo in SVG
-- Simplified mark/icon in SVG
-- Black logo variant
-- White logo variant
-- Transparent PNG exports
-- Favicon source at high resolution
-- Apple touch icon source
-- Social sharing image source
-- Optional monochrome app icon source
-
-Suggested raster exports:
-
-- `16x16`
-- `32x32`
-- `48x48`
-- `180x180`
-- `192x192`
-- `256x256`
-- `512x512`
-- `1200x630` for Open Graph
-
-## Working Principle
-
-The main website should feel intentionally designed and tightly controlled.
-
-The admin portal should feel useful to the business.
-
-That split is the direction for the next phase of work.
+The future customer portal belongs in the authenticated platform. Its
+organization, membership, project, update, and file models are planned now so
+customer access can be added without moving identity or project data later.
