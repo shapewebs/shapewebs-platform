@@ -526,6 +526,118 @@
       "id": "v5.0.0-4.4.4",
       "notes": "Shapewebs has no HTTPS-to-WebSocket session transition.",
       "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.1.1",
+      "notes": "The current Shapewebs release has no file-upload feature. The media screen explicitly identifies the upload pipeline as pending; this control must be reopened before that pipeline is implemented.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.1",
+      "notes": "The current release accepts no uploaded files. Maximum encoded and decoded file sizes remain a mandatory precondition for the planned media pipeline.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.2",
+      "notes": "The current release accepts no uploaded files. Extension, MIME signature and decoded-content validation must be implemented before media upload launch.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.2.3",
+      "notes": "The current release accepts no compressed file or archive input. Archive support is prohibited until entry-count and unpacked-size limits exist.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.3.1",
+      "notes": "No untrusted uploaded or generated file is stored in a public executable directory in the current release.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.3.2",
+      "notes": "The current release creates no filesystem path from a user-submitted filename or file metadata. Planned storage must use generated object identifiers.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.1",
+      "notes": "The current release accepts and serves no user-submitted filename. Content-Disposition handling must be reviewed before file delivery is added.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.2",
+      "notes": "The current release serves no untrusted filename in an HTTP response or email attachment.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-5.4.3",
+      "notes": "The current release stores and serves no file obtained from an untrusted source. Malware scanning remains a launch gate for the planned media pipeline.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.1.1",
+      "notes": "Shapewebs has no WebRTC implementation, TURN relay or media server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.1",
+      "notes": "Shapewebs has no WebRTC DTLS certificate or media server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.2",
+      "notes": "Shapewebs has no WebRTC DTLS-SRTP endpoint or cipher configuration.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.3",
+      "notes": "Shapewebs has no SRTP media processing.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.2.4",
+      "notes": "Shapewebs has no SRTP packet-processing path.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.3.1",
+      "notes": "Shapewebs has no WebRTC signaling server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-17.3.2",
+      "notes": "Shapewebs has no WebRTC signaling-message parser or signaling server.",
+      "owner": "Shapewebs owner"
     }
   ],
   "version": "5.0.0"

@@ -29,7 +29,7 @@ connected to production data, or promoted to the production domains.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
   requirements. Encoding, validation, browser-security, API and transport
-  review has 57 path-validated dispositions and 196 explicitly unreviewed
+  review has 73 path-validated dispositions and 180 explicitly unreviewed
   requirements; structural
   verification is canonical, and the production gate remains fail-closed until
   every requirement is reviewed.
