@@ -1,9 +1,12 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { hasAdminAuthConfig, isLocalAdminSetupMode } from "@/lib/better-auth";
 import { LoginForm } from "./login-form";
 import styles from "./page.module.css";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await connection();
+
   const isConfigured = hasAdminAuthConfig();
   const isLocalSetupMode = isLocalAdminSetupMode();
 

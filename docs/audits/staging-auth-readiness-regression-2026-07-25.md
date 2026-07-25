@@ -111,3 +111,12 @@ OAuth variables were added and the fixed staging branch was redeployed at
 authentication environment and database dependency are usable without
 disclosing provider details. The interactive Google-to-TOTP, step-up-expiry
 and session-revocation journeys remain required.
+
+After merge `b1791f3`, the interactive probe found that `/login` had been
+prerendered while the sensitive runtime variables were intentionally absent
+from the static generation context. The readiness API remained healthy, but
+the static page retained the unavailable state and disabled Google sign-in.
+The isolated correction calls Next.js `connection()` before reading auth
+configuration, making `/login` request-rendered. Its production build now
+reports `ƒ /login`; fixed-staging deployment and the interactive journey remain
+the closure evidence.
