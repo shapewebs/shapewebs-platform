@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { listContentDocuments } from "../../packages/database/src/content-list";
 import {
   getContentEditorState,
+  rollbackPageContentRevision,
   savePageContentRevision,
+  unpublishPageContent,
 } from "../../packages/database/src/content-editor";
 import {
   consumeContentPreviewGrant,
@@ -37,6 +39,10 @@ const publishCommandId = "10000000-0000-4000-8000-000000000113";
 const postPublishDraftCommandId = "10000000-0000-4000-8000-000000000114";
 const danishDraftCommandId = "10000000-0000-4000-8000-000000000115";
 const danishPublishCommandId = "10000000-0000-4000-8000-000000000116";
+const unpublishCommandId = "10000000-0000-4000-8000-000000000117";
+const staleUnpublishCommandId = "10000000-0000-4000-8000-000000000118";
+const crossLocaleRollbackCommandId = "10000000-0000-4000-8000-000000000119";
+const rollbackCommandId = "10000000-0000-4000-8000-000000000120";
 
 describe("Neon content-list repository", () => {
   it("returns the latest validated tenant-scoped revision", async () => {
@@ -102,6 +108,7 @@ describe.sequential("Neon content-editor repository", () => {
   let documentId = "";
   let publishedRevisionId = "";
   let postPublishDraftRevisionId = "";
+  let danishPublishedRevisionId = "";
 
   it("creates one immutable draft and treats an exact command replay idempotently", async () => {
     const created = await savePageContentRevision(
@@ -288,6 +295,8 @@ describe.sequential("Neon content-editor repository", () => {
       throw new Error("The Danish CMS revision was not published.");
     }
 
+    danishPublishedRevisionId = published.revisionId;
+
     await expect(
       getContentEditorState(databaseUrl, authorization, {
         documentId,
@@ -431,6 +440,162 @@ describe.sequential("Neon content-editor repository", () => {
         consumed.sessionToken,
       ),
     ).resolves.toBeNull();
+  });
+
+  it("unpublishes one locale without disturbing another and replays idempotently", async () => {
+    const unpublished = await unpublishPageContent(databaseUrl, authorization, {
+      commandId: unpublishCommandId,
+      documentId,
+      expectedVersion: 5,
+      localeCode: "en",
+    });
+
+    expect(unpublished).toMatchObject({
+      documentId,
+      localeCode: "en",
+      previousSlug: "cms-integration-page",
+      slug: "cms-integration-page",
+      status: "unpublished",
+      version: 6,
+    });
+
+    await expect(
+      unpublishPageContent(databaseUrl, authorization, {
+        commandId: unpublishCommandId,
+        documentId,
+        expectedVersion: 5,
+        localeCode: "en",
+      }),
+    ).resolves.toMatchObject({
+      documentId,
+      localeCode: "en",
+      status: "duplicate",
+      version: 6,
+    });
+
+    await expect(
+      getPublishedContentBySlug(webDatabaseUrl, authorization.organizationId, {
+        contentType: "page",
+        localeCode: "en",
+        slug: "cms-integration-page",
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      getPublishedContentBySlug(webDatabaseUrl, authorization.organizationId, {
+        contentType: "page",
+        localeCode: "da-DK",
+        slug: "cms-integrationsside",
+      }),
+    ).resolves.toMatchObject({
+      documentId,
+      localeCode: "da-DK",
+      title: "Dansk integrationsside",
+    });
+    await expect(
+      getContentEditorState(databaseUrl, authorization, {
+        documentId,
+        localeCode: "en",
+      }),
+    ).resolves.toMatchObject({
+      publishedRevisionId: null,
+      state: "archived",
+      version: 6,
+    });
+  });
+
+  it("rejects stale and cross-locale recovery commands without mutation", async () => {
+    await expect(
+      unpublishPageContent(databaseUrl, authorization, {
+        commandId: staleUnpublishCommandId,
+        documentId,
+        expectedVersion: 5,
+        localeCode: "da-DK",
+      }),
+    ).resolves.toEqual({ status: "conflict" });
+
+    await expect(
+      rollbackPageContentRevision(databaseUrl, authorization, {
+        commandId: crossLocaleRollbackCommandId,
+        documentId,
+        expectedVersion: 6,
+        localeCode: "en",
+        revisionId: danishPublishedRevisionId,
+      }),
+    ).resolves.toEqual({ status: "conflict" });
+
+    await expect(
+      getContentEditorState(databaseUrl, authorization, {
+        documentId,
+        localeCode: "en",
+      }),
+    ).resolves.toMatchObject({
+      publishedRevisionId: null,
+      version: 6,
+    });
+  });
+
+  it("rolls back by copying an exact revision into a new immutable publication", async () => {
+    const rolledBack = await rollbackPageContentRevision(
+      databaseUrl,
+      authorization,
+      {
+        commandId: rollbackCommandId,
+        documentId,
+        expectedVersion: 6,
+        localeCode: "en",
+        revisionId: publishedRevisionId,
+      },
+    );
+
+    expect(rolledBack).toMatchObject({
+      documentId,
+      localeCode: "en",
+      previousSlug: null,
+      slug: "cms-integration-page",
+      status: "rolled_back",
+      version: 7,
+    });
+
+    if (!("revisionId" in rolledBack)) {
+      throw new Error("The rollback publication was not created.");
+    }
+
+    expect(rolledBack.revisionId).not.toBe(publishedRevisionId);
+    await expect(
+      rollbackPageContentRevision(databaseUrl, authorization, {
+        commandId: rollbackCommandId,
+        documentId,
+        expectedVersion: 6,
+        localeCode: "en",
+        revisionId: publishedRevisionId,
+      }),
+    ).resolves.toMatchObject({
+      documentId,
+      revisionId: rolledBack.revisionId,
+      status: "duplicate",
+      version: 7,
+    });
+    await expect(
+      getContentEditorState(databaseUrl, authorization, {
+        documentId,
+        localeCode: "en",
+      }),
+    ).resolves.toMatchObject({
+      publishedRevisionId: rolledBack.revisionId,
+      state: "published",
+      title: "CMS integration page",
+      version: 7,
+    });
+    await expect(
+      getPublishedContentBySlug(webDatabaseUrl, authorization.organizationId, {
+        contentType: "page",
+        localeCode: "en",
+        slug: "cms-integration-page",
+      }),
+    ).resolves.toMatchObject({
+      documentId,
+      title: "CMS integration page",
+    });
   });
 
   it("rejects a locale/type slug collision atomically", async () => {

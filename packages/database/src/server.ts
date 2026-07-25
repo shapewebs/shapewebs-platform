@@ -7,12 +7,17 @@ export {
 export {
   getContentEditorState,
   getDefaultPageEditorState,
+  rollbackPageContentRevision,
   savePageContentRevision,
+  unpublishPageContent,
+  type ContentWorkflowCommandResult,
   type ContentEditorSeoState,
   type ContentEditorState,
   type ContentRevisionSummary,
+  type RollbackPageContentInput,
   type SavePageContentInput,
   type SavePageContentResult,
+  type UnpublishPageContentInput,
 } from "./content-editor";
 export {
   buildContentRevalidationTags,

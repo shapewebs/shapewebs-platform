@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   consumeAdminTotpCounter,
   recordAdminTotpFailure,
+  rotateAdminSessionToken,
 } from "../src/admin-auth";
 import { createDatabase } from "../src/client";
 import {
   adminSessionSecurity,
   adminTotpSecurity,
+  auditEvents,
   session,
 } from "../src/schema";
 
@@ -27,6 +29,7 @@ const sessionToken = "lifecycle-admin-auth-integration-token";
 const userId = "lifecycle-owner";
 
 async function removeFixture() {
+  await database.delete(auditEvents).where(eq(auditEvents.targetId, sessionId));
   await database
     .delete(adminTotpSecurity)
     .where(eq(adminTotpSecurity.userId, userId));
@@ -122,6 +125,80 @@ describe.sequential("Neon administrative TOTP repository", () => {
         failedAttempts: 0,
         lastAcceptedCounter: 42,
         stepUpVerifiedAt: verifiedAt,
+      },
+    ]);
+  });
+
+  it("rotates an accepted session token without extending its absolute expiry", async () => {
+    const verifiedAt = new Date("2026-07-25T20:01:00.000Z");
+    const rotatedAt = new Date("2026-07-25T20:01:01.000Z");
+
+    await expect(
+      consumeAdminTotpCounter(
+        databaseUrl,
+        {
+          counter: 43,
+          sessionId,
+          userId,
+        },
+        verifiedAt,
+      ),
+    ).resolves.toBe(true);
+
+    const [originalSession] = await database
+      .select({ expiresAt: session.expiresAt })
+      .from(session)
+      .where(eq(session.id, sessionId))
+      .limit(1);
+
+    await expect(
+      rotateAdminSessionToken(databaseUrl, {
+        authorization: {
+          actor: { id: userId },
+          latestStepUpAt: verifiedAt,
+          organizationId: "10000000-0000-4000-8000-000000000001",
+          role: "owner",
+          session: { id: sessionId },
+        },
+        newToken: "r".repeat(43),
+        requestId: "admin-auth-rotation-integration",
+        rotatedAt,
+        verifiedAt,
+      }),
+    ).resolves.toEqual({
+      expiresAt: originalSession?.expiresAt,
+    });
+
+    await expect(
+      database
+        .select({
+          expiresAt: session.expiresAt,
+          token: session.token,
+          updatedAt: session.updatedAt,
+        })
+        .from(session)
+        .where(eq(session.id, sessionId))
+        .limit(1),
+    ).resolves.toEqual([
+      {
+        expiresAt: originalSession?.expiresAt,
+        token: "r".repeat(43),
+        updatedAt: rotatedAt,
+      },
+    ]);
+
+    await expect(
+      database
+        .select({
+          action: auditEvents.action,
+          requestId: auditEvents.requestId,
+        })
+        .from(auditEvents)
+        .where(eq(auditEvents.targetId, sessionId)),
+    ).resolves.toEqual([
+      {
+        action: "auth.session_rotated",
+        requestId: "admin-auth-rotation-integration",
       },
     ]);
   });

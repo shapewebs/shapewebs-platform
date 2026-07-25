@@ -6,6 +6,8 @@ import {
 } from "../../packages/content-schema/src/index";
 import {
   contentDocumentListItemSchema,
+  contentRollbackCommandSchema,
+  contentUnpublishCommandSchema,
   pageEditorInputSchema,
 } from "../../packages/validation/src/index";
 
@@ -148,6 +150,44 @@ describe("content security validation", () => {
     ]) {
       expect(pageEditorInputSchema.safeParse(unsafePage).success).toBe(false);
     }
+  });
+
+  it("requires explicit confirmation for bounded publication commands", () => {
+    const unpublishCommand = {
+      commandId: "10000000-0000-4000-8000-000000000120",
+      confirmation: "true",
+      documentId: "10000000-0000-4000-8000-000000000004",
+      expectedVersion: 7,
+      localeCode: "en",
+    };
+
+    expect(
+      contentUnpublishCommandSchema.safeParse(unpublishCommand).success,
+    ).toBe(true);
+    expect(
+      contentRollbackCommandSchema.safeParse({
+        ...unpublishCommand,
+        revisionId: "10000000-0000-4000-8000-000000000005",
+      }).success,
+    ).toBe(true);
+
+    for (const unsafeCommand of [
+      { ...unpublishCommand, confirmation: undefined },
+      { ...unpublishCommand, confirmation: "false" },
+      { ...unpublishCommand, expectedVersion: 0 },
+      { ...unpublishCommand, localeCode: "unknown" },
+    ]) {
+      expect(
+        contentUnpublishCommandSchema.safeParse(unsafeCommand).success,
+      ).toBe(false);
+    }
+
+    expect(
+      contentRollbackCommandSchema.safeParse({
+        ...unpublishCommand,
+        revisionId: "not-a-revision",
+      }).success,
+    ).toBe(false);
   });
 
   it("accepts only bounded CMS list DTOs from the database boundary", () => {

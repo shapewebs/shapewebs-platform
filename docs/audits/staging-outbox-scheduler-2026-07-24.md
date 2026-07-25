@@ -142,3 +142,28 @@ After recovery, the trigger API again returned exactly one
 contained 21 outbox events, all `sent` with `suppressed_synthetic`, zero
 unresolved events and zero provider message IDs. Resend sent no outbox
 notification during the exercise.
+
+## Final POST-only cutover and credential rotation
+
+The temporary compatibility deployment was replaced by the tracked,
+POST-only Worker. The final code deployment used Worker version
+`deda7747-1501-4dde-8e39-3a1a3bbcc42f` and deployment
+`eb9eca55-229f-496d-bb93-bd315b04621a`.
+
+An operational CLI inspection unexpectedly rendered the private Checkly ping
+token. The token was treated as compromised immediately. A replacement was
+generated in memory, written directly to the Checkly heartbeat and the
+encrypted Cloudflare secret, and never stored in the repository or audit
+output. Updating the encrypted secret created the current 100% deployment:
+
+- Worker version `ed4d707f-9f62-4545-abcb-3e2fd1ccb953`;
+- deployment `a428805a-81e2-417c-8cff-359c8f09df3c`; and
+- exact schedule `*/5 * * * *`.
+
+No manual heartbeat was sent after rotation. Checkly's status updated from a
+real scheduled Worker success at `2026-07-25T22:55:52.701Z`. The heartbeat
+remained active and unmuted with its five-minute period, six-minute grace
+window, no failure, no error and no degraded state. Because the Worker sends
+that heartbeat only after a successful bounded JSON response from the
+POST-only outbox route, this is end-to-end evidence for the final
+Worker-to-admin configuration.

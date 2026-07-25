@@ -6,11 +6,15 @@ import { redirect } from "next/navigation";
 import { contentDocumentSchema } from "@shapewebs/content-schema";
 import {
   createContentPreviewGrant,
+  rollbackPageContentRevision,
   savePageContentRevision,
+  unpublishPageContent,
   type PublicLocaleCode,
 } from "@shapewebs/database/server";
 import {
   contentPreviewSelectionSchema,
+  contentRollbackCommandSchema,
+  contentUnpublishCommandSchema,
   pageEditorInputSchema,
 } from "@shapewebs/validation";
 
@@ -37,7 +41,7 @@ function getSiteOrigin() {
 async function triggerWebRevalidation(input: {
   documentId: string;
   localeCode: string;
-  slug: string;
+  paths: string[];
 }) {
   const secret = process.env.REVALIDATION_WEBHOOK_SECRET;
 
@@ -46,27 +50,37 @@ async function triggerWebRevalidation(input: {
   }
 
   try {
-    const response = await fetch(`${getSiteOrigin()}/api/revalidate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-shapewebs-revalidate-secret": secret,
-      },
-      body: JSON.stringify({
-        contentType: "page",
-        documentId: input.documentId,
-        localeCode: input.localeCode,
-        path: input.slug === "home" ? "/" : `/${input.slug}`,
-      }),
-      cache: "no-store",
-      redirect: "error",
-      signal: AbortSignal.timeout(5_000),
-    });
+    const responses = await Promise.all(
+      [...new Set(input.paths)].map((path) =>
+        fetch(`${getSiteOrigin()}/api/revalidate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-shapewebs-revalidate-secret": secret,
+          },
+          body: JSON.stringify({
+            contentType: "page",
+            documentId: input.documentId,
+            localeCode: input.localeCode,
+            path,
+          }),
+          cache: "no-store",
+          redirect: "error",
+          signal: AbortSignal.timeout(5_000),
+        }),
+      ),
+    );
 
-    return response.ok;
+    return responses.every((response) => response.ok);
   } catch {
     return false;
   }
+}
+
+function getPublicPagePath(slug: string, localeCode: string) {
+  const localePrefix = localeCode === "en" ? "" : `/${localeCode}`;
+
+  return slug === "home" ? localePrefix || "/" : `${localePrefix}/${slug}`;
 }
 
 function normalizeOptionalValue(value: FormDataEntryValue | null) {
@@ -206,10 +220,178 @@ export async function savePageEditorAction(formData: FormData) {
     !(await triggerWebRevalidation({
       documentId: result.documentId,
       localeCode: result.localeCode,
-      slug: parsed.data.slug,
+      paths: [getPublicPagePath(parsed.data.slug, result.localeCode)],
     }))
   ) {
     status = "published-revalidation-pending";
+  }
+
+  redirect(
+    getEditorPath(result.documentId, {
+      localeCode: result.localeCode,
+      status,
+    }),
+  );
+}
+
+export async function unpublishPageAction(formData: FormData) {
+  const runtime = await requireAdminSession({
+    freshStepUpWithinSeconds: 5 * 60,
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
+  const parsed = contentUnpublishCommandSchema.safeParse({
+    commandId: formData.get("commandId"),
+    confirmation: formData.get("confirmation"),
+    documentId: formData.get("documentId"),
+    expectedVersion: formData.get("expectedVersion"),
+    localeCode: formData.get("localeCode"),
+  });
+
+  if (!parsed.success) {
+    redirect(
+      getEditorPath(normalizeOptionalValue(formData.get("documentId")), {
+        error: "validation",
+        localeCode: normalizeOptionalValue(formData.get("localeCode")),
+      }),
+    );
+  }
+
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (runtime.setupMode || !databaseUrl || !runtime.authorization) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: "setup",
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  const requestHeaders = await headers();
+  const result = await unpublishPageContent(
+    databaseUrl,
+    runtime.authorization,
+    {
+      commandId: parsed.data.commandId,
+      documentId: parsed.data.documentId,
+      expectedVersion: parsed.data.expectedVersion,
+      localeCode: parsed.data.localeCode,
+      requestId: requestHeaders.get("x-request-id") ?? undefined,
+    },
+  );
+
+  if (!("documentId" in result)) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: result.status,
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  revalidatePath("/content");
+  revalidatePath(`/content/pages/${result.documentId}`);
+  let status = result.status === "duplicate" ? "duplicate" : "unpublished";
+
+  if (
+    result.status !== "duplicate" &&
+    result.previousSlug &&
+    !(await triggerWebRevalidation({
+      documentId: result.documentId,
+      localeCode: result.localeCode,
+      paths: [getPublicPagePath(result.previousSlug, result.localeCode)],
+    }))
+  ) {
+    status = "unpublished-revalidation-pending";
+  }
+
+  redirect(
+    getEditorPath(result.documentId, {
+      localeCode: result.localeCode,
+      status,
+    }),
+  );
+}
+
+export async function rollbackPageAction(formData: FormData) {
+  const runtime = await requireAdminSession({
+    freshStepUpWithinSeconds: 5 * 60,
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
+  const parsed = contentRollbackCommandSchema.safeParse({
+    commandId: formData.get("commandId"),
+    confirmation: formData.get("confirmation"),
+    documentId: formData.get("documentId"),
+    expectedVersion: formData.get("expectedVersion"),
+    localeCode: formData.get("localeCode"),
+    revisionId: formData.get("revisionId"),
+  });
+
+  if (!parsed.success) {
+    redirect(
+      getEditorPath(normalizeOptionalValue(formData.get("documentId")), {
+        error: "validation",
+        localeCode: normalizeOptionalValue(formData.get("localeCode")),
+      }),
+    );
+  }
+
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (runtime.setupMode || !databaseUrl || !runtime.authorization) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: "setup",
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  const requestHeaders = await headers();
+  const result = await rollbackPageContentRevision(
+    databaseUrl,
+    runtime.authorization,
+    {
+      commandId: parsed.data.commandId,
+      documentId: parsed.data.documentId,
+      expectedVersion: parsed.data.expectedVersion,
+      localeCode: parsed.data.localeCode,
+      requestId: requestHeaders.get("x-request-id") ?? undefined,
+      revisionId: parsed.data.revisionId,
+    },
+  );
+
+  if (!("documentId" in result)) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: result.status,
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  revalidatePath("/content");
+  revalidatePath(`/content/pages/${result.documentId}`);
+  let status = result.status === "duplicate" ? "duplicate" : "rolled-back";
+
+  if (result.status !== "duplicate") {
+    const paths = [getPublicPagePath(result.slug, result.localeCode)];
+
+    if (result.previousSlug) {
+      paths.push(getPublicPagePath(result.previousSlug, result.localeCode));
+    }
+
+    if (
+      !(await triggerWebRevalidation({
+        documentId: result.documentId,
+        localeCode: result.localeCode,
+        paths,
+      }))
+    ) {
+      status = "rolled-back-revalidation-pending";
+    }
   }
 
   redirect(

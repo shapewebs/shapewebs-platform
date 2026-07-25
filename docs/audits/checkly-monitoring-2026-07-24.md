@@ -211,3 +211,19 @@ not an accepted monitoring gap.
 The Resend webhook remains enabled at its rotated staging endpoint and is
 subscribed to the seven documented delivery-lifecycle events: sent, delivered,
 delivery delayed, bounced, complained, failed, and suppressed.
+
+## Final heartbeat-secret rotation
+
+The heartbeat ping token was rotated again on 25 July 2026 after an
+operational CLI JSON response rendered the private value. The old value was
+considered compromised and was replaced atomically in Checkly and the
+Cloudflare Worker's encrypted `CHECKLY_HEARTBEAT_URL` binding. The replacement
+value was generated in memory and is absent from source control and this
+record.
+
+The current Worker deployment is
+`a428805a-81e2-417c-8cff-359c8f09df3c`, serving version
+`ed4d707f-9f62-4545-abcb-3e2fd1ccb953` at 100%. No manual ping was used.
+Checkly recorded the real scheduled path at
+`2026-07-25T22:55:52.701Z`; the monitor was active, unmuted and neither
+failing, errored nor degraded.
