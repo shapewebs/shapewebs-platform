@@ -62,6 +62,45 @@ describe("security headers", () => {
     expect(csp).not.toContain("supabase.co");
   });
 
+  it("allows only the exact public origin for admin preview transfers", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const csp = buildAdminContentSecurityPolicy("safeNonce123", {
+      formActionOrigins: [
+        "https://staging.shapewebs.com",
+        "https://staging.shapewebs.com",
+      ],
+    });
+
+    expect(csp).toContain("form-action 'self' https://staging.shapewebs.com");
+    expect(csp.match(/https:\/\/staging\.shapewebs\.com/g)).toHaveLength(1);
+    expect(csp).not.toContain("*");
+  });
+
+  it("allows loopback HTTP form actions only in development", () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    expect(
+      buildAdminContentSecurityPolicy("safeNonce123", {
+        formActionOrigins: ["http://127.0.0.1:3100"],
+      }),
+    ).toContain("form-action 'self' http://127.0.0.1:3100");
+  });
+
+  it.each([
+    "https://staging.shapewebs.com/path",
+    "https://user:password@staging.shapewebs.com",
+    "http://staging.shapewebs.com",
+    "javascript:alert(1)",
+  ])("rejects unsafe admin form-action origin %s", (origin) => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    expect(() =>
+      buildAdminContentSecurityPolicy("safeNonce123", {
+        formActionOrigins: [origin],
+      }),
+    ).toThrow("exact secure origin");
+  });
+
   it("denies all browser rendering contexts for admin API responses", () => {
     const csp = buildAdminApiContentSecurityPolicy();
 

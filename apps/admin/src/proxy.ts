@@ -32,7 +32,12 @@ function withSecurityHeaders(response: NextResponse, csp: string) {
 
 export function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildAdminContentSecurityPolicy(nonce);
+  const publicSiteOrigin = process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
+    : undefined;
+  const csp = buildAdminContentSecurityPolicy(nonce, {
+    formActionOrigins: publicSiteOrigin ? [publicSiteOrigin] : [],
+  });
   const requestHeaders = new Headers(request.headers);
   const protectedPath = isProtectedPath(request.nextUrl.pathname);
   const setupMode = isLocalAdminSetupMode();
