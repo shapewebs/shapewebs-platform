@@ -433,7 +433,8 @@ persistent-staging deployment and rollback evidence.
 ## Next implementation slices
 
 1. Verify the deployed owner/editor, Google-token and TOTP paths on the fixed
-   staging admin domain, including step-up expiry and session revocation.
+   staging admin domain after the request-rendered login correction, including
+   step-up expiry and session revocation.
 2. Exercise authenticated Neon authoring and revision creation on persistent
    staging.
 3. Complete mailbox MFA, recovery-address verification and the remaining
