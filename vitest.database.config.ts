@@ -12,7 +12,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/integration/database-content-list.test.ts"],
+    include: [
+      "packages/database/tests/*.integration.test.ts",
+      "tests/integration/database-content-list.test.ts",
+    ],
     restoreMocks: true,
   },
 });
