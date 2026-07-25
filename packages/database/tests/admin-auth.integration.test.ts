@@ -13,14 +13,15 @@ import {
 } from "../src/schema";
 
 const databaseUrl = process.env.DATABASE_ADMIN_URL;
+const fixtureDatabaseUrl = process.env.DATABASE_OWNER_URL;
 
-if (!databaseUrl) {
+if (!databaseUrl || !fixtureDatabaseUrl) {
   throw new Error(
-    "DATABASE_ADMIN_URL is required for the admin-auth integration test.",
+    "DATABASE_ADMIN_URL and DATABASE_OWNER_URL are required for the admin-auth integration test.",
   );
 }
 
-const database = createDatabase(databaseUrl);
+const database = createDatabase(fixtureDatabaseUrl);
 const sessionId = "lifecycle-admin-auth-integration-session";
 const sessionToken = "lifecycle-admin-auth-integration-token";
 const userId = "lifecycle-owner";
