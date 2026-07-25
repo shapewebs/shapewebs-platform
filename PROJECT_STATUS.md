@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 25 July 2026
-- Branch: protected `staging`; current stacked implementation branch
-  `codex/neon-public-content`
+- Branch: protected `staging`; current implementation branch
+  `codex/staging-auth-runtime-evidence`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -12,8 +12,9 @@
   protected `staging` at `a56a771`; fail-closed admin-readiness pull request
   `shapewebs/shapewebs-platform#18` merged at `41d9556`; stacked Neon CMS
   editor pull request `shapewebs/shapewebs-platform#19` merged at `732c563`;
-  foundation promotion pull request `shapewebs/shapewebs-platform#7` remains
-  draft
+  public-content pull request `#20`, request-rendered login correction `#21`,
+  and Shapewebs session-cookie correction `#22` are merged; foundation
+  promotion pull request `shapewebs/shapewebs-platform#7` remains draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
@@ -42,11 +43,12 @@ to production data or promoted to the production domains.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
   requirements. Encoding, validation, browser-security, API, transport,
-  authentication, session, authorization, token and OAuth review has 160
-  evidence-backed dispositions and 93 explicitly unreviewed requirements.
-  Regeneration is byte-for-byte Prettier-clean, structural verification is
-  canonical, and the production gate remains fail-closed until every
-  requirement is reviewed.
+  authentication, session, authorization, token, OAuth, cryptography, and
+  logging review has 186 evidence-backed dispositions and 67 explicitly
+  unreviewed requirements. The cryptographic-key-management and logging
+  inventories are version controlled. Regeneration is byte-for-byte
+  Prettier-clean, structural verification is canonical, and the production
+  gate remains fail-closed until every requirement is reviewed.
 - `pnpm verify` is the canonical local/CI gate. It includes a deterministic
   compatibility and resource-bound check for the tracked `brace-expansion`
   5.0.8 security patch. `pnpm verify:release` adds dual builds, Playwright,
@@ -115,6 +117,12 @@ to production data or promoted to the production domains.
   five minutes is required to revoke another administrative session.
 - Google authentication is followed by a custom TOTP step-up. Publishing and
   other sensitive mutations require a fresh step-up.
+- The fixed staging login now recognizes the configured Shapewebs cookie
+  prefix. The current branch passes Better Auth's runtime key configuration
+  into TOTP decryption, including versioned secret envelopes, and replaces
+  error-prone manual-only enrollment with a locally rendered QR code plus a
+  clearly labeled manual fallback. The QR is generated in the admin bundle and
+  makes no third-party browser request.
 - Google ID Tokens are cryptographically verified against Google's fixed JWKS
   endpoint with exact issuer and audience checks, `RS256` only, required
   identity/lifetime claims and verified email.
@@ -352,6 +360,27 @@ Both disposable branches were deleted. Evidence is recorded in:
 
 - `docs/audits/neon-public-content-verification-2026-07-25.md`.
 
+Pull request `#20` passed every required check, advanced protected staging to
+`b1791f3`, and applied migration `0012` to the persistent synthetic database.
+Pull request `#21` corrected the runtime-rendered login path at `92cd373`.
+Live Google OAuth then created the allowlisted owner, Google account, session,
+membership, and administrative session records, exposing that middleware was
+still searching for Better Auth's default cookie prefix. Pull request `#22`
+added the exact `shapewebs` prefix to proxy resolution with a regression test,
+passed the complete disposable Neon lifecycle, and merged at `c07a9ce`. Both
+Vercel deployments and protected-staging k6/ZAP run
+[`30166696641`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30166696641)
+are green.
+
+The first live TOTP enrollment reached the protected step-up endpoint but
+failed before code comparison. Read-only Neon evidence showed one unverified
+factor, no accepted counter, and no failed-attempt record. The current branch
+corrects the wrapper to use Better Auth's runtime secret configuration rather
+than a single environment string and includes a versioned-envelope regression
+test. The canonical repository gate reports 105 passing unit tests, 96.13%
+statement coverage, no known vulnerabilities, and both admin Turbopack and
+webpack production builds pass.
+
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
 legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
@@ -362,8 +391,9 @@ Checkly compilation, Lighthouse CLI loading, the compatibility probe, and
 
 These are intentionally not guessed or provisioned:
 
-- completion of the deployed Google-to-TOTP staging journey. A restricted
-  staging client and secret now exist in personal project
+- completion of the deployed Google-to-TOTP staging journey after the current
+  runtime-key/QR correction is reviewed and deployed. A restricted staging
+  client and secret now exist in personal project
   `shapewebs-platform-2026` with exact fixed origins and are stored only in the
   admin `staging` Preview scope; the Workspace-owned organization project is
   pending Google's initial provisioning window;
@@ -383,8 +413,8 @@ These are intentionally not guessed or provisioned:
   approved legal retention, and an incident/restore exercise.
 - non-interactive Checkly automation credentials if monitoring deployment is
   later moved from the encrypted local CLI session into CI;
-- requirement-level review and evidence disposition for all 253 target ASVS
-  5.0.0 controls.
+- requirement-level review and evidence disposition for the remaining 67 of
+  253 target ASVS 5.0.0 controls.
 - a Vercel plan appropriate for commercial production. The Hobby team reached
   its rolling 100-deployment daily allowance while publishing pull request
   `#16`; the exact staging retry was refused before build creation, and no
@@ -432,15 +462,16 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Verify the deployed owner/editor, Google-token and TOTP paths on the fixed
-   staging admin domain after the request-rendered login correction, including
-   step-up expiry and session revocation.
-2. Exercise authenticated Neon authoring and revision creation on persistent
+1. Review and deploy the Better Auth runtime-key and QR-enrollment correction,
+   regenerate the unverified staging factor, and complete the live TOTP
+   journey.
+2. Verify step-up expiry, session revocation, audit evidence, and the
+   anonymous/expired/revoked/wrong-role fail-closed cases on fixed staging.
+3. Exercise authenticated Neon draft, revision, preview, publish, exact public
+   read, preview replay denial, and preview exit journeys on persistent
    staging.
-3. Complete mailbox MFA, recovery-address verification and the remaining
-   `security@shapewebs.com` send-as/outbound identity verification.
-4. Review and merge the public-content slice, apply migration `0012`, and test
-   publish, exact public read, preview replay denial and exit on fixed staging.
+4. Complete the remaining 67 ASVS dispositions, refresh the assurance
+   evidence, and record the controlled staging runtime results.
 5. Add audited rollback and unpublish commands, followed by storage controls,
    the final public studio design, and production recovery gates in the
    milestone order documented in
