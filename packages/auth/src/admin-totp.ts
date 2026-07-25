@@ -18,6 +18,7 @@ export type AdminTotpVerificationResult =
   | {
       enrollmentPending: boolean;
       status: "accepted";
+      verifiedAt: Date;
     }
   | {
       status: "invalid" | "locked" | "replayed" | "unavailable";
@@ -122,5 +123,6 @@ export async function verifyAdminTotpCode(input: {
   return {
     enrollmentPending: factor.verified !== true,
     status: "accepted",
+    verifiedAt,
   };
 }

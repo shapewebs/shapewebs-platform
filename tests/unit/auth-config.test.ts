@@ -102,6 +102,10 @@ describe("Better Auth security configuration", () => {
     });
     expect(auth.options.disabledPaths).toEqual(
       expect.arrayContaining([
+        "/list-sessions",
+        "/revoke-other-sessions",
+        "/revoke-session",
+        "/revoke-sessions",
         "/sign-in/email",
         "/sign-up/email",
         "/two-factor/disable",
@@ -120,6 +124,10 @@ describe("Better Auth security configuration", () => {
     const auth = createShapewebsAuth(validOptions);
 
     for (const path of [
+      "/list-sessions",
+      "/revoke-other-sessions",
+      "/revoke-session",
+      "/revoke-sessions",
       "/two-factor/disable",
       "/two-factor/generate-backup-codes",
       "/two-factor/get-totp-uri",

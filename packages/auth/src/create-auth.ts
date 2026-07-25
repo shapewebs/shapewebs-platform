@@ -17,8 +17,13 @@ import { betterAuth } from "better-auth/minimal";
 import { twoFactor } from "better-auth/plugins";
 
 import { createVerifiedGoogleUserInfo } from "./google-user-info";
+import { generateAdminSessionToken } from "./session-cookie";
 
 const disabledAuthPaths = [
+  "/list-sessions",
+  "/revoke-other-sessions",
+  "/revoke-session",
+  "/revoke-sessions",
   "/sign-in/email",
   "/sign-up/email",
   "/two-factor/disable",
@@ -195,6 +200,13 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
             }
 
             assertAllowedEmail(sessionUser.email);
+
+            return {
+              data: {
+                ...newSession,
+                token: generateAdminSessionToken(),
+              },
+            };
           },
           after: async (newSession, context) => {
             await provisionOwnerAdminSession(options.databaseUrl, {

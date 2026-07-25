@@ -8,7 +8,8 @@
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; draft foundation promotion
-  `shapewebs/shapewebs-platform#7`; the current content-list branch targets the
+  `shapewebs/shapewebs-platform#7`; draft authentication, session and Neon CMS
+  migration pull request `shapewebs/shapewebs-platform#17` targets the
   protected `staging` branch
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
@@ -36,8 +37,8 @@ to production data, or promoted to the production domains.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
   requirements. Encoding, validation, browser-security, API, transport,
-  authentication, session, authorization, token and OAuth review has 156
-  evidence-backed dispositions and 97 explicitly unreviewed requirements.
+  authentication, session, authorization, token and OAuth review has 160
+  evidence-backed dispositions and 93 explicitly unreviewed requirements.
   Regeneration is byte-for-byte Prettier-clean, structural verification is
   canonical, and the production gate remains fail-closed until every
   requirement is reviewed.
@@ -99,6 +100,13 @@ to production data, or promoted to the production domains.
 - Admin sessions have an eight-hour fixed lifetime and a 30-minute inactivity
   limit. Revoked, expired, inactive, anonymous, and customer-role sessions fail
   closed.
+- Initial and reauthenticated sessions use Shapewebs-owned 256-bit random
+  tokens. Every successful TOTP reauthentication rotates the token without
+  extending the original eight-hour expiry.
+- Better Auth's token-returning session-list and token-based revocation
+  endpoints are disabled. The owner settings view exposes only token-free
+  organization-scoped session summaries, and a TOTP step-up from the preceding
+  five minutes is required to revoke another administrative session.
 - Google authentication is followed by a custom TOTP step-up. Publishing and
   other sensitive mutations require a fresh step-up.
 - Google ID Tokens are cryptographically verified against Google's fixed JWKS
@@ -153,26 +161,29 @@ to production data, or promoted to the production domains.
 - Notification emails contain only the form type, submission ID, contact
   identity, and a protected admin link. The message and project details remain
   in Neon.
-- Google Workspace Business Starter trial is active for the one licensed
-  `admin@shapewebs.com` account. The domain is verified; Google MX, apex SPF,
-  and 2048-bit DKIM signing are active; DMARC remains at quarantine; and
-  Resend's DKIM and `send` subdomain SPF/MX records remain isolated and intact.
-- `info@`, `sales@`, `support@`, `lukasthomsen@`, `security@`, `privacy@`, and
-  `billing@` are aliases into the `admin@shapewebs.com` inbox.
+- Google Workspace Business Starter trial is active with two licensed
+  accounts: the dedicated administrative identity `admin@shapewebs.com` and
+  the everyday employee identity `lukasthomsen@shapewebs.com`. The domain is
+  verified; Google MX, apex SPF, and 2048-bit DKIM signing are active; DMARC
+  remains at quarantine; and Resend's DKIM and `send` subdomain SPF/MX records
+  remain isolated and intact.
+- `info@`, `sales@`, `support@`, `security@`, `privacy@`, and `billing@` are
+  role aliases into the `admin@shapewebs.com` inbox.
   `shapewebs@gmail.com` is the independent recovery address. There is no
   catch-all, and `noreply@shapewebs.com` remains a Resend-only sender rather
   than a human mailbox.
 - Exact inbox-preserving filters apply `Shapewebs/Admin`, `Info`, `Sales`,
-  `Support`, `Security`, `Privacy`, `Billing`, or `Personal` labels to matching
+  `Support`, `Security`, `Privacy`, or `Billing` labels to matching
   inbound addresses. Existing conversations were backfilled without
   archiving, forwarding, deleting or marking them read. Replies use the same
   role address that received the message, while `admin@shapewebs.com` remains
   the default identity for new mail.
 - `admin@shapewebs.com` remains the default Workspace sender. The additional
-  `Shapewebs <info@shapewebs.com>` identity sent a controlled message whose
-  authenticated From address arrived correctly at `shapewebs@gmail.com`. The
-  stale `smtp.simply.com` `info@` send-as entry was then removed from the
-  personal Gmail account without deleting mail.
+  billing, info, privacy, sales, security and support role identities are
+  configured in Gmail. The `Shapewebs <info@shapewebs.com>` identity sent a
+  controlled message whose authenticated From address arrived correctly at
+  `shapewebs@gmail.com`. The stale `smtp.simply.com` `info@` send-as entry was
+  then removed from the personal Gmail account without deleting mail.
 - Branch-scoped staging configuration now uses `admin@shapewebs.com` as the
   Better Auth owner, `sales@shapewebs.com` as the lead recipient, and
   `Shapewebs <noreply@shapewebs.com>` as the transactional sender. No
@@ -249,11 +260,13 @@ disposable source and restore branches were deleted. Evidence is recorded in:
 
 - `docs/audits/neon-content-list-verification-2026-07-25.md`.
 
-The authentication/session slice has 89 passing unit tests, 96.56% statement
+The authentication/session slice has 92 passing unit tests, 96.56% statement
 coverage, and passed the canonical verification gate plus both admin production
 builds. A complete disposable Neon migration, security, rollback, export and
 restore lifecycle proved one-time TOTP counters, cross-session replay denial,
-lockout and lock expiry recovery. The source and restore branches were deleted.
+lockout and lock expiry recovery, 256-bit absolute-lifetime-preserving token
+rotation, token-free organization session listing, and owner-controlled
+cross-session revocation. The source and restore branches were deleted.
 Evidence is recorded in:
 
 - `docs/audits/authentication-session-verification-2026-07-25.md`.
@@ -270,10 +283,9 @@ These are intentionally not guessed or provisioned:
 
 - Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
   staging journey;
-- Workspace mailbox MFA plus the remaining `security@shapewebs.com` send-as
-  identity and controlled outbound evidence for the additional aliases.
-  External MX delivery, all inbox filters and the `info@` identity are
-  complete;
+- Workspace mailbox MFA/recovery verification and controlled outbound evidence
+  for the additional configured role aliases. External MX delivery, inbox
+  filters and the `info@` identity are complete;
 - production Turnstile site/secret keys and the exact production hostname;
 - production Resend key/webhook configuration; the staging recipient is now
   `sales@shapewebs.com`, and staging delivery, bounce, and provider replay

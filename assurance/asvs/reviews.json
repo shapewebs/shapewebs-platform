@@ -883,6 +883,28 @@
     {
       "disposition": "implemented",
       "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/auth/src/session-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-7.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "packages/auth/src/session-cookie.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-7.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
         "docs/security/authentication-session-contract.md",
         "packages/auth/src/create-auth.ts",
         "packages/database/src/admin-auth.ts",
@@ -931,10 +953,33 @@
       "owner": "Shapewebs owner"
     },
     {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.4.5",
+      "owner": "Shapewebs owner"
+    },
+    {
       "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-7.5.1",
       "notes": "The current release exposes no account email, phone, recovery attribute or enrolled-factor modification function. Re-review is mandatory before adding one.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/logout-button.tsx",
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.5.2",
       "owner": "Shapewebs owner"
     },
     {

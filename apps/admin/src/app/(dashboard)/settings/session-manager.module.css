@@ -1,0 +1,113 @@
+.sw-session-root-q8m2v4 {
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.sw-session-header-n3k7p1 {
+  display: grid;
+  gap: 8px;
+}
+
+.sw-session-header-n3k7p1 h2 {
+  font-size: 1.15rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.sw-session-header-n3k7p1 p,
+.sw-session-details-z7p4n2 > p,
+.sw-session-empty-b7p2m5 {
+  color: rgba(var(--color-text-secondary), 1);
+  line-height: 1.55;
+}
+
+.sw-session-eyebrow-t6m1q9 {
+  color: rgba(var(--color-text-tertiary), 1);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sw-session-error-r4n8k2 {
+  border: 1px solid currentColor;
+  color: rgba(var(--color-text-primary), 1);
+  padding: 12px;
+}
+
+.sw-session-list-f2q9m6 {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sw-session-item-k5m3v8 {
+  align-items: start;
+  background: rgba(var(--color-bg-secondary), 0.35);
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.sw-session-details-z7p4n2 {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sw-session-details-z7p4n2 > p {
+  overflow-wrap: anywhere;
+}
+
+.sw-session-title-h9m2q5 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sw-session-title-h9m2q5 span {
+  border: 1px solid rgba(var(--color-border-primary), 1);
+  color: rgba(var(--color-text-secondary), 1);
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+.sw-session-metadata-d3n8p7 {
+  display: grid;
+  gap: 8px 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 5px 0 0;
+}
+
+.sw-session-metadata-d3n8p7 div {
+  display: grid;
+  gap: 2px;
+}
+
+.sw-session-metadata-d3n8p7 dt {
+  color: rgba(var(--color-text-tertiary), 1);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.sw-session-metadata-d3n8p7 dd {
+  color: rgba(var(--color-text-secondary), 1);
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .sw-session-item-k5m3v8 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sw-session-metadata-d3n8p7 {
+    grid-template-columns: 1fr;
+  }
+}

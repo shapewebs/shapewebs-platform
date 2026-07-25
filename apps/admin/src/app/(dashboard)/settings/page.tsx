@@ -1,10 +1,12 @@
 import {
   getDefaultOrganizationSettingsSnapshot,
   getOrganizationSettingsSnapshot,
+  listOrganizationAdminSessions,
 } from "@shapewebs/database/server";
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import styles from "./page.module.css";
+import { SessionManager, type AdminSessionListItem } from "./session-manager";
 
 export default async function SettingsPage() {
   const runtime = await requireAdminSession({
@@ -17,13 +19,20 @@ export default async function SettingsPage() {
     throw new Error("Organization settings are unavailable.");
   }
 
-  const settings =
+  const [settings, sessions] =
     runtime.setupMode || !databaseUrl || !runtime.authorization
-      ? getDefaultOrganizationSettingsSnapshot()
-      : await getOrganizationSettingsSnapshot(
-          databaseUrl,
-          runtime.authorization,
-        );
+      ? [getDefaultOrganizationSettingsSnapshot(), []]
+      : await Promise.all([
+          getOrganizationSettingsSnapshot(databaseUrl, runtime.authorization),
+          listOrganizationAdminSessions(databaseUrl, runtime.authorization),
+        ]);
+  const sessionItems: AdminSessionListItem[] = sessions.map((session) => ({
+    ...session,
+    createdAt: session.createdAt.toISOString(),
+    expiresAt: session.expiresAt.toISOString(),
+    lastSeenAt: session.lastSeenAt.toISOString(),
+    stepUpVerifiedAt: session.stepUpVerifiedAt?.toISOString() ?? null,
+  }));
 
   return (
     <main className={styles.rootQ3m8p1}>
@@ -74,6 +83,8 @@ export default async function SettingsPage() {
           ))}
         </section>
       </div>
+
+      {!runtime.setupMode ? <SessionManager sessions={sessionItems} /> : null}
     </main>
   );
 }

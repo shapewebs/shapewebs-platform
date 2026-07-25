@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { neon } from "@neondatabase/serverless";
 
@@ -57,6 +57,8 @@ const ids = {
   idleAdminSession: `security-session-idle-${runId}`,
   revokedAdminSession: `security-session-revoked-${runId}`,
   nonStepUpAdminSession: `security-session-no-step-up-${runId}`,
+  otherAdminSession: `security-session-other-${runId}`,
+  revocableAdminSession: `security-session-revocable-${runId}`,
   customerSession: `security-session-customer-${runId}`,
   draftDocument: randomUUID(),
   draftRevisionOne: randomUUID(),
@@ -106,7 +108,7 @@ async function seed() {
         (${ids.organizationA}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationB}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationA}, ${ids.customerUser}, 'customer', 'active'),
-        (${ids.organizationB}, ${ids.otherUser}, 'customer', 'active')`,
+        (${ids.organizationB}, ${ids.otherUser}, 'editor', 'active')`,
     fixtureAdmin`insert into auth.session (
         id,
         expires_at,
@@ -163,6 +165,22 @@ async function seed() {
           now(),
           now(),
           ${ids.customerUser}
+        ),
+        (
+          ${ids.otherAdminSession},
+          now() + interval '8 hours',
+          ${`token-other-${runId}`},
+          now(),
+          now(),
+          ${ids.otherUser}
+        ),
+        (
+          ${ids.revocableAdminSession},
+          now() + interval '8 hours',
+          ${`token-revocable-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
         )`,
     fixtureAdmin`insert into auth.admin_session_security (
         session_id,
@@ -210,6 +228,20 @@ async function seed() {
         (
           ${ids.customerSession},
           ${ids.customerUser},
+          now(),
+          now(),
+          null
+        ),
+        (
+          ${ids.otherAdminSession},
+          ${ids.otherUser},
+          now(),
+          now(),
+          null
+        ),
+        (
+          ${ids.revocableAdminSession},
+          ${ids.adminUser},
           now(),
           now(),
           null
@@ -330,6 +362,11 @@ async function seed() {
 
 async function cleanup() {
   await fixtureAdmin.transaction([
+    fixtureAdmin`delete from audit.events
+      where target_id in (
+        ${ids.activeAdminSession},
+        ${ids.revocableAdminSession}
+      )`,
     fixtureAdmin`delete from audit.events
       where id = ${ids.auditEvent}`,
     fixtureAdmin`delete from app.provider_webhook_events
@@ -725,6 +762,109 @@ async function recordSyntheticTotpFailure(failedAt = new Date()) {
   `;
 }
 
+async function rotateSyntheticAdminSessionToken({
+  newToken,
+  rotatedAt,
+  sessionId,
+  userId = ids.adminUser,
+  verifiedAt,
+}) {
+  const [, , , result] = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`
+      with rotated as (
+        update auth.session
+        set token = ${newToken}, updated_at = ${rotatedAt}
+        where id = ${sessionId}
+          and user_id = ${userId}
+          and expires_at > ${rotatedAt}
+          and exists (
+            select 1
+            from auth.admin_session_security
+            where session_id = ${sessionId}
+              and user_id = ${userId}
+              and revoked_at is null
+              and step_up_verified_at = ${verifiedAt}
+          )
+        returning id, created_at, expires_at
+      ),
+      audited as (
+        insert into audit.events (
+          organization_id,
+          actor_user_id,
+          action,
+          target_type,
+          target_id,
+          metadata
+        )
+        select
+          ${ids.organizationA},
+          ${ids.adminUser},
+          'auth.session_rotated',
+          'session',
+          rotated.id,
+          jsonb_build_object('result', 'success')
+        from rotated
+        returning target_id
+      )
+      select rotated.created_at, rotated.expires_at
+      from rotated
+      inner join audited on audited.target_id = rotated.id
+    `,
+  ]);
+
+  return result;
+}
+
+async function revokeSyntheticOrganizationSession(targetSessionId) {
+  const [, , , result] = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`
+      with revoked as (
+        delete from auth.session
+        where id = ${targetSessionId}
+          and id <> ${ids.activeAdminSession}
+          and exists (
+            select 1
+            from app.memberships
+            where organization_id = ${ids.organizationA}
+              and user_id = auth.session.user_id
+              and status = 'active'
+              and role in ('owner', 'editor')
+          )
+        returning id
+      ),
+      audited as (
+        insert into audit.events (
+          organization_id,
+          actor_user_id,
+          action,
+          target_type,
+          target_id,
+          metadata
+        )
+        select
+          ${ids.organizationA},
+          ${ids.adminUser},
+          'auth.session_revoked_by_owner',
+          'session',
+          revoked.id,
+          jsonb_build_object('result', 'success')
+        from revoked
+        returning target_id
+      )
+      select target_id
+      from audited
+    `,
+  ]);
+
+  return result;
+}
+
 async function verifyAdminSessionAssurance() {
   const active = await authorizeSyntheticAdminSession({
     sessionId: ids.activeAdminSession,
@@ -756,6 +896,139 @@ async function verifyAdminSessionAssurance() {
       `${label} session must fail closed`,
     );
   }
+}
+
+async function verifyAdminSessionManagement() {
+  const visibleSessions = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`
+      select session.id
+      from auth.session as session
+      inner join auth.admin_session_security as security
+        on security.session_id = session.id
+        and security.user_id = session.user_id
+      inner join app.memberships as membership
+        on membership.organization_id = ${ids.organizationA}
+        and membership.user_id = session.user_id
+        and membership.status = 'active'
+        and membership.role in ('owner', 'editor')
+      where session.expires_at > now()
+        and security.revoked_at is null
+      order by session.id
+    `,
+  });
+  const visibleSessionIds = new Set(visibleSessions.map(({ id }) => id));
+
+  for (const sessionId of [
+    ids.activeAdminSession,
+    ids.idleAdminSession,
+    ids.nonStepUpAdminSession,
+    ids.revocableAdminSession,
+  ]) {
+    assert.ok(
+      visibleSessionIds.has(sessionId),
+      `${sessionId} should be visible to the organization owner`,
+    );
+  }
+
+  for (const sessionId of [
+    ids.customerSession,
+    ids.expiredAdminSession,
+    ids.otherAdminSession,
+    ids.revokedAdminSession,
+  ]) {
+    assert.equal(
+      visibleSessionIds.has(sessionId),
+      false,
+      `${sessionId} must not appear in the owner session list`,
+    );
+  }
+
+  const [beforeRotation] = await admin`
+    select created_at, expires_at, token
+    from auth.session
+    where id = ${ids.activeAdminSession}
+  `;
+  const verifiedAt = new Date();
+  const consumed = await consumeSyntheticTotpCounter({
+    counter: 13,
+    sessionId: ids.activeAdminSession,
+    verifiedAt,
+  });
+  assert.deepEqual(consumed, [{ session_id: ids.activeAdminSession }]);
+
+  const replacementToken = randomBytes(32).toString("base64url");
+  const rotatedAt = new Date(verifiedAt.getTime() + 1);
+  const rotated = await rotateSyntheticAdminSessionToken({
+    newToken: replacementToken,
+    rotatedAt,
+    sessionId: ids.activeAdminSession,
+    verifiedAt,
+  });
+  assert.equal(rotated.length, 1);
+  assert.equal(
+    rotated[0].created_at.getTime(),
+    beforeRotation.created_at.getTime(),
+    "credential rotation must preserve the absolute session start",
+  );
+  assert.equal(
+    rotated[0].expires_at.getTime(),
+    beforeRotation.expires_at.getTime(),
+    "credential rotation must preserve the absolute session expiry",
+  );
+
+  const [afterRotation] = await admin`
+    select token
+    from auth.session
+    where id = ${ids.activeAdminSession}
+  `;
+  assert.equal(afterRotation.token, replacementToken);
+  assert.notEqual(afterRotation.token, beforeRotation.token);
+
+  const staleProofRotation = await rotateSyntheticAdminSessionToken({
+    newToken: randomBytes(32).toString("base64url"),
+    rotatedAt: new Date(rotatedAt.getTime() + 1),
+    sessionId: ids.activeAdminSession,
+    verifiedAt: new Date(verifiedAt.getTime() - 1),
+  });
+  assert.deepEqual(
+    staleProofRotation,
+    [],
+    "token rotation must require the exact accepted step-up event",
+  );
+
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.activeAdminSession),
+    [],
+    "the owner termination path must not revoke its current session",
+  );
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.otherAdminSession),
+    [],
+    "an owner must not revoke a session outside the current organization",
+  );
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.revocableAdminSession),
+    [{ target_id: ids.revocableAdminSession }],
+  );
+
+  const [revocationState] = await fixtureAdmin`
+    select
+      exists (
+        select 1 from auth.session
+        where id = ${ids.revocableAdminSession}
+      ) as session_exists,
+      (
+        select count(*)::integer
+        from audit.events
+        where action = 'auth.session_revoked_by_owner'
+          and target_id = ${ids.revocableAdminSession}
+      ) as audit_count
+  `;
+  assert.equal(revocationState.session_exists, false);
+  assert.equal(revocationState.audit_count, 1);
 }
 
 async function verifyAdminTotpAssurance() {
@@ -1339,13 +1612,14 @@ try {
   await verifyRlsCoverage();
   await verifyAdminSessionAssurance();
   await verifyAdminTotpAssurance();
+  await verifyAdminSessionManagement();
   await verifyAdminIsolation();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

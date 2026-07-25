@@ -2,10 +2,12 @@
 
 ## Scope
 
-This audit covers the `codex/asvs-auth-session-review` branch based on commit
-`98a8e8a`. It verifies the Google identity-token boundary, administrative TOTP
-step-up, replay and lockout persistence, session-policy documentation,
-deterministic ASVS evidence, and both supported admin production build modes.
+This audit covers the `codex/asvs-auth-session-review` branch, including the
+session-management work following commit `f3903a9`. It verifies the Google
+identity-token boundary, administrative TOTP step-up, replay and lockout
+persistence, session-token rotation, owner-controlled session termination,
+session-policy documentation, deterministic ASVS evidence, and both supported
+admin production build modes.
 
 No production deployment, production environment variable, persistent staging
 database branch or production domain was modified.
@@ -25,6 +27,21 @@ database branch or production domain was modified.
   after lock expiry resets the failure state.
 - A successful counter consumption and the exact session step-up timestamp
   commit in one SQL statement.
+- Initial and reauthenticated sessions use 256 random bits encoded as 43
+  base64url characters by a Shapewebs-owned generator.
+- Every successful non-enrollment TOTP step-up replaces the backend reference
+  token and signed browser cookie while preserving the original creation time
+  and absolute expiry.
+- Better Auth's token-returning session-list and token-based revocation
+  endpoints are disabled.
+- The owner settings view receives only token-free, organization-scoped session
+  summaries. It omits tokens and IP addresses and sanitizes bounded user-agent
+  summaries.
+- Revoking another administrative session requires an owner role and a TOTP
+  step-up from the preceding five minutes. The current session cannot be
+  selected through this path and remains terminable through visible logout.
+- Token rotation and owner revocation write append-only audit events in the
+  same database statement as the corresponding credential change.
 - Accepted and authenticated failed step-up attempts write safe, append-only
   audit events without recording the submitted code.
 - The replay/lockout table is inaccessible to public and web runtime roles.
@@ -51,6 +68,14 @@ The lifecycle proved:
 - older-counter and concurrent replay denial;
 - account lock after ten failures;
 - valid-code denial during lockout and safe recovery after expiry;
+- exact-event session-token rotation, old-token invalidation and preservation
+  of the original absolute lifetime;
+- stale step-up proof denial for a second rotation;
+- token-free same-organization owner/editor session listing with customer,
+  cross-organization, expired and revoked session exclusion;
+- current-session and cross-organization revocation denial;
+- successful same-organization non-current session revocation with exactly one
+  audit event;
 - forced RLS and privilege denial for the replay guard;
 - tenant-isolated CMS and organization-setting access;
 - transaction rollback;
@@ -65,9 +90,9 @@ remaining `codex-lifecycle-*` branch.
 
 ## Verification results
 
-- Focused authentication tests: 14 passed.
+- Focused session/TOTP/authentication tests: 17 passed.
 - Canonical `pnpm verify`: passed.
-- Full unit suite: 89 passed across 13 files.
+- Full unit suite: 92 passed across 14 files.
 - Coverage:
   - statements: 96.56%;
   - branches: 95.48%;
@@ -77,7 +102,7 @@ remaining `codex-lifecycle-*` branch.
   Checkly compilation, worker runtime tests, application boundaries, Knip,
   dependency cycles, generated schemas and Drizzle consistency: passed.
 - `pnpm audit`: zero known vulnerabilities.
-- ASVS register: 253 Level 1/Level 2 requirements, 156 reviewed and 97
+- ASVS register: 253 Level 1/Level 2 requirements, 160 reviewed and 93
   explicitly unreviewed.
 - Admin Next.js 16.2.11 Turbopack production build: passed.
 - Admin Next.js 16.2.11 webpack production build: passed.
@@ -92,9 +117,6 @@ remain explicit launch gates:
 - configure the fixed staging Google OAuth client and exact callback origins;
 - complete the deployed Google-to-TOTP journey and inspect production-style
   cookie attributes;
-- rotate the Better Auth session token after every successful
-  reauthentication;
-- add owner-visible and administrator-controlled active-session termination;
 - define and rehearse identity-proofed TOTP recovery and factor replacement;
 - verify underlying Google Workspace MFA and recovery configuration;
 - review every remaining exact-ID ASVS requirement.

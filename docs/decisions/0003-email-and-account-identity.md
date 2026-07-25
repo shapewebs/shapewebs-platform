@@ -19,26 +19,24 @@ Cloudflare Email Routing would require moving the authoritative DNS zone.
 Forwarding-only services also would not provide a complete, DMARC-aligned human
 send-and-reply experience. Neither is justified now that Workspace is active.
 
-Shapewebs currently has one operator. The user selected a central
-`admin@shapewebs.com` Workspace account for the first licensed identity instead
-of an employee address. This is acceptable only while its credentials are not
-shared. Before a second maintainer joins, each person must receive an
-individually licensed account and routine actions must move to those named
-accounts.
+Shapewebs currently has one operator but separates routine and privileged
+identity. `lukasthomsen@shapewebs.com` is the individually licensed everyday
+account. `admin@shapewebs.com` is the separately licensed administrative
+identity. The administrative credentials are never shared, and every future
+maintainer must receive an individually licensed account.
 
 ## Decision
 
 Use Google Workspace for the human mailbox and identity boundary, while keeping
 Resend for application-generated mail:
 
-- The one licensed Workspace user and Google administration identity is
-  `admin@shapewebs.com`, with display name `Lukas Thomsen`.
+- The Google administration identity is `admin@shapewebs.com`.
+- The named everyday employee identity is `lukasthomsen@shapewebs.com`.
 - Keep `shapewebs@gmail.com` as the independently protected recovery address.
 - The following aliases deliver to the `admin@shapewebs.com` inbox:
   - `info@shapewebs.com`;
   - `sales@shapewebs.com`;
   - `support@shapewebs.com`;
-  - `lukasthomsen@shapewebs.com`;
   - `security@shapewebs.com`;
   - `privacy@shapewebs.com`;
   - `billing@shapewebs.com`.
@@ -78,13 +76,15 @@ email must not replace named membership or personal MFA.
 
 ## Google administration and OAuth
 
-The first Better Auth owner allowlist uses `admin@shapewebs.com`. It is the
-actual Google Account, unlike the Workspace aliases, which cannot sign in to
-Google services.
+The first Better Auth owner allowlist uses `admin@shapewebs.com`. Both
+`admin@shapewebs.com` and `lukasthomsen@shapewebs.com` are real Google
+Accounts; the role aliases cannot sign in to Google services.
 
 The central account may administer the one-person Workspace and Google Cloud
 organization with phishing-resistant MFA. Its credentials must never be
-shared. Before a second maintainer or commercial customer portal launches:
+shared. Routine mail and Workspace activity use the named employee account
+where practical. Before a second maintainer or commercial customer portal
+launches:
 
 1. create individually licensed, named users for every maintainer;
 2. remove routine super-administrator use from `admin@shapewebs.com`;
@@ -134,18 +134,20 @@ address that received the message. Do not send customer correspondence from
 
 ## Implementation status
 
-As of 24 July 2026:
+As of 25 July 2026:
 
 - the Workspace Business Starter trial is active;
 - `shapewebs.com` is verified;
 - Gmail, Google SPF, and 2048-bit Google DKIM are active;
-- the licensed account, aliases, and recovery address above are configured;
+- both licensed accounts, role aliases, and the recovery address above are
+  configured;
 - `admin@shapewebs.com` is the branch-scoped Better Auth owner;
 - staging lead notifications target `sales@shapewebs.com`;
 - staging transactional mail sends as
   `Shapewebs <noreply@shapewebs.com>`;
-- no catch-all or additional paid user was created; and
-- mailbox MFA, alias send-as/filter setup, end-to-end mail-flow testing, and
+- no catch-all was created;
+- role-alias send-as identities and inbox filters are configured; and
+- mailbox MFA/recovery verification, remaining controlled outbound checks, and
   the Google Cloud OAuth client remain to be completed.
 
 No payment method, plan upgrade, or production application environment was
@@ -155,7 +157,8 @@ changed during this cutover.
 
 Benefits:
 
-- one paid mailbox supports the current solo business;
+- separate everyday and privileged accounts improve attribution and reduce
+  routine use of the administrative identity;
 - public role addresses can become groups or delegated mailboxes without
   changing customer-facing addresses;
 - Google OAuth and Google Cloud ownership use the verified company identity;
@@ -166,6 +169,7 @@ Costs and risks:
 
 - Google Workspace becomes a paid subscription after the trial unless
   cancelled;
+- the two licensed accounts create two paid seats after the trial;
 - a central administrative login provides weaker person-level attribution than
   named employee accounts and must not be shared;
 - Gmail filters and send-as identities require one-time configuration; and

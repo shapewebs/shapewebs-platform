@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { createDatabase } from "./client";
 import {
@@ -9,6 +9,7 @@ import {
   membershipRole,
   organizationSettings,
   session as authSession,
+  user as authUser,
 } from "./schema";
 import { defaultOrganizationSettingsValue } from "./settings-defaults";
 
@@ -28,12 +29,35 @@ export type AdminAuthorizationContext = {
   };
 };
 
+export type AdminSessionSummary = {
+  createdAt: Date;
+  expiresAt: Date;
+  id: string;
+  isActive: boolean;
+  isCurrent: boolean;
+  lastSeenAt: Date;
+  stepUpVerifiedAt: Date | null;
+  userAgent: string;
+  userEmail: string;
+  userName: string;
+};
+
 type AdminSessionIdentity = {
   organizationId: string;
   sessionId: string;
   stepUpVerifiedAt?: Date;
   userId: string;
 };
+
+function summarizeUserAgent(value: string | null): string {
+  const normalized = (value ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+
+  return normalized || "Unknown browser";
+}
 
 function contextQueries(
   database: ReturnType<typeof createDatabase>,
@@ -243,6 +267,226 @@ export async function authorizeAdminSession(
       id: identity.sessionId,
     },
   };
+}
+
+export async function listOrganizationAdminSessions(
+  databaseUrl: string,
+  authorization: AdminAuthorizationContext,
+  now = new Date(),
+): Promise<AdminSessionSummary[]> {
+  if (authorization.role !== "owner") {
+    throw new Error("Only an owner may list organization sessions.");
+  }
+
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    {
+      organizationId: authorization.organizationId,
+      userId: authorization.actor.id,
+    },
+    authorization.role,
+  );
+  const results = await database.batch([
+    ...context,
+    database
+      .select({
+        createdAt: authSession.createdAt,
+        expiresAt: authSession.expiresAt,
+        id: authSession.id,
+        lastSeenAt: adminSessionSecurity.lastSeenAt,
+        stepUpVerifiedAt: adminSessionSecurity.stepUpVerifiedAt,
+        userAgent: authSession.userAgent,
+        userEmail: authUser.email,
+        userName: authUser.name,
+      })
+      .from(authSession)
+      .innerJoin(
+        adminSessionSecurity,
+        and(
+          eq(adminSessionSecurity.sessionId, authSession.id),
+          eq(adminSessionSecurity.userId, authSession.userId),
+        ),
+      )
+      .innerJoin(authUser, eq(authUser.id, authSession.userId))
+      .innerJoin(
+        memberships,
+        and(
+          eq(memberships.organizationId, authorization.organizationId),
+          eq(memberships.userId, authSession.userId),
+          eq(memberships.status, "active"),
+          sql`${memberships.role} in ('owner', 'editor')`,
+        ),
+      )
+      .where(
+        and(
+          gt(authSession.expiresAt, now),
+          isNull(adminSessionSecurity.revokedAt),
+        ),
+      )
+      .orderBy(desc(adminSessionSecurity.lastSeenAt))
+      .limit(50),
+  ]);
+  const inactivityCutoff = now.getTime() - inactivityLimitMs;
+
+  return results[3].map((session) => ({
+    ...session,
+    isActive: session.lastSeenAt.getTime() > inactivityCutoff,
+    isCurrent: session.id === authorization.session.id,
+    userAgent: summarizeUserAgent(session.userAgent),
+  }));
+}
+
+export async function rotateAdminSessionToken(
+  databaseUrl: string,
+  input: {
+    authorization: AdminAuthorizationContext;
+    newToken: string;
+    requestId?: string;
+    rotatedAt: Date;
+    verifiedAt: Date;
+  },
+): Promise<{ expiresAt: Date } | null> {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(input.newToken)) {
+    throw new Error("The replacement session token is invalid.");
+  }
+
+  const database = createDatabase(databaseUrl);
+  const authorization = input.authorization;
+  const context = contextQueries(
+    database,
+    {
+      organizationId: authorization.organizationId,
+      userId: authorization.actor.id,
+    },
+    authorization.role,
+  );
+  const results = await database.batch([
+    ...context,
+    database.execute<{ expiresAt: Date }>(sql`
+      with rotated as (
+        update ${authSession}
+        set
+          ${authSession.token} = ${input.newToken},
+          ${authSession.updatedAt} = ${input.rotatedAt}
+        where ${authSession.id} = ${authorization.session.id}
+          and ${authSession.userId} = ${authorization.actor.id}
+          and ${authSession.expiresAt} > ${input.rotatedAt}
+          and exists (
+            select 1
+            from ${adminSessionSecurity}
+            where ${adminSessionSecurity.sessionId} = ${authorization.session.id}
+              and ${adminSessionSecurity.userId} = ${authorization.actor.id}
+              and ${adminSessionSecurity.revokedAt} is null
+              and ${adminSessionSecurity.stepUpVerifiedAt} = ${input.verifiedAt}
+          )
+        returning
+          ${authSession.id},
+          ${authSession.expiresAt}
+      ),
+      audited as (
+        insert into ${auditEvents} (
+          ${auditEvents.organizationId},
+          ${auditEvents.actorUserId},
+          ${auditEvents.action},
+          ${auditEvents.targetType},
+          ${auditEvents.targetId},
+          ${auditEvents.requestId},
+          ${auditEvents.metadata}
+        )
+        select
+          ${authorization.organizationId},
+          ${authorization.actor.id},
+          'auth.session_rotated',
+          'session',
+          rotated.${sql.identifier("id")},
+          ${input.requestId ?? null},
+          jsonb_build_object('result', 'success')
+        from rotated
+        returning ${auditEvents.targetId}
+      )
+      select rotated.${sql.identifier("expires_at")} as "expiresAt"
+      from rotated
+      inner join audited
+        on audited.${sql.identifier("target_id")} = rotated.${sql.identifier("id")}
+    `),
+  ]);
+
+  return results[3].rows[0] ?? null;
+}
+
+export async function revokeOrganizationAdminSession(
+  databaseUrl: string,
+  input: {
+    authorization: AdminAuthorizationContext;
+    requestId?: string;
+    targetSessionId: string;
+  },
+): Promise<boolean> {
+  const authorization = input.authorization;
+
+  if (
+    authorization.role !== "owner" ||
+    input.targetSessionId === authorization.session.id ||
+    input.targetSessionId.length < 8 ||
+    input.targetSessionId.length > 128
+  ) {
+    return false;
+  }
+
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    {
+      organizationId: authorization.organizationId,
+      userId: authorization.actor.id,
+    },
+    authorization.role,
+  );
+  const results = await database.batch([
+    ...context,
+    database.execute<{ targetId: string }>(sql`
+      with revoked as (
+        delete from ${authSession}
+        where ${authSession.id} = ${input.targetSessionId}
+          and ${authSession.id} <> ${authorization.session.id}
+          and exists (
+            select 1
+            from ${memberships}
+            where ${memberships.organizationId} = ${authorization.organizationId}
+              and ${memberships.userId} = ${authSession.userId}
+              and ${memberships.status} = 'active'
+              and ${memberships.role} in ('owner', 'editor')
+          )
+        returning ${authSession.id}
+      ),
+      audited as (
+        insert into ${auditEvents} (
+          ${auditEvents.organizationId},
+          ${auditEvents.actorUserId},
+          ${auditEvents.action},
+          ${auditEvents.targetType},
+          ${auditEvents.targetId},
+          ${auditEvents.requestId},
+          ${auditEvents.metadata}
+        )
+        select
+          ${authorization.organizationId},
+          ${authorization.actor.id},
+          'auth.session_revoked_by_owner',
+          'session',
+          revoked.${sql.identifier("id")},
+          ${input.requestId ?? null},
+          jsonb_build_object('result', 'success')
+        from revoked
+        returning ${auditEvents.targetId}
+      )
+      select audited.${sql.identifier("target_id")} as "targetId"
+      from audited
+    `),
+  ]);
+
+  return results[3].rows[0]?.targetId === input.targetSessionId;
 }
 
 export async function isAdminTotpLocked(

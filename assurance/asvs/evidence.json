@@ -959,14 +959,24 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/auth/src/session-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
       "id": "v5.0.0-7.2.3",
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "packages/auth/src/session-cookie.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
       "id": "v5.0.0-7.2.4",
       "owner": "Shapewebs owner"
     },
@@ -1027,8 +1037,13 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
       "id": "v5.0.0-7.4.5",
       "owner": "Shapewebs owner"
     },
@@ -1040,8 +1055,14 @@
       "owner": "Shapewebs owner"
     },
     {
-      "disposition": "unreviewed",
-      "evidence": [],
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/logout-button.tsx",
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
       "id": "v5.0.0-7.5.2",
       "owner": "Shapewebs owner"
     },

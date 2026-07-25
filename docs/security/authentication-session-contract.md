@@ -77,6 +77,8 @@ The current policy is:
 - absolute session lifetime: eight hours;
 - inactivity timeout: 30 minutes, enforced by an atomic backend update;
 - session refresh: disabled, so the absolute lifetime does not slide;
+- session tokens: 256 random bits encoded as 43 base64url characters, generated
+  by Shapewebs with Node.js `randomBytes`;
 - step-up freshness for publishing: 10 minutes;
 - production cookie: host-only, Secure, HttpOnly, SameSite=Lax, path `/`;
 - trusted origins: exact origins only, with HTTPS required outside local
@@ -85,6 +87,15 @@ The current policy is:
   to one allowlisted owner;
 - logout: visible in every dashboard layout and invalidates the backend
   session.
+
+Better Auth's token-returning session-list and token-based revocation endpoints
+are disabled. The owner settings view instead receives a minimal,
+organization-scoped session DTO containing a non-credential session ID, user
+identity, sanitized user-agent summary and timestamps. It never receives the
+session token or IP address. The owner may revoke another administrator's
+session only after a TOTP step-up completed within the preceding five minutes.
+The current session is terminated through the always-visible logout control.
+Both paths invalidate the server-side reference session.
 
 Role or membership removal fails closed on the next request even if the Better
 Auth session has not expired. Expired, inactive, revoked, anonymous and
@@ -103,10 +114,12 @@ recent step-up is older than the sensitive operation's policy. Publishing
 currently requires a code verified within the preceding 10 minutes.
 
 The first successful enrollment rotates the Better Auth session as part of
-factor activation. A later TOTP step-up currently strengthens the
-database-backed authorization context without rotating the Better Auth session
-token. ASVS session-token rotation after every reauthentication therefore
-remains an explicit launch gate.
+factor activation. Every later successful TOTP step-up atomically replaces the
+current session token with a new 256-bit value and writes an append-only audit
+event. Rotation preserves the original session creation time and absolute
+expiry, so reauthentication never extends the eight-hour maximum lifetime. The
+replacement cookie is signed with the Better Auth secret and preserves the
+configured host-only, Secure, HttpOnly, SameSite=Lax policy.
 
 ## Recovery and factor lifecycle
 
@@ -129,9 +142,14 @@ Automated evidence includes:
   issuer, audience, lifetime and algorithm rejection;
 - `tests/unit/admin-totp.test.ts` for the RFC 6238 calculation, exact time-step
   lifetime and malformed input;
+- `tests/unit/admin-session-cookie.test.ts` for 256-bit token generation,
+  rotation-cookie signing, remaining absolute lifetime and secure host-only
+  attributes;
 - `packages/database/scripts/verify-security.mjs` for session
   expiry/revocation/inactivity/role checks, globally one-time counters,
-  lockout, recovery after expiry and privilege denial;
+  lockout, recovery after expiry, exact-event token rotation,
+  organization-scoped token-free session listing, owner revocation and
+  privilege denial;
 - the disposable Neon lifecycle for fresh migrations, forced RLS, rollback,
   export and logical restore;
 - `apps/admin/src/lib/auth.ts` and the protected handlers/actions for
@@ -145,8 +163,6 @@ Google-to-TOTP journey still require dated fixed-staging evidence.
 - Configure the fixed staging Google OAuth client and exact callback origins.
 - Complete a dated Google-to-TOTP staging journey and inspect the deployed
   session cookie.
-- Rotate the session token after every successful reauthentication.
-- Add owner-visible and administrator-controlled active-session termination.
 - Define and rehearse identity-proofed TOTP recovery and replacement.
 - Decide and enforce a concurrent-session maximum before a second maintainer or
   customer portal is introduced.

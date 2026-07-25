@@ -1,8 +1,13 @@
 import { createHmac, randomUUID } from "node:crypto";
 
-import { verifyAdminTotpCode } from "@shapewebs/auth/server";
+import {
+  generateAdminSessionToken,
+  serializeAdminSessionCookie,
+  verifyAdminTotpCode,
+} from "@shapewebs/auth/server";
 import {
   appendAdminAuditEvent,
+  rotateAdminSessionToken,
   type AdminAuthorizationContext,
 } from "@shapewebs/database/server";
 import {
@@ -194,6 +199,32 @@ export async function POST(request: Request) {
         auditStepUp("failure", runtime.authorization);
         return jsonNoStore({ error: "session_unavailable" }, 401);
       }
+    } else {
+      const rotatedAt = new Date();
+      const replacementToken = generateAdminSessionToken();
+      const rotatedSession = await rotateAdminSessionToken(databaseUrl, {
+        authorization,
+        newToken: replacementToken,
+        requestId,
+        rotatedAt,
+        verifiedAt: verification.verifiedAt,
+      });
+
+      if (!rotatedSession) {
+        await Promise.allSettled([recordDurableStepUp("failure")]);
+        auditStepUp("failure", runtime.authorization);
+        return jsonNoStore({ error: "session_unavailable" }, 401);
+      }
+
+      setCookies = [
+        await serializeAdminSessionCookie({
+          authOptions: auth.options,
+          expiresAt: rotatedSession.expiresAt,
+          now: rotatedAt,
+          secret: process.env.BETTER_AUTH_SECRET as string,
+          token: replacementToken,
+        }),
+      ];
     }
 
     await recordDurableStepUp("success");

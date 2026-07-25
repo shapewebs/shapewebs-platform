@@ -13,10 +13,14 @@ export {
   authorizeAdminSession,
   consumeAdminTotpCounter,
   isAdminTotpLocked,
+  listOrganizationAdminSessions,
   provisionOwnerAdminSession,
   recordAdminTotpFailure,
+  revokeOrganizationAdminSession,
   revokeAdminSessionSecurity,
+  rotateAdminSessionToken,
   type AdminAuthorizationContext,
+  type AdminSessionSummary,
 } from "./admin-auth";
 export {
   claimLeadNotification,
