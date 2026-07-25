@@ -308,7 +308,7 @@ try {
   // Both files contain synthetic example.test data only.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const sourceExport = readFileSync(exportPath, "utf8");
-  const sourceHashMatch = sourceExport.match(/"version": 3/);
+  const sourceHashMatch = sourceExport.match(/"version": 4/);
   assert.ok(sourceHashMatch, "The logical export is invalid");
 
   restoreBranchId = createBranch(restoreBranchName);

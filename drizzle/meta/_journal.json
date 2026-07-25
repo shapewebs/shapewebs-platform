@@ -78,6 +78,13 @@
       "when": 1784934434218,
       "tag": "0010_admin-totp-replay-guard",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784990922337,
+      "tag": "0011_neon-cms-authoring",
+      "breakpoints": true
     }
   ]
 }

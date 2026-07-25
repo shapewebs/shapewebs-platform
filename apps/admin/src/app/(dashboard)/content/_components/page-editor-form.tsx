@@ -1,15 +1,17 @@
 import { Buttons } from "@shapewebs/ui";
-import type { DocumentEditorState } from "@shapewebs/db";
+import type { ContentEditorState } from "@shapewebs/database/server";
 import { savePageEditorAction } from "../_actions/page-editor";
 import styles from "./page-editor-form.module.css";
 
 type PageEditorFormProps = {
-  editorState: DocumentEditorState;
+  commandId: string;
+  editorState: ContentEditorState;
   notice?: string | null;
   setupMode?: boolean;
 };
 
 export function PageEditorForm({
+  commandId,
   editorState,
   notice,
   setupMode = false,
@@ -30,6 +32,7 @@ export function PageEditorForm({
           <span>Document: {editorState.documentId}</span>
           <span>Locale: {editorState.localeCode}</span>
           <span>State: {editorState.state}</span>
+          <span>Version: {editorState.version}</span>
           <span>Source: {editorState.source}</span>
         </div>
       </header>
@@ -37,12 +40,25 @@ export function PageEditorForm({
       {notice ? <p className={styles.noticeK6m1q7}>{notice}</p> : null}
       {setupMode ? (
         <p className={styles.noticeK6m1q7}>
-          Saving is disabled until Supabase is configured for this environment.
+          Saving is disabled until Neon and administrative authentication are
+          configured for this environment.
         </p>
       ) : null}
 
       <form action={savePageEditorAction} className={styles.formN5m2p8}>
-        <input name="documentId" type="hidden" value={editorState.documentId} />
+        <input name="commandId" type="hidden" value={commandId} />
+        <input
+          name="expectedVersion"
+          type="hidden"
+          value={editorState.version}
+        />
+        {editorState.documentId ? (
+          <input
+            name="documentId"
+            type="hidden"
+            value={editorState.documentId}
+          />
+        ) : null}
 
         <section className={styles.sectionQ7m3n9}>
           <h2>Document</h2>
@@ -121,7 +137,7 @@ export function PageEditorForm({
             <input
               defaultChecked={editorState.seo.robotsIndex}
               name="robotsIndex"
-              type="radio"
+              type="checkbox"
               value="true"
             />
             <span>Allow indexing</span>
@@ -167,13 +183,13 @@ export function PageEditorForm({
             Submit for review
           </Buttons.Button>
           <Buttons.Button
-            disabled={setupMode}
+            disabled
             kind="tertiary"
-            name="intent"
             size="small"
-            value="preview"
+            title="Preview will be enabled after the public Neon read path is migrated."
+            type="button"
           >
-            Preview
+            Preview migration pending
           </Buttons.Button>
           <Buttons.Button
             disabled={setupMode}

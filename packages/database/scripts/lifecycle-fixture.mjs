@@ -26,7 +26,7 @@ if (["export", "restore"].includes(command) && !exportPath) {
 const sql = neon(databaseUrl);
 
 const fixture = {
-  version: 3,
+  version: 4,
   users: [
     {
       id: "lifecycle-owner",
@@ -129,7 +129,25 @@ const fixture = {
       kind: "method",
       slug: "lifecycle-method",
       status: "review",
+      defaultLocale: "en",
+      pageKind: null,
+      version: 1,
       createdByUserId: "lifecycle-owner",
+      publishedAt: null,
+    },
+  ],
+  contentLocalizations: [
+    {
+      id: "10000000-0000-4000-8000-000000000009",
+      organizationId: "10000000-0000-4000-8000-000000000001",
+      documentId: "10000000-0000-4000-8000-000000000004",
+      kind: "method",
+      locale: "en",
+      slug: "lifecycle-method",
+      title: "Lifecycle method",
+      summary: "Synthetic review revision",
+      seo: { metaDescription: "Synthetic recovery fixture" },
+      publishedRevisionId: null,
       publishedAt: null,
     },
   ],
@@ -137,12 +155,17 @@ const fixture = {
     {
       id: "10000000-0000-4000-8000-000000000005",
       documentId: "10000000-0000-4000-8000-000000000004",
+      commandId: "10000000-0000-4000-8000-000000000005",
       revisionNumber: 1,
       locale: "en",
+      status: "review",
+      slug: "lifecycle-method",
+      pageKind: null,
       title: "Lifecycle method",
       summary: "Synthetic review revision",
-      payload: { blocks: [{ type: "paragraph", text: "Recovery fixture" }] },
-      seo: { description: "Synthetic recovery fixture" },
+      payload: { blocks: [], schemaVersion: 1 },
+      seo: { metaDescription: "Synthetic recovery fixture" },
+      changeNote: "Synthetic lifecycle fixture",
       createdByUserId: "lifecycle-owner",
       publishedAt: null,
     },
@@ -158,7 +181,7 @@ const fixture = {
       email: "lifecycle-lead@example.test",
       message: "Synthetic lead retained through recovery",
       payload: { source: "lifecycle-test" },
-      requestFingerprint: "lifecycle-fixture-v3",
+      requestFingerprint: "lifecycle-fixture-v4",
     },
   ],
   files: [
@@ -180,8 +203,8 @@ const fixture = {
       actorUserId: "lifecycle-owner",
       action: "lifecycle.fixture.created",
       targetType: "lifecycle_test",
-      targetId: "fixture-v3",
-      requestId: "lifecycle-request-v3",
+      targetId: "fixture-v4",
+      requestId: "lifecycle-request-v4",
       metadata: { synthetic: true },
       occurredAt: "2026-01-01T00:00:00.000Z",
     },
@@ -224,6 +247,7 @@ async function seedFixture(value) {
   const [projectMembership] = value.projectMemberships;
   const [projectUpdate] = value.projectUpdates;
   const [document] = value.contentDocuments;
+  const [localization] = value.contentLocalizations;
   const [revision] = value.contentRevisions;
   const [lead] = value.leads;
   const [file] = value.files;
@@ -376,6 +400,9 @@ async function seedFixture(value) {
         kind,
         slug,
         status,
+        default_locale,
+        page_kind,
+        version,
         created_by_user_id,
         published_at,
         created_at,
@@ -387,6 +414,9 @@ async function seedFixture(value) {
         ${document.kind},
         ${document.slug},
         ${document.status},
+        ${document.defaultLocale},
+        ${document.pageKind},
+        ${document.version},
         ${document.createdByUserId},
         ${document.publishedAt}::timestamptz,
         ${timestamp}::timestamptz,
@@ -395,12 +425,17 @@ async function seedFixture(value) {
     sql`insert into app.content_revisions (
         id,
         document_id,
+        command_id,
         revision_number,
         locale,
+        status,
+        slug,
+        page_kind,
         title,
         summary,
         payload,
         seo,
+        change_note,
         created_by_user_id,
         published_at,
         created_at
@@ -408,14 +443,49 @@ async function seedFixture(value) {
       values (
         ${revision.id},
         ${revision.documentId},
+        ${revision.commandId},
         ${revision.revisionNumber},
         ${revision.locale},
+        ${revision.status},
+        ${revision.slug},
+        ${revision.pageKind},
         ${revision.title},
         ${revision.summary},
         ${JSON.stringify(revision.payload)}::jsonb,
         ${JSON.stringify(revision.seo)}::jsonb,
+        ${revision.changeNote},
         ${revision.createdByUserId},
         ${revision.publishedAt}::timestamptz,
+        ${timestamp}::timestamptz
+      )`,
+    sql`insert into app.content_localizations (
+        id,
+        organization_id,
+        document_id,
+        kind,
+        locale,
+        slug,
+        title,
+        summary,
+        seo,
+        published_revision_id,
+        published_at,
+        created_at,
+        updated_at
+      )
+      values (
+        ${localization.id},
+        ${localization.organizationId},
+        ${localization.documentId},
+        ${localization.kind},
+        ${localization.locale},
+        ${localization.slug},
+        ${localization.title},
+        ${localization.summary},
+        ${JSON.stringify(localization.seo)}::jsonb,
+        ${localization.publishedRevisionId},
+        ${localization.publishedAt}::timestamptz,
+        ${timestamp}::timestamptz,
         ${timestamp}::timestamptz
       )`,
     sql`insert into app.lead_submissions (
@@ -501,6 +571,7 @@ async function readFixture() {
     projectMemberships,
     projectUpdates,
     contentDocuments,
+    contentLocalizations,
     contentRevisions,
     leads,
     files,
@@ -559,19 +630,41 @@ async function readFixture() {
         kind,
         slug,
         status,
+        default_locale,
+        page_kind,
+        version,
         created_by_user_id,
         published_at
       from app.content_documents
       where id = ${fixture.contentDocuments[0].id}`,
     sql`select
         id,
+        organization_id,
         document_id,
+        kind,
+        locale,
+        slug,
+        title,
+        summary,
+        seo,
+        published_revision_id,
+        published_at
+      from app.content_localizations
+      where id = ${fixture.contentLocalizations[0].id}`,
+    sql`select
+        id,
+        document_id,
+        command_id,
         revision_number,
         locale,
+        status,
+        slug,
+        page_kind,
         title,
         summary,
         payload,
         seo,
+        change_note,
         created_by_user_id,
         published_at
       from app.content_revisions
@@ -615,7 +708,7 @@ async function readFixture() {
   ]);
 
   return {
-    version: 3,
+    version: 4,
     users: users.map((row) => ({
       id: row.id,
       name: row.name,
@@ -670,7 +763,26 @@ async function readFixture() {
       kind: row.kind,
       slug: row.slug,
       status: row.status,
+      defaultLocale: row.default_locale,
+      pageKind: row.page_kind,
+      version: row.version,
       createdByUserId: row.created_by_user_id,
+      publishedAt:
+        row.published_at === null
+          ? null
+          : new Date(row.published_at).toISOString(),
+    })),
+    contentLocalizations: contentLocalizations.map((row) => ({
+      id: row.id,
+      organizationId: row.organization_id,
+      documentId: row.document_id,
+      kind: row.kind,
+      locale: row.locale,
+      slug: row.slug,
+      title: row.title,
+      summary: row.summary,
+      seo: row.seo,
+      publishedRevisionId: row.published_revision_id,
       publishedAt:
         row.published_at === null
           ? null
@@ -679,12 +791,17 @@ async function readFixture() {
     contentRevisions: contentRevisions.map((row) => ({
       id: row.id,
       documentId: row.document_id,
+      commandId: row.command_id,
       revisionNumber: row.revision_number,
       locale: row.locale,
+      status: row.status,
+      slug: row.slug,
+      pageKind: row.page_kind,
       title: row.title,
       summary: row.summary,
       payload: row.payload,
       seo: row.seo,
+      changeNote: row.change_note,
       createdByUserId: row.created_by_user_id,
       publishedAt:
         row.published_at === null

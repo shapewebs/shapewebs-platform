@@ -4,6 +4,16 @@ export {
   getDefaultContentDocumentList,
   listContentDocuments,
 } from "./content-list";
+export {
+  getContentEditorState,
+  getDefaultPageEditorState,
+  savePageContentRevision,
+  type ContentEditorSeoState,
+  type ContentEditorState,
+  type ContentRevisionSummary,
+  type SavePageContentInput,
+  type SavePageContentResult,
+} from "./content-editor";
 export { pingDatabase } from "./readiness";
 export { createDatabase } from "./client";
 export type { ShapewebsDatabase } from "./client";

@@ -10,7 +10,7 @@ import {
 
 import type { AdminAuthorizationContext } from "./admin-auth";
 import { createDatabase } from "./client";
-import { contentDocuments, contentRevisions } from "./schema";
+import { contentDocuments, contentLocalizations } from "./schema";
 
 const maximumListItems = 250;
 
@@ -75,25 +75,6 @@ export async function listContentDocuments(
 
   const filters = documentFiltersSchema.parse(input);
   const database = createDatabase(databaseUrl);
-  const latestRevisions = database.$with("latest_content_revisions").as(
-    database
-      .selectDistinctOn(
-        [contentRevisions.documentId, contentRevisions.locale],
-        {
-          documentId: contentRevisions.documentId,
-          localeCode: contentRevisions.locale,
-          summary: contentRevisions.summary,
-          title: contentRevisions.title,
-        },
-      )
-      .from(contentRevisions)
-      .orderBy(
-        contentRevisions.documentId,
-        contentRevisions.locale,
-        desc(contentRevisions.revisionNumber),
-        desc(contentRevisions.createdAt),
-      ),
-  );
   const conditions: SQL[] = [];
 
   if (filters.contentType) {
@@ -101,7 +82,7 @@ export async function listContentDocuments(
   }
 
   if (filters.localeCode) {
-    conditions.push(eq(latestRevisions.localeCode, filters.localeCode));
+    conditions.push(eq(contentLocalizations.locale, filters.localeCode));
   }
 
   if (filters.state) {
@@ -119,29 +100,28 @@ export async function listContentDocuments(
       sql`select set_config('app.membership_role', ${authorization.role}, true)`,
     ),
     database
-      .with(latestRevisions)
       .select({
         contentType: contentDocuments.kind,
         documentId: contentDocuments.id,
-        localeCode: latestRevisions.localeCode,
-        pageKind: sql<null>`null`,
-        publishedAt: contentDocuments.publishedAt,
-        slug: contentDocuments.slug,
+        localeCode: contentLocalizations.locale,
+        pageKind: contentDocuments.pageKind,
+        publishedAt: contentLocalizations.publishedAt,
+        slug: contentLocalizations.slug,
         state: contentDocuments.status,
-        summary: latestRevisions.summary,
-        title: latestRevisions.title,
+        summary: contentLocalizations.summary,
+        title: contentLocalizations.title,
         updatedAt: contentDocuments.updatedAt,
       })
       .from(contentDocuments)
       .innerJoin(
-        latestRevisions,
-        eq(latestRevisions.documentId, contentDocuments.id),
+        contentLocalizations,
+        eq(contentLocalizations.documentId, contentDocuments.id),
       )
       .where(and(...conditions))
       .orderBy(
         desc(contentDocuments.updatedAt),
         contentDocuments.id,
-        latestRevisions.localeCode,
+        contentLocalizations.locale,
       )
       .limit(maximumListItems),
   ]);
