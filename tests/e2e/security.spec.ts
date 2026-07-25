@@ -21,6 +21,32 @@ test("public responses expose the required production security policy", async ({
   expect(csp).not.toContain("'unsafe-eval'");
 });
 
+test("private preview routes are non-indexable and never shared-cacheable", async ({
+  request,
+}) => {
+  const response = await request.get("/preview");
+  const headers = response.headers();
+
+  expect(response.status()).toBe(404);
+  expect(headers["cache-control"]).toContain("no-store");
+  expect(headers["x-robots-tag"]).toBe("noindex, nofollow, noarchive");
+});
+
+test("exiting private preview clears the session without a cacheable redirect", async ({
+  request,
+}) => {
+  const response = await request.post("/api/preview/exit", {
+    maxRedirects: 0,
+  });
+  const headers = response.headers();
+
+  expect(response.status()).toBe(303);
+  expect(headers["cache-control"]).toBe("private, no-store");
+  expect(headers.location).toBe("http://127.0.0.1:3100/");
+  expect(headers["set-cookie"]).toContain("sw-preview-token=");
+  expect(headers["set-cookie"]).toContain("Max-Age=0");
+});
+
 test("admin API responses deny browser rendering contexts", async ({
   request,
 }) => {

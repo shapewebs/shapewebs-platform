@@ -66,6 +66,29 @@ describe("content security validation", () => {
     ).toBe(false);
   });
 
+  it("rejects unknown CMS document and block fields", () => {
+    expect(
+      contentDocumentSchema.safeParse({
+        blocks: [],
+        schemaVersion: 1,
+        unexpected: "must not be silently accepted",
+      }).success,
+    ).toBe(false);
+
+    expect(
+      contentDocumentSchema.safeParse({
+        blocks: [
+          {
+            heading: "Strict content",
+            type: "hero",
+            unexpected: true,
+          },
+        ],
+        schemaVersion: 1,
+      }).success,
+    ).toBe(false);
+  });
+
   it("requires HTTPS canonical overrides without credentials", () => {
     const basePage = {
       commandId: "10000000-0000-4000-8000-000000000099",

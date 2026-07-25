@@ -8,14 +8,14 @@ import { getSessionCookie } from "../../packages/auth/src/proxy";
 
 const productionAuthOptions = {
   advanced: {
-    cookiePrefix: "shapewebs",
+    cookiePrefix: "__Host-shapewebs",
     defaultCookieAttributes: {
       httpOnly: true,
       path: "/",
       sameSite: "lax" as const,
       secure: true,
     },
-    useSecureCookies: true,
+    useSecureCookies: false,
   },
   session: {
     expiresIn: 60 * 60 * 8,
@@ -27,8 +27,9 @@ describe("administrative session cookie rotation", () => {
     expect(
       getSessionCookie(
         new Headers({
-          cookie: "__Secure-shapewebs.session_token=admin-session-token",
+          cookie: "__Host-shapewebs.session_token=admin-session-token",
         }),
+        { production: true },
       ),
     ).toBe("admin-session-token");
 
@@ -37,6 +38,7 @@ describe("administrative session cookie rotation", () => {
         new Headers({
           cookie: "__Secure-better-auth.session_token=wrong-prefix-token",
         }),
+        { production: true },
       ),
     ).toBeNull();
   });
@@ -63,7 +65,7 @@ describe("administrative session cookie rotation", () => {
       token: "a".repeat(43),
     });
 
-    expect(cookie).toContain("__Secure-shapewebs.session_token=");
+    expect(cookie).toContain("__Host-shapewebs.session_token=");
     expect(cookie).toContain("; Max-Age=3600");
     expect(cookie).toContain("; Path=/");
     expect(cookie).toContain("; HttpOnly");

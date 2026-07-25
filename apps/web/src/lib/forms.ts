@@ -148,6 +148,7 @@ export async function verifyTurnstileToken(input: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         method: "POST",
+        redirect: "error",
         signal: AbortSignal.timeout(5_000),
       },
     );

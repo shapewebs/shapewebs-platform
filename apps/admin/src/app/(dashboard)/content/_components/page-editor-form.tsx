@@ -4,6 +4,7 @@ import {
   previewSavedPageAction,
   savePageEditorAction,
 } from "../_actions/page-editor";
+import { PreviewSavedRevisionForm } from "./preview-saved-revision-form";
 import styles from "./page-editor-form.module.css";
 
 type PageEditorFormProps = {
@@ -186,22 +187,6 @@ export function PageEditorForm({
             Submit for review
           </Buttons.Button>
           <Buttons.Button
-            disabled={
-              setupMode ||
-              !editorState.documentId ||
-              editorState.revisions.length === 0
-            }
-            formAction={previewSavedPageAction}
-            kind="tertiary"
-            name="revisionId"
-            size="small"
-            title="Preview the most recently saved revision in a private, time-limited session."
-            type="submit"
-            value={editorState.revisions[0]?.revisionId ?? ""}
-          >
-            Preview saved revision
-          </Buttons.Button>
-          <Buttons.Button
             disabled={setupMode}
             kind="primary"
             name="intent"
@@ -212,6 +197,18 @@ export function PageEditorForm({
           </Buttons.Button>
         </div>
       </form>
+
+      <PreviewSavedRevisionForm
+        previewAction={previewSavedPageAction}
+        disabled={
+          setupMode ||
+          !editorState.documentId ||
+          editorState.revisions.length === 0
+        }
+        documentId={editorState.documentId ?? ""}
+        localeCode={editorState.localeCode}
+        revisionId={editorState.revisions[0]?.revisionId ?? ""}
+      />
 
       <section className={styles.sectionQ7m3n9}>
         <h2>Revision history</h2>

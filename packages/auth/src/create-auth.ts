@@ -17,6 +17,7 @@ import { betterAuth } from "better-auth/minimal";
 import { twoFactor } from "better-auth/plugins";
 
 import { createVerifiedGoogleUserInfo } from "./google-user-info";
+import { getAdminCookiePolicy } from "./cookie-policy";
 import { generateAdminSessionToken } from "./session-cookie";
 
 const disabledAuthPaths = [
@@ -114,6 +115,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
   }
 
   const database = createDatabase(options.databaseUrl);
+  const cookiePolicy = getAdminCookiePolicy(options.production);
   const assertAllowedEmail = (email: string) => {
     if (!ownerEmails.has(email.trim().toLowerCase())) {
       throw new APIError("FORBIDDEN", {
@@ -268,14 +270,9 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       : {},
     trustedOrigins: options.trustedOrigins,
     advanced: {
-      cookiePrefix: "shapewebs",
-      defaultCookieAttributes: {
-        httpOnly: true,
-        path: "/",
-        sameSite: "lax",
-        secure: options.production,
-      },
-      useSecureCookies: options.production,
+      cookiePrefix: cookiePolicy.prefix,
+      defaultCookieAttributes: cookiePolicy.attributes,
+      useSecureCookies: false,
     },
     plugins: [
       twoFactor({

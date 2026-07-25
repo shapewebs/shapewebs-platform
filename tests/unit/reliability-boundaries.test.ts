@@ -61,6 +61,13 @@ describe("reliability and provider boundaries", () => {
         consentAccepted: true,
       }).success,
     ).toBe(true);
+    expect(
+      contactFormSchema.safeParse({
+        ...input,
+        administrator: true,
+        consentAccepted: true,
+      }).success,
+    ).toBe(false);
   });
 
   it("compares cron bearer credentials without accepting partial matches", () => {

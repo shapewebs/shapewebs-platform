@@ -1,14 +1,22 @@
-import { cookies, draftMode } from "next/headers";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getPublicSiteOrigin, previewCookieNames } from "@/lib/content";
+import { getPublicSiteOrigin } from "@/lib/content";
+import { getPreviewCookiePolicy } from "@/lib/preview-cookie";
 
 export async function POST() {
-  const draft = await draftMode();
-  draft.disable();
-
+  const cookiePolicy = getPreviewCookiePolicy(
+    process.env.NODE_ENV === "production",
+  );
   const cookieStore = await cookies();
-  cookieStore.delete(previewCookieNames.token);
+  cookieStore.set(cookiePolicy.name, "", {
+    ...cookiePolicy.attributes,
+    expires: new Date(0),
+    maxAge: 0,
+  });
 
-  return NextResponse.redirect(new URL("/", getPublicSiteOrigin()), 303);
+  return NextResponse.redirect(new URL("/", getPublicSiteOrigin()), {
+    headers: { "Cache-Control": "private, no-store" },
+    status: 303,
+  });
 }

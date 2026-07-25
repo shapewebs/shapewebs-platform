@@ -286,22 +286,28 @@ export function hasSupabaseServiceEnv(
   );
 }
 
-export const adminLoginSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8).max(200),
-  redirectTo: z.string().max(500).optional(),
-});
+export const adminLoginSchema = z
+  .object({
+    email: z.email(),
+    password: z.string().min(8).max(200),
+    redirectTo: z.string().max(500).optional(),
+  })
+  .strict();
 
-export const mfaChallengeSchema = z.object({
-  factorId: z.string().min(1),
-  challengeId: z.string().min(1),
-  code: z.string().trim().min(6).max(12),
-  redirectTo: z.string().max(500).optional(),
-});
+export const mfaChallengeSchema = z
+  .object({
+    factorId: z.string().min(1),
+    challengeId: z.string().min(1),
+    code: z.string().trim().min(6).max(12),
+    redirectTo: z.string().max(500).optional(),
+  })
+  .strict();
 
-export const mfaEnrollSchema = z.object({
-  friendlyName: z.string().trim().min(2).max(80).default("Shapewebs Admin"),
-});
+export const mfaEnrollSchema = z
+  .object({
+    friendlyName: z.string().trim().min(2).max(80).default("Shapewebs Admin"),
+  })
+  .strict();
 
 const contentTypeSchema = z.enum([
   "page",
@@ -343,11 +349,13 @@ const contentSlugSchema = z
     "Slug must use single hyphens between lowercase letters and numbers.",
   );
 
-export const documentFiltersSchema = z.object({
-  contentType: contentTypeSchema.optional(),
-  localeCode: localeCodeEnum.optional(),
-  state: contentStateSchema.optional(),
-});
+export const documentFiltersSchema = z
+  .object({
+    contentType: contentTypeSchema.optional(),
+    localeCode: localeCodeEnum.optional(),
+    state: contentStateSchema.optional(),
+  })
+  .strict();
 
 export const revalidationPayloadSchema = z
   .object({
@@ -454,26 +462,32 @@ export const pageEditorInputSchema = z
   })
   .strict();
 
-export const mediaUploadSchema = z.object({
-  altText: z.string().trim().min(1).max(180),
-  caption: z.string().trim().max(280).optional(),
-  localeCode: localeCodeEnum.default("en"),
-});
+export const mediaUploadSchema = z
+  .object({
+    altText: z.string().trim().min(1).max(180),
+    caption: z.string().trim().max(280).optional(),
+    localeCode: localeCodeEnum.default("en"),
+  })
+  .strict();
 
-export const contactFormSchema = z.object({
-  name: z.string().min(1).max(120),
-  email: z.email(),
-  company: z.string().max(160).optional(),
-  message: z.string().min(10).max(4000),
-  localeCode: localeCodeEnum.default("en"),
-  consentAccepted: z.literal(true),
-});
+export const contactFormSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    email: z.email(),
+    company: z.string().max(160).optional(),
+    message: z.string().min(10).max(4000),
+    localeCode: localeCodeEnum.default("en"),
+    consentAccepted: z.literal(true),
+  })
+  .strict();
 
-export const projectInquirySchema = contactFormSchema.extend({
-  budgetBand: z.string().max(80).optional(),
-  timeline: z.string().max(80).optional(),
-  serviceInterest: z.string().max(120).optional(),
-});
+export const projectInquirySchema = contactFormSchema
+  .extend({
+    budgetBand: z.string().max(80).optional(),
+    timeline: z.string().max(80).optional(),
+    serviceInterest: z.string().max(120).optional(),
+  })
+  .strict();
 
 export type ContactFormInput = z.infer<typeof contactFormSchema>;
 export type ProjectInquiryInput = z.infer<typeof projectInquirySchema>;

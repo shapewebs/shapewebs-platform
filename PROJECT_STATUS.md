@@ -2,9 +2,9 @@
 
 ## Current milestone
 
-- Date: 25 July 2026
+- Date: 26 July 2026
 - Branch: protected `staging`; current implementation branch
-  `codex/staging-auth-runtime-evidence`
+  `codex/complete-asvs-foundation`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -13,19 +13,22 @@
   `shapewebs/shapewebs-platform#18` merged at `41d9556`; stacked Neon CMS
   editor pull request `shapewebs/shapewebs-platform#19` merged at `732c563`;
   public-content pull request `#20`, request-rendered login correction `#21`,
-  and Shapewebs session-cookie correction `#22` are merged; foundation
-  promotion pull request `shapewebs/shapewebs-platform#7` remains draft
+  Shapewebs session-cookie correction `#22`, TOTP enrollment correction `#23`,
+  diagnostic evidence `#24`, and the counter-persistence repair `#25` are
+  merged; complete foundation pull request
+  `shapewebs/shapewebs-platform#26` remains draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#19` are merged into protected `staging`. Migration `0011` is applied to the
-persistent synthetic staging database and its live security verification
-passes. The current `codex/neon-public-content` branch adds the Neon public
-read path and private preview lifecycle. No content slice has been connected
-to production data or promoted to the production domains.
+`#25` are merged into protected `staging`. Migrations `0000` through `0012` are
+applied to the persistent synthetic staging database and its live security
+verification passes. Google OAuth, local TOTP enrollment, successful step-up
+and protected CMS navigation have passed on the fixed staging origin. No
+content slice has been connected to production data or promoted to the
+production domains.
 
 ## Implemented on this branch
 
@@ -42,13 +45,11 @@ to production data or promoted to the production domains.
   are version controlled.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
-  requirements. Encoding, validation, browser-security, API, transport,
-  authentication, session, authorization, token, OAuth, cryptography, and
-  logging review has 186 evidence-backed dispositions and 67 explicitly
-  unreviewed requirements. The cryptographic-key-management and logging
-  inventories are version controlled. Regeneration is byte-for-byte
-  Prettier-clean, structural verification is canonical, and the production
-  gate remains fail-closed until every requirement is reviewed.
+  requirements. All 253 have evidence-backed dispositions; zero remain
+  unreviewed and the deterministic ASVS launch gate passes. Time-limited
+  accepted risks remain explicit, owned and expiry-bound. The communication,
+  cryptographic-key-management, data-protection, availability and logging
+  inventories are version controlled.
 - `pnpm verify` is the canonical local/CI gate. It includes a deterministic
   compatibility and resource-bound check for the tracked `brace-expansion`
   5.0.8 security patch. `pnpm verify:release` adds dual builds, Playwright,
@@ -64,6 +65,10 @@ to production data or promoted to the production domains.
 - The public site remains static-first and within its Lighthouse and transfer
   budgets. Speed Insights is loaded only on Vercel. Turnstile is loaded only
   with the contact interface.
+- CMS drafts render only within a dynamic, private/no-store and non-indexable
+  `/preview` namespace. Public marketing layouts do not read request cookies,
+  preserving shared CDN caching. Preview sessions are bound to the exact
+  tenant, document, revision, locale, and resolved route.
 - The admin app has nonce-based dynamic CSP, fail-closed readiness, structured
   logs, OpenTelemetry instrumentation, and request/trace correlation.
 - Typed structured logging rejects or redacts cookies, authorization values,
@@ -104,7 +109,9 @@ to production data or promoted to the production domains.
 - Production configuration requires an exact HTTPS base origin, exact trusted
   origins, Google credentials, a strong secret, and an organization UUID.
   Wildcard preview origins fail configuration validation.
-- Production cookies are host-only, Secure, HttpOnly, and SameSite=Lax.
+- Production cookies are `__Host-` prefixed, host-only, Secure, HttpOnly and
+  SameSite=Lax. Successful logout also clears browser cache, cookies and
+  storage for the admin origin.
 - Admin sessions have an eight-hour fixed lifetime and a 30-minute inactivity
   limit. Revoked, expired, inactive, anonymous, and customer-role sessions fail
   closed.
@@ -133,6 +140,11 @@ to production data or promoted to the production domains.
 - Every migrated admin page, Route Handler, and Server Action re-authorizes
   against server-owned session and membership context. Authentication,
   step-up, revocation, and authorization-denial events are audited.
+- The accepted future customer identity contract uses a separate
+  `apps/portal`, Vercel project, Better Auth instance, cookie namespace, OAuth
+  client, Neon schema, and runtime role. It supports invitation-gated Google
+  and verified email/password onboarding with explicit same-email account
+  linking, without weakening or sharing administrative authentication.
 
 ### Neon lead, retention and email path
 
@@ -236,10 +248,10 @@ to production data or promoted to the production domains.
   back to English content. Ambiguous nested routes fail closed.
 - CMS preview grants store only SHA-256 token hashes, activate once within five
   minutes, expire after 30 minutes, bind one tenant/document/revision/locale
-  and redirect only to a server-derived internal path. Activation exchanges the
-  URL token for a distinct session token, so URL history or access logs cannot
-  reopen or read the preview. The browser receives one HttpOnly host-only
-  cookie and can explicitly exit Draft Mode.
+  and redirect only to a server-derived internal path. Activation transfers the
+  one-time token in a bounded POST body and exchanges it for a distinct
+  `__Host-` session cookie, so URL history or access logs never contain the
+  credential. The browser can explicitly exit through a POST-only route.
 - The revalidation endpoint uses constant-time secret comparison, exact JSON
   content type, a streamed 2 KiB body limit, a strict DTO and normalized
   internal paths.
@@ -372,14 +384,13 @@ Vercel deployments and protected-staging k6/ZAP run
 [`30166696641`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30166696641)
 are green.
 
-The first live TOTP enrollment reached the protected step-up endpoint but
-failed before code comparison. Read-only Neon evidence showed one unverified
-factor, no accepted counter, and no failed-attempt record. The current branch
-corrects the wrapper to use Better Auth's runtime secret configuration rather
-than a single environment string and includes a versioned-envelope regression
-test. The canonical repository gate reports 105 passing unit tests, 96.13%
-statement coverage, no known vulnerabilities, and both admin Turbopack and
-webpack production builds pass.
+Pull request `#23` corrected Better Auth runtime-key handling and TOTP
+enrollment. Pull request `#24` added safe diagnostic evidence. The next live
+attempt exposed invalid PostgreSQL target-column qualification in both counter
+mutations; pull request `#25` repaired the SQL and added a real disposable
+database integration test. After deployment, the full Google-to-TOTP journey
+returned a successful audited step-up and the dashboard plus every protected
+CMS route returned `200`.
 
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
@@ -387,16 +398,18 @@ legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
 Checkly compilation, Lighthouse CLI loading, the compatibility probe, and
 `pnpm audit` all pass; the audit reports zero known vulnerabilities.
 
+The complete foundation branch currently passes the canonical gate with 113
+unit tests, 96.15% statement coverage, all 253 ASVS Level 1/Level 2 evidence
+records reviewed, deterministic schemas, and zero known audited
+vulnerabilities. Both Next.js production applications build successfully. The
+eight-test production HTTP security suite proves shared caching for the public
+homepage, private/no-store and noindex preview behavior, preview-session exit,
+security headers, and administrative fail-closed behavior.
+
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
 
-- completion of the deployed Google-to-TOTP staging journey after the current
-  runtime-key/QR correction is reviewed and deployed. A restricted staging
-  client and secret now exist in personal project
-  `shapewebs-platform-2026` with exact fixed origins and are stored only in the
-  admin `staging` Preview scope; the Workspace-owned organization project is
-  pending Google's initial provisioning window;
 - Workspace mailbox MFA/recovery verification and controlled outbound evidence
   for the additional configured role aliases. External MX delivery, inbox
   filters and the `info@` identity are complete;
@@ -413,8 +426,6 @@ These are intentionally not guessed or provisioned:
   approved legal retention, and an incident/restore exercise.
 - non-interactive Checkly automation credentials if monitoring deployment is
   later moved from the encrypted local CLI session into CI;
-- requirement-level review and evidence disposition for the remaining 67 of
-  253 target ASVS 5.0.0 controls.
 - a Vercel plan appropriate for commercial production. The Hobby team reached
   its rolling 100-deployment daily allowance while publishing pull request
   `#16`; the exact staging retry was refused before build creation, and no
@@ -462,16 +473,15 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Review and deploy the Better Auth runtime-key and QR-enrollment correction,
-   regenerate the unverified staging factor, and complete the live TOTP
-   journey.
+1. Deploy and inspect the `__Host-` cookie, POST-only preview/outbox and logout
+   browser-state hardening on fixed staging.
 2. Verify step-up expiry, session revocation, audit evidence, and the
    anonymous/expired/revoked/wrong-role fail-closed cases on fixed staging.
-3. Exercise authenticated Neon draft, revision, preview, publish, exact public
-   read, preview replay denial, and preview exit journeys on persistent
-   staging.
-4. Complete the remaining 67 ASVS dispositions, refresh the assurance
-   evidence, and record the controlled staging runtime results.
+3. Exercise authenticated Neon draft, revision, POST-only preview, publish,
+   exact public read, preview replay denial and preview exit journeys on
+   persistent staging.
+4. Rehearse the accepted-risk expiry checks and production provider launch
+   gates recorded in the exact ASVS register.
 5. Add audited rollback and unpublish commands, followed by storage controls,
    the final public studio design, and production recovery gates in the
    milestone order documented in

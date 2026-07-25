@@ -31,6 +31,42 @@ Auth sessions are identity evidence, not authorization evidence. Memberships,
 roles, tenant assignment, resource ownership, and step-up freshness are
 re-read from trusted server-side sources.
 
+## Accepted future customer identity boundary
+
+ADR 0004 defines a third, separately deployed customer portal. It is not yet
+implemented and is not counted as current ASVS evidence.
+
+```mermaid
+flowchart LR
+  Customer["Untrusted customer browser"] --> Portal["Customer portal Next.js app"]
+  Portal --> CustomerAuth["Customer Better Auth instance"]
+  CustomerAuth --> GoogleCustomer["Dedicated customer Google OAuth client"]
+  CustomerAuth --> CustomerAuthDb["customer_auth schema"]
+  Portal --> PortalRuntime["Least-privilege portal runtime role"]
+  PortalRuntime --> CustomerData["Customer memberships and project access with forced RLS"]
+  Portal --> TurnstileCustomer["Cloudflare Turnstile"]
+  Portal --> AuthOutbox["Durable authentication-email outbox"]
+  AuthOutbox --> ResendCustomer["Resend"]
+```
+
+The portal has a distinct origin, cookie namespace, Better Auth secret, OAuth
+client, schema, and runtime role. No customer session is accepted by the admin
+application, and no provider account, matching email, browser role, or
+customer membership grants administrative access.
+
+Planned customer-specific threats and controls are:
+
+| Scenario                              | Required prevention/detection                                                                 | Verification                                                      |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Duplicate or implicit account linking | Disable implicit linking; require a signed-in, recently reauthenticated explicit link         | Same/different-email, provider-subject and concurrent-link tests  |
+| Credential stuffing/password spraying | Uniform responses, database/account/IP throttles, firewall controls, conditional Turnstile    | Distributed spray, shared-IP and lockout-denial tests             |
+| Email or account enumeration          | Verified-email signup without automatic session, indistinguishable responses and bounded time | Existing/non-existing signup and reset timing tests               |
+| Invitation theft/replay               | Opaque single-use expiry, verified matching email, tenant-bound acceptance and audit          | Forwarded, expired, reused, mismatched and raced invitation tests |
+| Last-method removal/account lockout   | Recent reauthentication and refusal to unlink the final verified usable method                | Google-only, credential-only and dual-method unlink tests         |
+| Customer-to-admin privilege crossing  | Separate app, cookies, auth config/schema/runtime role; independent staff authorization       | Copied-cookie, same-email and customer-role admin denial tests    |
+| Cross-customer IDOR                   | Server-owned membership/project context, minimal DTOs and forced RLS                          | Wrong-tenant/project and direct-object misuse tests               |
+| Auth-email loss or duplication        | Durable outbox, stable command IDs, retries, webhook deduplication and backlog alerts         | Provider timeout, worker crash, replay and delayed-delivery tests |
+
 ## Protected assets
 
 - Domain, GitHub, Vercel, Neon, Google and Resend operator accounts.

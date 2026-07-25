@@ -80,13 +80,14 @@ The current policy is:
 - session tokens: 256 random bits encoded as 43 base64url characters, generated
   by Shapewebs with Node.js `randomBytes`;
 - step-up freshness for publishing: 10 minutes;
-- production cookie: host-only, Secure, HttpOnly, SameSite=Lax, path `/`;
+- production cookie: `__Host-shapewebs.*`, Secure, HttpOnly, SameSite=Lax,
+  path `/`, with no `Domain` attribute;
 - trusted origins: exact origins only, with HTTPS required outside local
   development;
 - concurrent sessions: currently unlimited, because the release is restricted
   to one allowlisted owner;
-- logout: visible in every dashboard layout and invalidates the backend
-  session.
+- logout: visible in every dashboard layout, invalidates the backend session
+  and sends `Clear-Site-Data` for the admin origin after successful sign-out.
 
 Better Auth's token-returning session-list and token-based revocation endpoints
 are disabled. The owner settings view instead receives a minimal,
@@ -155,14 +156,18 @@ Automated evidence includes:
 - `apps/admin/src/lib/auth.ts` and the protected handlers/actions for
   server-owned authorization and fresh step-up enforcement.
 
-Provider-side Google OIDC behavior, deployed cookie attributes and the complete
-Google-to-TOTP journey still require dated fixed-staging evidence.
+The complete fixed-staging Google-to-TOTP journey passed on 25 July 2026.
+Google returned to the protected admin application, an unenrolled owner
+completed local TOTP enrollment, a current code produced an audited successful
+step-up, and the dashboard plus protected CMS routes returned `200`. The
+counter-persistence defect discovered by the live test was repaired and
+reverified through the disposable Neon lifecycle before the successful
+attempt.
 
 ## Launch gates
 
-- Configure the fixed staging Google OAuth client and exact callback origins.
-- Complete a dated Google-to-TOTP staging journey and inspect the deployed
-  session cookie.
+- Reinspect the deployed cookie after the `__Host-` hardening release; the
+  current browser journey already proves Google-to-TOTP authorization.
 - Define and rehearse identity-proofed TOTP recovery and replacement.
 - Decide and enforce a concurrent-session maximum before a second maintainer or
   customer portal is introduced.

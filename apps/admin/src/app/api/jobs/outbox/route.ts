@@ -32,7 +32,7 @@ function nextRetryAt(attempt: number, now = new Date()): Date {
   return new Date(now.getTime() + delaySeconds * 1_000);
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const requestId = request.headers.get("x-request-id") ?? randomUUID();
 
   if (

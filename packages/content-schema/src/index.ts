@@ -34,12 +34,14 @@ const internalHrefSchema = z
     message: "Links must use a normalized internal path beginning with '/'.",
   });
 
-export const richTextNodeSchema = z.object({
-  type: z.string(),
-  attrs: z.record(z.string(), z.unknown()).optional(),
-  content: z.array(z.unknown()).optional(),
-  text: z.string().optional(),
-});
+export const richTextNodeSchema = z
+  .object({
+    type: z.string(),
+    attrs: z.record(z.string(), z.unknown()).optional(),
+    content: z.array(z.unknown()).optional(),
+    text: z.string().optional(),
+  })
+  .strict();
 
 export const heroBlockSchema = z
   .object({
@@ -50,6 +52,7 @@ export const heroBlockSchema = z
     primaryCtaLabel: z.string().min(1).max(40).optional(),
     primaryCtaHref: internalHrefSchema.optional(),
   })
+  .strict()
   .refine(
     (block) => Boolean(block.primaryCtaLabel) === Boolean(block.primaryCtaHref),
     {
@@ -58,36 +61,46 @@ export const heroBlockSchema = z
     },
   );
 
-export const richTextBlockSchema = z.object({
-  type: z.literal("rich_text"),
-  document: z.array(richTextNodeSchema),
-});
+export const richTextBlockSchema = z
+  .object({
+    type: z.literal("rich_text"),
+    document: z.array(richTextNodeSchema),
+  })
+  .strict();
 
-export const imageBlockSchema = z.object({
-  type: z.literal("image"),
-  assetId: z.string().uuid(),
-  caption: z.string().max(280).optional(),
-  layout: z.enum(["full", "contained"]).default("contained"),
-});
+export const imageBlockSchema = z
+  .object({
+    type: z.literal("image"),
+    assetId: z.string().uuid(),
+    caption: z.string().max(280).optional(),
+    layout: z.enum(["full", "contained"]).default("contained"),
+  })
+  .strict();
 
-export const ctaBlockSchema = z.object({
-  type: z.literal("cta"),
-  heading: z.string().min(1).max(120),
-  body: z.string().max(500).optional(),
-  label: z.string().min(1).max(40),
-  href: internalHrefSchema,
-});
+export const ctaBlockSchema = z
+  .object({
+    type: z.literal("cta"),
+    heading: z.string().min(1).max(120),
+    body: z.string().max(500).optional(),
+    label: z.string().min(1).max(40),
+    href: internalHrefSchema,
+  })
+  .strict();
 
-export const faqItemSchema = z.object({
-  question: z.string().min(1).max(200),
-  answer: z.array(richTextNodeSchema),
-});
+export const faqItemSchema = z
+  .object({
+    question: z.string().min(1).max(200),
+    answer: z.array(richTextNodeSchema),
+  })
+  .strict();
 
-export const faqBlockSchema = z.object({
-  type: z.literal("faq"),
-  heading: z.string().max(120).optional(),
-  items: z.array(faqItemSchema).min(1),
-});
+export const faqBlockSchema = z
+  .object({
+    type: z.literal("faq"),
+    heading: z.string().max(120).optional(),
+    items: z.array(faqItemSchema).min(1),
+  })
+  .strict();
 
 export const contentBlockSchema = z.discriminatedUnion("type", [
   heroBlockSchema,
@@ -97,10 +110,12 @@ export const contentBlockSchema = z.discriminatedUnion("type", [
   faqBlockSchema,
 ]);
 
-export const contentDocumentSchema = z.object({
-  schemaVersion: z.literal(1),
-  blocks: z.array(contentBlockSchema),
-});
+export const contentDocumentSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    blocks: z.array(contentBlockSchema),
+  })
+  .strict();
 
 export type ContentBlock = z.infer<typeof contentBlockSchema>;
 export type ContentDocument = z.infer<typeof contentDocumentSchema>;

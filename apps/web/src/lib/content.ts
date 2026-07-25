@@ -1,4 +1,4 @@
-import { cookies, draftMode } from "next/headers";
+import { cookies } from "next/headers";
 import { siteConfig, type ContentType } from "@shapewebs/config";
 import {
   buildContentRevalidationTags,
@@ -9,11 +9,12 @@ import {
   type PublishedDocument,
   type PublicLocaleCode,
 } from "@shapewebs/database/server";
+import {
+  contentRouteMatchesDocument,
+  type ResolvedContentRoute,
+} from "./content-routing";
 import { buildPageMetadata, getAbsoluteSiteUrl } from "./metadata";
-
-export const previewCookieNames = {
-  token: "sw-preview-token",
-} as const;
+import { getPreviewCookiePolicy } from "./preview-cookie";
 
 export function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -107,16 +108,13 @@ export function buildDocumentMetadata(document: PublishedDocument) {
 
 async function getPreviewToken() {
   const cookieStore = await cookies();
-  return cookieStore.get(previewCookieNames.token)?.value ?? null;
+  const cookiePolicy = getPreviewCookiePolicy(
+    process.env.NODE_ENV === "production",
+  );
+  return cookieStore.get(cookiePolicy.name)?.value ?? null;
 }
 
 async function getPreviewDocument() {
-  const draft = await draftMode();
-
-  if (!draft.isEnabled) {
-    return null;
-  }
-
   const token = await getPreviewToken();
 
   if (!token) {
@@ -130,6 +128,16 @@ async function getPreviewDocument() {
   }
 
   return getPreviewContentByToken(databaseUrl, organizationId, token);
+}
+
+export async function getPrivatePreviewContent(
+  route: ResolvedContentRoute,
+): Promise<PublishedDocument | null> {
+  const document = await getPreviewDocument();
+
+  return document && contentRouteMatchesDocument(route, document)
+    ? document
+    : null;
 }
 
 export async function getPublishedContentList(
@@ -149,17 +157,6 @@ export async function getPublishedContentList(
 async function getResolvedHomepage(
   localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
-  const previewDocument = await getPreviewDocument();
-
-  if (
-    previewDocument &&
-    previewDocument.contentType === "page" &&
-    previewDocument.localeCode === localeCode &&
-    (previewDocument.pageKind === "home" || previewDocument.slug === "home")
-  ) {
-    return previewDocument;
-  }
-
   const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
   return getPublishedPageByKind(
     databaseUrl,
@@ -174,17 +171,6 @@ export async function getResolvedContentBySlug(
   slug: string,
   localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
-  const previewDocument = await getPreviewDocument();
-
-  if (
-    previewDocument &&
-    previewDocument.contentType === contentType &&
-    previewDocument.localeCode === localeCode &&
-    previewDocument.slug === slug
-  ) {
-    return previewDocument;
-  }
-
   const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
   return getPublishedContentBySlug(databaseUrl, organizationId, {
     contentType,
@@ -197,19 +183,7 @@ export async function getResolvedContentList(
   contentType: ContentType,
   localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
-  const items = await getPublishedContentList(contentType, localeCode);
-  const previewDocument = await getPreviewDocument();
-
-  if (
-    previewDocument &&
-    previewDocument.contentType === contentType &&
-    previewDocument.localeCode === localeCode &&
-    !items.some((item) => item.documentId === previewDocument.documentId)
-  ) {
-    return [previewDocument, ...items];
-  }
-
-  return items;
+  return getPublishedContentList(contentType, localeCode);
 }
 
 export async function getResolvedGenericPage(
