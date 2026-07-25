@@ -8,7 +8,7 @@ import {
 import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { eq } from "drizzle-orm";
-import { symmetricDecrypt } from "better-auth/crypto";
+import { symmetricDecrypt, type SecretConfig } from "better-auth/crypto";
 
 const totpDigits = 6;
 const totpPeriodMs = 30_000;
@@ -23,6 +23,16 @@ export type AdminTotpVerificationResult =
   | {
       status: "invalid" | "locked" | "replayed" | "unavailable";
     };
+
+export async function decryptAdminTotpSecret(
+  encryptedSecret: string,
+  key: string | SecretConfig,
+): Promise<string> {
+  return symmetricDecrypt({
+    data: encryptedSecret,
+    key,
+  });
+}
 
 function createTotpCode(secret: string, counter: number): string {
   const counterBytes = Buffer.alloc(8);
@@ -66,7 +76,7 @@ export function findMatchingTotpCounter(
 export async function verifyAdminTotpCode(input: {
   code: string;
   databaseUrl: string;
-  secret: string;
+  secret: string | SecretConfig;
   sessionId: string;
   userId: string;
   verifiedAt?: Date;
@@ -91,10 +101,10 @@ export async function verifyAdminTotpCode(input: {
     return { status: "unavailable" };
   }
 
-  const totpSecret = await symmetricDecrypt({
-    data: factor.encryptedSecret,
-    key: input.secret,
-  });
+  const totpSecret = await decryptAdminTotpSecret(
+    factor.encryptedSecret,
+    input.secret,
+  );
   const matchedCounter = findMatchingTotpCounter(
     input.code,
     totpSecret,

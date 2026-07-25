@@ -1309,6 +1309,275 @@
       "owner": "Shapewebs owner"
     },
     {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "docs/runbooks/security-incident.md"
+      ],
+      "id": "v5.0.0-11.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/admin-totp.ts",
+        "packages/auth/src/google-user-info.ts",
+        "packages/auth/src/session-cookie.ts"
+      ],
+      "id": "v5.0.0-11.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/admin-totp.ts",
+        "packages/auth/src/google-user-info.ts",
+        "packages/auth/src/session-cookie.ts",
+        "pnpm-lock.yaml"
+      ],
+      "id": "v5.0.0-11.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/admin-totp.ts",
+        "packages/auth/src/session-cookie.ts"
+      ],
+      "id": "v5.0.0-11.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/admin-totp.ts",
+        "packages/auth/src/session-cookie.ts"
+      ],
+      "id": "v5.0.0-11.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/admin-totp.ts",
+        "packages/auth/src/session-cookie.ts"
+      ],
+      "id": "v5.0.0-11.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "apps/web/src/lib/forms.ts",
+        "apps/web/src/app/api/revalidate/route.ts",
+        "apps/admin/src/lib/job-security.ts"
+      ],
+      "id": "v5.0.0-11.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-11.4.2",
+      "notes": "Shapewebs disables email/password authentication and does not collect or store application passwords.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "apps/web/src/lib/forms.ts",
+        "apps/web/src/app/api/revalidate/route.ts",
+        "apps/admin/src/lib/job-security.ts"
+      ],
+      "id": "v5.0.0-11.4.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-11.4.4",
+      "notes": "Shapewebs does not derive cryptographic keys from user passwords and has no password-authentication path.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/session-cookie.ts",
+        "packages/database/src/public-content.ts",
+        "tests/unit/admin-session-cookie.test.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-11.5.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "docs/security/data-retention-register.md"
+      ],
+      "id": "v5.0.0-16.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "tests/unit/observability.test.ts"
+      ],
+      "id": "v5.0.0-16.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "tests/unit/observability.test.ts"
+      ],
+      "id": "v5.0.0-16.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "packages/database/src/schema/audit.ts"
+      ],
+      "id": "v5.0.0-16.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "tests/unit/observability.test.ts"
+      ],
+      "id": "v5.0.0-16.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "tests/unit/observability.test.ts",
+        "docs/security/data-retention-register.md"
+      ],
+      "id": "v5.0.0-16.2.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "packages/database/src/admin-auth.ts"
+      ],
+      "id": "v5.0.0-16.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "apps/admin/src/lib/auth.ts",
+        "packages/database/src/admin-auth.ts"
+      ],
+      "id": "v5.0.0-16.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "apps/web/src/lib/forms.ts",
+        "apps/admin/src/app/api/webhooks/resend/route.ts",
+        "apps/admin/src/app/api/jobs/outbox/route.ts"
+      ],
+      "id": "v5.0.0-16.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/health.ts",
+        "apps/web/src/lib/health.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-16.3.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "tests/unit/observability.test.ts"
+      ],
+      "id": "v5.0.0-16.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/database/src/schema/audit.ts",
+        "drizzle/0000_shapewebs-foundation.sql",
+        "drizzle/0001_security-hardening.sql",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-16.4.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "apps/admin/src/app/api/webhooks/resend/route.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-16.5.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/email/src/resend-delivery.ts",
+        "apps/admin/src/app/api/jobs/outbox/route.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-16.5.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/logging-inventory.md",
+        "packages/observability/src/structured-logging.ts",
+        "apps/admin/src/lib/auth.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-16.5.3",
+      "owner": "Shapewebs owner"
+    },
+    {
       "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-17.1.1",

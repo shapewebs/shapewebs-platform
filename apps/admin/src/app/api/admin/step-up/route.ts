@@ -165,10 +165,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const authContext = await auth.$context;
     const verification = await verifyAdminTotpCode({
       code,
       databaseUrl,
-      secret: process.env.BETTER_AUTH_SECRET as string,
+      secret: authContext.secretConfig,
       sessionId: runtime.primarySession.session.id,
       userId: runtime.primarySession.user.id,
     });
