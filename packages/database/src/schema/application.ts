@@ -51,11 +51,14 @@ export const contentKind = appSchema.enum("content_kind", [
   "post",
   "project",
   "service",
+  "method",
   "legal",
 ]);
 
 export const contentStatus = appSchema.enum("content_status", [
   "draft",
+  "review",
+  "scheduled",
   "published",
   "archived",
 ]);

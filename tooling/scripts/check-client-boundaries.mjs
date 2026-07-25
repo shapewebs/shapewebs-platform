@@ -274,7 +274,6 @@ const transitionalAdminSupabasePath = path.join(
 const transitionalAdminSupabaseImporters = new Set(
   [
     "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
-    "apps/admin/src/app/(dashboard)/content/page.tsx",
     "apps/admin/src/app/(dashboard)/content/pages/[documentId]/page.tsx",
   ].map((relativePath) => path.join(workspaceRoot, relativePath)),
 );

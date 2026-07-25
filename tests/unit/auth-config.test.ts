@@ -1,6 +1,11 @@
+import { generateKeyPair, SignJWT, type JWTVerifyGetKey } from "jose";
 import { describe, expect, it } from "vitest";
 
 import { createShapewebsAuth } from "../../packages/auth/src/create-auth";
+import {
+  createVerifiedGoogleUserInfo,
+  verifyShapewebsGoogleIdToken,
+} from "../../packages/auth/src/google-user-info";
 
 const validOptions = {
   baseUrl: "http://localhost:3001",
@@ -83,8 +88,269 @@ describe("Better Auth security configuration", () => {
     expect(auth.options.session?.freshAge).toBe(60 * 5);
     expect(auth.options.session?.disableSessionRefresh).toBe(true);
     expect(auth.options.emailAndPassword?.enabled).toBe(false);
+    expect(auth.options.rateLimit).toMatchObject({
+      customRules: {
+        "/sign-in/social": {
+          max: 10,
+          window: 60,
+        },
+      },
+      enabled: true,
+      max: 60,
+      storage: "database",
+      window: 60,
+    });
     expect(auth.options.disabledPaths).toEqual(
-      expect.arrayContaining(["/sign-in/email", "/sign-up/email"]),
+      expect.arrayContaining([
+        "/list-sessions",
+        "/revoke-other-sessions",
+        "/revoke-session",
+        "/revoke-sessions",
+        "/sign-in/email",
+        "/sign-up/email",
+        "/two-factor/disable",
+        "/two-factor/generate-backup-codes",
+        "/two-factor/get-totp-uri",
+        "/two-factor/send-otp",
+        "/two-factor/verify-backup-code",
+        "/two-factor/verify-otp",
+        "/two-factor/verify-totp",
+      ]),
     );
+    expect(auth.options.hooks?.before).toBeTypeOf("function");
+  });
+
+  it("does not expose unused factor-management endpoints", async () => {
+    const auth = createShapewebsAuth(validOptions);
+
+    for (const path of [
+      "/list-sessions",
+      "/revoke-other-sessions",
+      "/revoke-session",
+      "/revoke-sessions",
+      "/two-factor/disable",
+      "/two-factor/generate-backup-codes",
+      "/two-factor/get-totp-uri",
+      "/two-factor/send-otp",
+      "/two-factor/verify-backup-code",
+      "/two-factor/verify-otp",
+      "/two-factor/verify-totp",
+    ]) {
+      const response = await auth.handler(
+        new Request(`${validOptions.baseUrl}/api/auth${path}`, {
+          body: "{}",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: validOptions.baseUrl,
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status, path).toBe(404);
+    }
+  });
+
+  it("accepts Google profile claims only after exact-audience token verification", async () => {
+    const verifier = async ({
+      audience,
+      token,
+    }: {
+      audience: string | string[];
+      nonce?: string;
+      token: string;
+    }) => {
+      expect(audience).toBe("shapewebs-google-client");
+      expect(token).toBe("signed-google-token");
+
+      return {
+        aud: audience,
+        email: "owner@shapewebs.com",
+        email_verified: true,
+        exp: Math.floor(Date.now() / 1000) + 300,
+        iss: "https://accounts.google.com",
+        name: "Shapewebs Owner",
+        picture: "https://example.test/owner.png",
+        sub: "google-subject",
+      };
+    };
+    const getUserInfo = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      verifier,
+    );
+
+    await expect(
+      getUserInfo({ idToken: "signed-google-token" }),
+    ).resolves.toEqual({
+      data: expect.objectContaining({
+        aud: "shapewebs-google-client",
+        iss: "https://accounts.google.com",
+      }),
+      user: {
+        email: "owner@shapewebs.com",
+        emailVerified: true,
+        id: "google-subject",
+        image: "https://example.test/owner.png",
+        name: "Shapewebs Owner",
+      },
+    });
+  });
+
+  it("rejects missing, invalid, unverified, and malformed Google identity claims", async () => {
+    const rejectToken = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => null,
+    );
+    const unverifiedEmail = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "owner@shapewebs.com",
+        email_verified: false,
+        sub: "google-subject",
+      }),
+    );
+    const malformedEmail = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "not-an-email",
+        email_verified: true,
+        sub: "google-subject",
+      }),
+    );
+    const missingSubject = createVerifiedGoogleUserInfo(
+      "shapewebs-google-client",
+      async () => ({
+        email: "owner@shapewebs.com",
+        email_verified: true,
+      }),
+    );
+
+    await expect(rejectToken({})).resolves.toBeNull();
+    await expect(rejectToken({ idToken: "invalid" })).resolves.toBeNull();
+    await expect(
+      unverifiedEmail({ idToken: "unverified-email" }),
+    ).resolves.toBeNull();
+    await expect(
+      malformedEmail({ idToken: "malformed-email" }),
+    ).resolves.toBeNull();
+    await expect(
+      missingSubject({ idToken: "missing-subject" }),
+    ).resolves.toBeNull();
+  });
+
+  it("cryptographically verifies Google identity tokens with fixed trust metadata", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("RS256");
+    const resolveKey: JWTVerifyGetKey = async () => publicKey;
+    const issuedAt = Math.floor(Date.now() / 1_000);
+    const validToken = await new SignJWT({
+      email: "owner@shapewebs.com",
+      email_verified: true,
+    })
+      .setProtectedHeader({ alg: "RS256", kid: "shapewebs-test-key" })
+      .setAudience("shapewebs-google-client")
+      .setExpirationTime(issuedAt + 300)
+      .setIssuedAt(issuedAt)
+      .setIssuer("https://accounts.google.com")
+      .setSubject("google-subject")
+      .sign(privateKey);
+
+    await expect(
+      verifyShapewebsGoogleIdToken(
+        {
+          audience: "shapewebs-google-client",
+          token: validToken,
+        },
+        resolveKey,
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        aud: "shapewebs-google-client",
+        iss: "https://accounts.google.com",
+        sub: "google-subject",
+      }),
+    );
+    await expect(
+      verifyShapewebsGoogleIdToken(
+        {
+          audience: "another-client",
+          token: validToken,
+        },
+        resolveKey,
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("rejects invalid signatures, issuers, expiry, and non-RS256 algorithms", async () => {
+    const trusted = await generateKeyPair("RS256");
+    const attacker = await generateKeyPair("RS256");
+    const resolveTrustedKey: JWTVerifyGetKey = async () => trusted.publicKey;
+    const issuedAt = Math.floor(Date.now() / 1_000);
+    const createToken = (
+      privateKey: CryptoKey,
+      issuer: string,
+      expiresAt: number,
+    ) =>
+      new SignJWT({
+        email: "owner@shapewebs.com",
+        email_verified: true,
+      })
+        .setProtectedHeader({ alg: "RS256", kid: "shapewebs-test-key" })
+        .setAudience("shapewebs-google-client")
+        .setExpirationTime(expiresAt)
+        .setIssuedAt(issuedAt)
+        .setIssuer(issuer)
+        .setSubject("google-subject")
+        .sign(privateKey);
+    const invalidSignature = await createToken(
+      attacker.privateKey,
+      "https://accounts.google.com",
+      issuedAt + 300,
+    );
+    const invalidIssuer = await createToken(
+      trusted.privateKey,
+      "https://attacker.example",
+      issuedAt + 300,
+    );
+    const expired = await createToken(
+      trusted.privateKey,
+      "https://accounts.google.com",
+      issuedAt - 1,
+    );
+    const sharedSecret = new TextEncoder().encode(
+      "shapewebs-test-secret-at-least-32-bytes",
+    );
+    const symmetricToken = await new SignJWT({
+      email: "owner@shapewebs.com",
+      email_verified: true,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setAudience("shapewebs-google-client")
+      .setExpirationTime(issuedAt + 300)
+      .setIssuedAt(issuedAt)
+      .setIssuer("https://accounts.google.com")
+      .setSubject("google-subject")
+      .sign(sharedSecret);
+    const resolveSymmetricKey: JWTVerifyGetKey = async () => sharedSecret;
+
+    for (const token of [invalidSignature, invalidIssuer, expired]) {
+      await expect(
+        verifyShapewebsGoogleIdToken(
+          {
+            audience: "shapewebs-google-client",
+            token,
+          },
+          resolveTrustedKey,
+        ),
+      ).resolves.toBeNull();
+    }
+    await expect(
+      verifyShapewebsGoogleIdToken(
+        {
+          audience: "shapewebs-google-client",
+          token: symmetricToken,
+        },
+        resolveSymmetricKey,
+      ),
+    ).resolves.toBeNull();
   });
 });

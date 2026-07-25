@@ -37,6 +37,24 @@ export type AdminRuntimeState = {
   setupMode: boolean;
 };
 
+type AuthorizedAdminRuntimeState = AdminRuntimeState & {
+  authorization: AdminAuthorizationContext;
+  primarySession: BetterAuthSession;
+  session: AdminRuntimeSession;
+  setupMode: false;
+};
+
+export type AdminApiAuthorizationResult =
+  | {
+      runtime: AuthorizedAdminRuntimeState;
+      status: "authorized";
+    }
+  | {
+      error: "authentication_required" | "forbidden" | "step_up_required";
+      status: "denied";
+      statusCode: 401 | 403;
+    };
+
 type AdminRuntimeSession = {
   aal: "aal1" | "aal2";
   nextAal: "aal2";
@@ -186,6 +204,73 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
         ? null
         : toAdminSessionContext(primarySession, authorization),
     setupMode: false,
+  };
+}
+
+export async function authorizeAdminApiSession(options?: {
+  freshStepUpWithinSeconds?: number;
+  roles?: AdminRole[];
+}): Promise<AdminApiAuthorizationResult> {
+  const runtime = await getAdminRuntimeState();
+  const primarySession = runtime.primarySession;
+  const authorization = runtime.authorization;
+  const session = runtime.session;
+
+  if (runtime.setupMode || !primarySession || !authorization || !session) {
+    if (!runtime.setupMode) {
+      await recordAuthorizationDenial(runtime, "api_session_unavailable");
+    }
+
+    return {
+      error: "authentication_required",
+      status: "denied",
+      statusCode: 401,
+    };
+  }
+
+  if (!primarySession.user.twoFactorEnabled || !authorization.latestStepUpAt) {
+    await recordAuthorizationDenial(runtime, "api_totp_step_up_required");
+    return {
+      error: "step_up_required",
+      status: "denied",
+      statusCode: 403,
+    };
+  }
+
+  if (options?.freshStepUpWithinSeconds) {
+    const oldestAllowed = Date.now() - options.freshStepUpWithinSeconds * 1_000;
+
+    if (authorization.latestStepUpAt.getTime() < oldestAllowed) {
+      await recordAuthorizationDenial(runtime, "api_totp_step_up_stale");
+      return {
+        error: "step_up_required",
+        status: "denied",
+        statusCode: 403,
+      };
+    }
+  }
+
+  if (
+    options?.roles?.length &&
+    !options.roles.some((role) => session.roles.includes(role))
+  ) {
+    await recordAuthorizationDenial(runtime, "api_role_forbidden");
+    return {
+      error: "forbidden",
+      status: "denied",
+      statusCode: 403,
+    };
+  }
+
+  return {
+    runtime: {
+      ...runtime,
+      authorization,
+      primarySession,
+      session,
+      setupMode: false,
+    },
+    status: "authorized",
   };
 }
 

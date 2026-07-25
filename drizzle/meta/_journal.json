@@ -64,6 +64,20 @@
       "when": 1784929139974,
       "tag": "0008_organization-settings-backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784930910812,
+      "tag": "0009_content-workflow-enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784934434218,
+      "tag": "0010_admin-totp-replay-guard",
+      "breakpoints": true
     }
   ]
 }

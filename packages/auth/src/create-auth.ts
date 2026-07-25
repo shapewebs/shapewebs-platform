@@ -8,9 +8,32 @@ import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { emailAddressSchema } from "@shapewebs/validation";
 import { eq } from "drizzle-orm";
-import { APIError } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { twoFactor } from "better-auth/plugins";
+
+import { createVerifiedGoogleUserInfo } from "./google-user-info";
+import { generateAdminSessionToken } from "./session-cookie";
+
+const disabledAuthPaths = [
+  "/list-sessions",
+  "/revoke-other-sessions",
+  "/revoke-session",
+  "/revoke-sessions",
+  "/sign-in/email",
+  "/sign-up/email",
+  "/two-factor/disable",
+  "/two-factor/generate-backup-codes",
+  "/two-factor/get-totp-uri",
+  "/two-factor/send-otp",
+  "/two-factor/verify-backup-code",
+  "/two-factor/verify-otp",
+  "/two-factor/verify-totp",
+] as const;
 
 export type GoogleOAuthCredentials = {
   clientId: string;
@@ -114,7 +137,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       provider: "pg",
       schema: authSchema,
     }),
-    disabledPaths: ["/sign-in/email", "/sign-up/email"],
+    disabledPaths: [...disabledAuthPaths],
     emailAndPassword: {
       enabled: false,
     },
@@ -131,6 +154,22 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
           Promise.resolve(options.onApiError?.()),
         ]);
       },
+    },
+    hooks: {
+      before: createAuthMiddleware(async (context) => {
+        if (context.path !== "/two-factor/enable") {
+          return;
+        }
+
+        const activeSession = await getSessionFromCtx(context);
+
+        if (activeSession?.user.twoFactorEnabled) {
+          throw new APIError("FORBIDDEN", {
+            message:
+              "The enrolled administrative factor cannot be replaced through this endpoint.",
+          });
+        }
+      }),
     },
     databaseHooks: {
       user: {
@@ -161,11 +200,22 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
             }
 
             assertAllowedEmail(sessionUser.email);
+
+            return {
+              data: {
+                ...newSession,
+                token: generateAdminSessionToken(),
+              },
+            };
           },
-          after: async (newSession) => {
+          after: async (newSession, context) => {
             await provisionOwnerAdminSession(options.databaseUrl, {
               organizationId: options.organizationId,
               sessionId: newSession.id,
+              stepUpVerifiedAt:
+                context?.path === "/two-factor/verify-totp"
+                  ? new Date()
+                  : undefined,
               userId: newSession.userId,
             });
           },
@@ -210,6 +260,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
             clientId: options.google.clientId,
             clientSecret: options.google.clientSecret,
             disableImplicitSignUp: false,
+            getUserInfo: createVerifiedGoogleUserInfo(options.google.clientId),
             prompt: "select_account",
             scope: ["email", "profile"],
           },
@@ -229,6 +280,9 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     plugins: [
       twoFactor({
         allowPasswordless: true,
+        backupCodeOptions: {
+          amount: 0,
+        },
         issuer: "Shapewebs",
       }),
     ],

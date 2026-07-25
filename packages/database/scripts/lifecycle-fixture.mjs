@@ -26,7 +26,7 @@ if (["export", "restore"].includes(command) && !exportPath) {
 const sql = neon(databaseUrl);
 
 const fixture = {
-  version: 2,
+  version: 3,
   users: [
     {
       id: "lifecycle-owner",
@@ -126,11 +126,11 @@ const fixture = {
     {
       id: "10000000-0000-4000-8000-000000000004",
       organizationId: "10000000-0000-4000-8000-000000000001",
-      kind: "page",
-      slug: "lifecycle-page",
-      status: "published",
+      kind: "method",
+      slug: "lifecycle-method",
+      status: "review",
       createdByUserId: "lifecycle-owner",
-      publishedAt: "2026-01-01T00:00:00.000Z",
+      publishedAt: null,
     },
   ],
   contentRevisions: [
@@ -139,12 +139,12 @@ const fixture = {
       documentId: "10000000-0000-4000-8000-000000000004",
       revisionNumber: 1,
       locale: "en",
-      title: "Lifecycle page",
-      summary: "Synthetic published revision",
+      title: "Lifecycle method",
+      summary: "Synthetic review revision",
       payload: { blocks: [{ type: "paragraph", text: "Recovery fixture" }] },
       seo: { description: "Synthetic recovery fixture" },
       createdByUserId: "lifecycle-owner",
-      publishedAt: "2026-01-01T00:00:00.000Z",
+      publishedAt: null,
     },
   ],
   leads: [
@@ -158,7 +158,7 @@ const fixture = {
       email: "lifecycle-lead@example.test",
       message: "Synthetic lead retained through recovery",
       payload: { source: "lifecycle-test" },
-      requestFingerprint: "lifecycle-fixture-v2",
+      requestFingerprint: "lifecycle-fixture-v3",
     },
   ],
   files: [
@@ -180,8 +180,8 @@ const fixture = {
       actorUserId: "lifecycle-owner",
       action: "lifecycle.fixture.created",
       targetType: "lifecycle_test",
-      targetId: "fixture-v2",
-      requestId: "lifecycle-request-v2",
+      targetId: "fixture-v3",
+      requestId: "lifecycle-request-v3",
       metadata: { synthetic: true },
       occurredAt: "2026-01-01T00:00:00.000Z",
     },
@@ -615,7 +615,7 @@ async function readFixture() {
   ]);
 
   return {
-    version: 2,
+    version: 3,
     users: users.map((row) => ({
       id: row.id,
       name: row.name,
@@ -671,7 +671,10 @@ async function readFixture() {
       slug: row.slug,
       status: row.status,
       createdByUserId: row.created_by_user_id,
-      publishedAt: new Date(row.published_at).toISOString(),
+      publishedAt:
+        row.published_at === null
+          ? null
+          : new Date(row.published_at).toISOString(),
     })),
     contentRevisions: contentRevisions.map((row) => ({
       id: row.id,
@@ -683,7 +686,10 @@ async function readFixture() {
       payload: row.payload,
       seo: row.seo,
       createdByUserId: row.created_by_user_id,
-      publishedAt: new Date(row.published_at).toISOString(),
+      publishedAt:
+        row.published_at === null
+          ? null
+          : new Date(row.published_at).toISOString(),
     })),
     leads: leads.map((row) => ({
       id: row.id,

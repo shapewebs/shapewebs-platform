@@ -591,6 +591,724 @@
       "owner": "Shapewebs owner"
     },
     {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.1.2",
+      "notes": "Shapewebs accepts no application password. Administrative authentication is Google OIDC followed by a local TOTP.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.1",
+      "notes": "Shapewebs disables email/password registration and login and never accepts a user-set application password.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.2",
+      "notes": "Shapewebs has no application password and therefore no application password-change function. Google credential management remains at the identity provider.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.3",
+      "notes": "Shapewebs has no application password-change function because password authentication is disabled.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.4",
+      "notes": "Shapewebs does not register or change application passwords. Google owns its separate credential policy.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.5",
+      "notes": "Shapewebs accepts no application password and imposes no application password-composition rule.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.6",
+      "notes": "Shapewebs presents no password input because email/password authentication is disabled.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.7",
+      "notes": "Shapewebs presents no application password input and therefore cannot restrict password paste or password-manager behavior.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.8",
+      "notes": "Shapewebs never receives or verifies an application password.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.9",
+      "notes": "Shapewebs accepts no application password, so an application maximum password length does not exist.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.10",
+      "notes": "Shapewebs has no application password-expiration or rotation policy because application password authentication is disabled.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.11",
+      "notes": "Shapewebs accepts no application password, so context-specific password screening does not apply.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.2.12",
+      "notes": "Shapewebs accepts no application password, so breached-password screening remains the responsibility of the configured Google identity provider.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.3.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.4.1",
+      "notes": "Shapewebs issues no initial password or account activation code. The sole owner is allowlisted before Google OIDC authentication.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.4.2",
+      "notes": "Shapewebs has no password hint, security question or knowledge-based authentication path.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.4.3",
+      "notes": "Shapewebs has no application password or application password-reset function. Google account recovery cannot bypass the separate local TOTP.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/admin-totp.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/admin-totp.test.ts"
+      ],
+      "id": "v5.0.0-6.5.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.5.2",
+      "notes": "Enrollment generates no lookup secrets, and every recovery-code generation and verification endpoint is disabled. The database stores only an encrypted empty array for plugin schema compatibility.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.5.4",
+      "notes": "Shapewebs supports no lookup secret or out-of-band authentication code. The only local factor is TOTP.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/admin-totp.ts",
+        "tests/unit/admin-totp.test.ts"
+      ],
+      "id": "v5.0.0-6.5.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.6.1",
+      "notes": "Shapewebs offers no phone, SMS or Public Switched Telephone Network authentication mechanism.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.6.2",
+      "notes": "Shapewebs offers no out-of-band authentication request, code or token.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.6.3",
+      "notes": "Shapewebs offers no code-based out-of-band authentication mechanism.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.8.1",
+      "notes": "Shapewebs supports exactly one identity provider, Google, and does not merge identities across providers.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-6.8.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.8.3",
+      "notes": "Shapewebs does not accept SAML assertions.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "apps/admin/src/lib/auth.ts",
+        "packages/auth/src/google-user-info.ts"
+      ],
+      "id": "v5.0.0-6.8.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": ["docs/security/authentication-session-contract.md"],
+      "id": "v5.0.0-7.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": ["docs/security/authentication-session-contract.md"],
+      "id": "v5.0.0-7.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": ["docs/security/authentication-session-contract.md"],
+      "id": "v5.0.0-7.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "packages/database/src/schema/auth.ts"
+      ],
+      "id": "v5.0.0-7.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/auth/src/session-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-7.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "packages/auth/src/session-cookie.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-7.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-7.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-7.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-7.4.3",
+      "notes": "The current release permits no change or removal of an enrolled authentication factor. Re-review is mandatory before the identity-proofed recovery workflow is introduced.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/layout.tsx",
+        "apps/admin/src/app/(dashboard)/logout-button.tsx"
+      ],
+      "id": "v5.0.0-7.4.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.4.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-7.5.1",
+      "notes": "The current release exposes no account email, phone, recovery attribute or enrolled-factor modification function. Re-review is mandatory before adding one.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(dashboard)/logout-button.tsx",
+        "apps/admin/src/app/(dashboard)/settings/session-manager.tsx",
+        "apps/admin/src/app/api/admin/sessions/[sessionId]/route.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.5.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/threat-model.md",
+        "docs/foundation/architecture.md"
+      ],
+      "id": "v5.0.0-8.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/threat-model.md",
+        "docs/foundation/architecture.md",
+        "packages/database/src/content-list.ts",
+        "packages/database/src/organization-settings.ts"
+      ],
+      "id": "v5.0.0-8.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/auth.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-8.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/admin-auth.ts",
+        "packages/database/src/content-list.ts",
+        "packages/database/src/organization-settings.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-8.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/content-list.ts",
+        "packages/database/src/lead-outbox.ts",
+        "packages/database/src/organization-settings.ts",
+        "tests/unit/content-list.test.ts"
+      ],
+      "id": "v5.0.0-8.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/auth.ts",
+        "apps/admin/src/app/api/admin/step-up/route.ts",
+        "packages/database/src/admin-auth.ts"
+      ],
+      "id": "v5.0.0-8.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/schema/application.ts",
+        "packages/database/src/admin-auth.ts",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-8.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-9.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/auth.ts"
+      ],
+      "id": "v5.0.0-10.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.2.2",
+      "notes": "Shapewebs configures exactly one OAuth authorization server, Google, so an authorization-server mix-up cannot occur.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.3.1",
+      "notes": "Shapewebs is not an OAuth resource server and accepts no access token for delegated API authorization.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.3.2",
+      "notes": "Shapewebs is not an OAuth resource server and makes no authorization decision from access-token scopes or authorization details.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.3.3",
+      "notes": "Shapewebs is not an OAuth resource server and does not identify users from access tokens.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.3.4",
+      "notes": "Shapewebs is not an OAuth resource server and accepts no access token as authentication-strength evidence.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.1",
+      "notes": "Shapewebs is an OIDC relying party, not an OAuth authorization server.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.2",
+      "notes": "Shapewebs does not issue OAuth authorization codes.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.3",
+      "notes": "Shapewebs does not issue OAuth authorization codes.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.4",
+      "notes": "Shapewebs does not operate an OAuth authorization server or assign client grants.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.5",
+      "notes": "Shapewebs does not operate an OAuth authorization server or issue refresh tokens.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.6",
+      "notes": "Shapewebs does not operate an OAuth authorization server. Google owns authorization-server PKCE enforcement.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.7",
+      "notes": "Shapewebs does not operate an OAuth authorization server or dynamic client-registration endpoint.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.8",
+      "notes": "Shapewebs does not operate an OAuth authorization server or issue refresh tokens.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.9",
+      "notes": "Shapewebs does not operate an OAuth authorization server or issue access or refresh tokens.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.10",
+      "notes": "Shapewebs does not operate an OAuth authorization server or authenticate clients to authorization-server backchannels.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.4.11",
+      "notes": "Shapewebs does not operate an OAuth authorization server or assign scopes to OAuth clients.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-10.5.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-10.5.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-10.5.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.5.5",
+      "notes": "Shapewebs does not implement OIDC back-channel logout.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.6.1",
+      "notes": "Shapewebs is not an OpenID Provider.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.6.2",
+      "notes": "Shapewebs is not an OpenID Provider.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.7.1",
+      "notes": "Shapewebs is not an OAuth authorization server and does not collect authorization-server consent.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.7.2",
+      "notes": "Shapewebs is not an OAuth authorization server and does not present authorization-server consent.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-10.7.3",
+      "notes": "Shapewebs is not an OAuth authorization server and stores no authorization-server consent grant.",
+      "owner": "Shapewebs owner"
+    },
+    {
       "disposition": "not_applicable",
       "evidence": [],
       "id": "v5.0.0-17.1.1",

@@ -10,7 +10,6 @@ import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 import styles from "./page.module.css";
 
 type Enrollment = {
-  backupCodes: string[];
   totpUri: string;
 };
 
@@ -93,7 +92,6 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
                 }
 
                 setEnrollment({
-                  backupCodes: data.backupCodes,
                   totpUri: data.totpURI,
                 });
               });
@@ -115,17 +113,11 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
               <div className={styles.secretBoxJ7m2r8}>{enrollmentSecret}</div>
             </div>
 
-            <div className={styles.setupFieldsF4m6p1}>
-              <p className={styles.mutedH8p2q5}>
-                Store these recovery codes offline. They are displayed only
-                during enrollment and must never be copied into project notes.
-              </p>
-              <div className={styles.secretBoxJ7m2r8}>
-                {enrollment.backupCodes.map((backupCode) => (
-                  <div key={backupCode}>{backupCode}</div>
-                ))}
-              </div>
-            </div>
+            <p className={styles.noticeStateW5m1d9}>
+              Recovery codes are intentionally unavailable until the
+              administrative identity-recovery procedure has been implemented
+              and tested. Keep the authenticator enrollment active.
+            </p>
           </div>
         ) : null}
 

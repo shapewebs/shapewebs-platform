@@ -3,11 +3,10 @@
 - Date: 24 July 2026
 - Environment: Google Workspace trial and Resend staging
 - Primary mailbox: `admin@shapewebs.com`
-- Status: inbound routing, transactional MX delivery, inbox organization and
-  the `info@` outbound identity verified; MFA and the remaining send-as
-  identities remain open
+- Status: historical 24 July routing evidence retained; current two-user
+  follow-up recorded below
 
-## Address contract
+## Historical address contract — 24 July 2026
 
 The single licensed Workspace mailbox is `admin@shapewebs.com`. These aliases
 route to that mailbox:
@@ -86,13 +85,22 @@ default and only sender. No mail was deleted. Human domain mail now originates
 from the Workspace account; the personal Gmail account remains recovery and
 operational contact only.
 
-## Remaining controls
+## Follow-up — 25 July 2026
 
-1. Enable two-step verification on `admin@shapewebs.com` and verify the
-   `shapewebs@gmail.com` recovery address.
-2. Add Workspace send-as identities for `sales@`, `support@`, `security@`,
-   `privacy@`, `billing@` and `lukasthomsen@`, keeping each as an alias of the
-   central account.
-3. Send a controlled outbound message from each remaining Workspace identity
-   to `shapewebs@gmail.com` and verify the authenticated From address.
-4. Do not add `noreply@shapewebs.com` as a Gmail sender or mailbox.
+`lukasthomsen@shapewebs.com` was converted from an alias into a separately
+licensed, named everyday user. The historical eight-address MX test above
+remains valid evidence for the routing configuration that existed on 24 July;
+new mail to `lukasthomsen@shapewebs.com` now terminates in that user's own
+mailbox rather than the administrative inbox.
+
+The `admin@shapewebs.com` Gmail settings now show billing, info, privacy, sales,
+security and support as additional sender identities. They remain role aliases,
+not paid users or independent inboxes.
+
+Remaining controls:
+
+1. Verify two-step authentication and recovery for the privileged
+   `admin@shapewebs.com` account and appropriate MFA for the named account.
+2. Send a controlled outbound message from each role identity not already
+   evidenced to `shapewebs@gmail.com` and verify the authenticated From address.
+3. Do not add `noreply@shapewebs.com` as a Gmail sender or mailbox.

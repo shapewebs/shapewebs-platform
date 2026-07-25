@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { neon } from "@neondatabase/serverless";
 
@@ -57,10 +57,18 @@ const ids = {
   idleAdminSession: `security-session-idle-${runId}`,
   revokedAdminSession: `security-session-revoked-${runId}`,
   nonStepUpAdminSession: `security-session-no-step-up-${runId}`,
+  otherAdminSession: `security-session-other-${runId}`,
+  revocableAdminSession: `security-session-revocable-${runId}`,
   customerSession: `security-session-customer-${runId}`,
   draftDocument: randomUUID(),
+  draftRevisionOne: randomUUID(),
+  draftRevisionTwo: randomUUID(),
   publishedDocumentA: randomUUID(),
+  publishedRevisionA: randomUUID(),
   publishedDocumentB: randomUUID(),
+  publishedRevisionB: randomUUID(),
+  workflowDocument: randomUUID(),
+  workflowRevision: randomUUID(),
   auditEvent: randomUUID(),
 };
 
@@ -100,7 +108,7 @@ async function seed() {
         (${ids.organizationA}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationB}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationA}, ${ids.customerUser}, 'customer', 'active'),
-        (${ids.organizationB}, ${ids.otherUser}, 'customer', 'active')`,
+        (${ids.organizationB}, ${ids.otherUser}, 'editor', 'active')`,
     fixtureAdmin`insert into auth.session (
         id,
         expires_at,
@@ -157,6 +165,22 @@ async function seed() {
           now(),
           now(),
           ${ids.customerUser}
+        ),
+        (
+          ${ids.otherAdminSession},
+          now() + interval '8 hours',
+          ${`token-other-${runId}`},
+          now(),
+          now(),
+          ${ids.otherUser}
+        ),
+        (
+          ${ids.revocableAdminSession},
+          now() + interval '8 hours',
+          ${`token-revocable-${runId}`},
+          now(),
+          now(),
+          ${ids.adminUser}
         )`,
     fixtureAdmin`insert into auth.admin_session_security (
         session_id,
@@ -207,6 +231,20 @@ async function seed() {
           now(),
           now(),
           null
+        ),
+        (
+          ${ids.otherAdminSession},
+          ${ids.otherUser},
+          now(),
+          now(),
+          null
+        ),
+        (
+          ${ids.revocableAdminSession},
+          ${ids.adminUser},
+          now(),
+          now(),
+          null
         )`,
     fixtureAdmin`insert into app.projects (id, organization_id, slug, name, status)
       values
@@ -238,7 +276,26 @@ async function seed() {
       values
         (${ids.draftDocument}, ${ids.organizationA}, 'page', 'draft', 'draft', ${ids.adminUser}, null),
         (${ids.publishedDocumentA}, ${ids.organizationA}, 'page', 'published-a', 'published', ${ids.adminUser}, now()),
-        (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now())`,
+        (${ids.publishedDocumentB}, ${ids.organizationB}, 'page', 'published-b', 'published', ${ids.adminUser}, now()),
+        (${ids.workflowDocument}, ${ids.organizationA}, 'method', 'secure-method', 'review', ${ids.adminUser}, null)`,
+    fixtureAdmin`insert into app.content_revisions (
+        id,
+        document_id,
+        revision_number,
+        locale,
+        title,
+        summary,
+        payload,
+        seo,
+        created_by_user_id,
+        published_at
+      )
+      values
+        (${ids.draftRevisionOne}, ${ids.draftDocument}, 1, 'en', 'Draft revision one', null, '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
+        (${ids.draftRevisionTwo}, ${ids.draftDocument}, 2, 'en', 'Draft revision two', 'Latest draft', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
+        (${ids.publishedRevisionA}, ${ids.publishedDocumentA}, 1, 'en', 'Published A', 'Organization A', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
+        (${ids.publishedRevisionB}, ${ids.publishedDocumentB}, 1, 'en', 'Published B', 'Organization B', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
+        (${ids.workflowRevision}, ${ids.workflowDocument}, 1, 'da-DK', 'Sikker metode', 'Workflow enum coverage', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null)`,
   ]);
 
   await migrator.transaction([
@@ -305,6 +362,11 @@ async function seed() {
 
 async function cleanup() {
   await fixtureAdmin.transaction([
+    fixtureAdmin`delete from audit.events
+      where target_id in (
+        ${ids.activeAdminSession},
+        ${ids.revocableAdminSession}
+      )`,
     fixtureAdmin`delete from audit.events
       where id = ${ids.auditEvent}`,
     fixtureAdmin`delete from app.provider_webhook_events
@@ -499,6 +561,64 @@ async function verifyAdminIsolation() {
   });
   assert.deepEqual(customerMemberships, [{ user_id: ids.customerUser }]);
 
+  const organizationAContent = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`with latest_revisions as (
+        select distinct on (document_id, locale)
+          document_id,
+          locale,
+          title
+        from app.content_revisions
+        order by document_id, locale, revision_number desc, created_at desc
+      )
+      select
+        document.id,
+        document.kind,
+        document.status,
+        revision.locale,
+        revision.title
+      from app.content_documents as document
+      inner join latest_revisions as revision
+        on revision.document_id = document.id
+      order by document.slug`,
+  });
+  assert.deepEqual(organizationAContent, [
+    {
+      id: ids.draftDocument,
+      kind: "page",
+      status: "draft",
+      locale: "en",
+      title: "Draft revision two",
+    },
+    {
+      id: ids.publishedDocumentA,
+      kind: "page",
+      status: "published",
+      locale: "en",
+      title: "Published A",
+    },
+    {
+      id: ids.workflowDocument,
+      kind: "method",
+      status: "review",
+      locale: "da-DK",
+      title: "Sikker metode",
+    },
+  ]);
+
+  const editorContent = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select id from app.content_documents order by id`,
+  });
+  assert.deepEqual(
+    new Set(editorContent.map(({ id }) => id)),
+    new Set([ids.draftDocument, ids.publishedDocumentA, ids.workflowDocument]),
+  );
+
   const customerDrafts = await withAdminContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
@@ -563,6 +683,188 @@ async function authorizeSyntheticAdminSession({
   };
 }
 
+async function consumeSyntheticTotpCounter({
+  counter,
+  sessionId,
+  userId = ids.adminUser,
+  verifiedAt = new Date(),
+}) {
+  return admin`
+    with accepted_counter as (
+      insert into auth.admin_totp_security (
+        user_id,
+        last_accepted_counter,
+        failed_attempts,
+        locked_until,
+        updated_at
+      )
+      values (${userId}, ${counter}, 0, null, ${verifiedAt})
+      on conflict (user_id) do update
+      set
+        last_accepted_counter = excluded.last_accepted_counter,
+        failed_attempts = 0,
+        locked_until = null,
+        updated_at = excluded.updated_at
+      where (
+        auth.admin_totp_security.locked_until is null
+        or auth.admin_totp_security.locked_until <= ${verifiedAt}
+      )
+      and (
+        auth.admin_totp_security.last_accepted_counter is null
+        or auth.admin_totp_security.last_accepted_counter
+          < excluded.last_accepted_counter
+      )
+      returning user_id
+    )
+    update auth.admin_session_security
+    set
+      last_seen_at = ${verifiedAt},
+      step_up_verified_at = ${verifiedAt}
+    where session_id = ${sessionId}
+      and user_id = ${userId}
+      and revoked_at is null
+      and exists (select 1 from accepted_counter)
+    returning session_id
+  `;
+}
+
+async function recordSyntheticTotpFailure(failedAt = new Date()) {
+  await admin`
+    insert into auth.admin_totp_security (
+      user_id,
+      failed_attempts,
+      updated_at
+    )
+    values (${ids.adminUser}, 1, ${failedAt})
+    on conflict (user_id) do update
+    set
+      failed_attempts = case
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until <= ${failedAt}
+          then 1
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until > ${failedAt}
+          then auth.admin_totp_security.failed_attempts
+        else auth.admin_totp_security.failed_attempts + 1
+      end,
+      locked_until = case
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until > ${failedAt}
+          then auth.admin_totp_security.locked_until
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until <= ${failedAt}
+          then null
+        when auth.admin_totp_security.failed_attempts + 1 >= 10
+          then cast(${failedAt} as timestamptz) + interval '15 minutes'
+        else null
+      end,
+      updated_at = ${failedAt}
+  `;
+}
+
+async function rotateSyntheticAdminSessionToken({
+  newToken,
+  rotatedAt,
+  sessionId,
+  userId = ids.adminUser,
+  verifiedAt,
+}) {
+  const [, , , result] = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`
+      with rotated as (
+        update auth.session
+        set token = ${newToken}, updated_at = ${rotatedAt}
+        where id = ${sessionId}
+          and user_id = ${userId}
+          and expires_at > ${rotatedAt}
+          and exists (
+            select 1
+            from auth.admin_session_security
+            where session_id = ${sessionId}
+              and user_id = ${userId}
+              and revoked_at is null
+              and step_up_verified_at = ${verifiedAt}
+          )
+        returning id, created_at, expires_at
+      ),
+      audited as (
+        insert into audit.events (
+          organization_id,
+          actor_user_id,
+          action,
+          target_type,
+          target_id,
+          metadata
+        )
+        select
+          ${ids.organizationA},
+          ${ids.adminUser},
+          'auth.session_rotated',
+          'session',
+          rotated.id,
+          jsonb_build_object('result', 'success')
+        from rotated
+        returning target_id
+      )
+      select rotated.created_at, rotated.expires_at
+      from rotated
+      inner join audited on audited.target_id = rotated.id
+    `,
+  ]);
+
+  return result;
+}
+
+async function revokeSyntheticOrganizationSession(targetSessionId) {
+  const [, , , result] = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`
+      with revoked as (
+        delete from auth.session
+        where id = ${targetSessionId}
+          and id <> ${ids.activeAdminSession}
+          and exists (
+            select 1
+            from app.memberships
+            where organization_id = ${ids.organizationA}
+              and user_id = auth.session.user_id
+              and status = 'active'
+              and role in ('owner', 'editor')
+          )
+        returning id
+      ),
+      audited as (
+        insert into audit.events (
+          organization_id,
+          actor_user_id,
+          action,
+          target_type,
+          target_id,
+          metadata
+        )
+        select
+          ${ids.organizationA},
+          ${ids.adminUser},
+          'auth.session_revoked_by_owner',
+          'session',
+          revoked.id,
+          jsonb_build_object('result', 'success')
+        from revoked
+        returning target_id
+      )
+      select target_id
+      from audited
+    `,
+  ]);
+
+  return result;
+}
+
 async function verifyAdminSessionAssurance() {
   const active = await authorizeSyntheticAdminSession({
     sessionId: ids.activeAdminSession,
@@ -596,6 +898,234 @@ async function verifyAdminSessionAssurance() {
   }
 }
 
+async function verifyAdminSessionManagement() {
+  const visibleSessions = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`
+      select session.id
+      from auth.session as session
+      inner join auth.admin_session_security as security
+        on security.session_id = session.id
+        and security.user_id = session.user_id
+      inner join app.memberships as membership
+        on membership.organization_id = ${ids.organizationA}
+        and membership.user_id = session.user_id
+        and membership.status = 'active'
+        and membership.role in ('owner', 'editor')
+      where session.expires_at > now()
+        and security.revoked_at is null
+      order by session.id
+    `,
+  });
+  const visibleSessionIds = new Set(visibleSessions.map(({ id }) => id));
+
+  for (const sessionId of [
+    ids.activeAdminSession,
+    ids.idleAdminSession,
+    ids.nonStepUpAdminSession,
+    ids.revocableAdminSession,
+  ]) {
+    assert.ok(
+      visibleSessionIds.has(sessionId),
+      `${sessionId} should be visible to the organization owner`,
+    );
+  }
+
+  for (const sessionId of [
+    ids.customerSession,
+    ids.expiredAdminSession,
+    ids.otherAdminSession,
+    ids.revokedAdminSession,
+  ]) {
+    assert.equal(
+      visibleSessionIds.has(sessionId),
+      false,
+      `${sessionId} must not appear in the owner session list`,
+    );
+  }
+
+  const [beforeRotation] = await admin`
+    select created_at, expires_at, token
+    from auth.session
+    where id = ${ids.activeAdminSession}
+  `;
+  const verifiedAt = new Date();
+  const consumed = await consumeSyntheticTotpCounter({
+    counter: 13,
+    sessionId: ids.activeAdminSession,
+    verifiedAt,
+  });
+  assert.deepEqual(consumed, [{ session_id: ids.activeAdminSession }]);
+
+  const replacementToken = randomBytes(32).toString("base64url");
+  const rotatedAt = new Date(verifiedAt.getTime() + 1);
+  const rotated = await rotateSyntheticAdminSessionToken({
+    newToken: replacementToken,
+    rotatedAt,
+    sessionId: ids.activeAdminSession,
+    verifiedAt,
+  });
+  assert.equal(rotated.length, 1);
+  assert.equal(
+    rotated[0].created_at.getTime(),
+    beforeRotation.created_at.getTime(),
+    "credential rotation must preserve the absolute session start",
+  );
+  assert.equal(
+    rotated[0].expires_at.getTime(),
+    beforeRotation.expires_at.getTime(),
+    "credential rotation must preserve the absolute session expiry",
+  );
+
+  const [afterRotation] = await admin`
+    select token
+    from auth.session
+    where id = ${ids.activeAdminSession}
+  `;
+  assert.equal(afterRotation.token, replacementToken);
+  assert.notEqual(afterRotation.token, beforeRotation.token);
+
+  const staleProofRotation = await rotateSyntheticAdminSessionToken({
+    newToken: randomBytes(32).toString("base64url"),
+    rotatedAt: new Date(rotatedAt.getTime() + 1),
+    sessionId: ids.activeAdminSession,
+    verifiedAt: new Date(verifiedAt.getTime() - 1),
+  });
+  assert.deepEqual(
+    staleProofRotation,
+    [],
+    "token rotation must require the exact accepted step-up event",
+  );
+
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.activeAdminSession),
+    [],
+    "the owner termination path must not revoke its current session",
+  );
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.otherAdminSession),
+    [],
+    "an owner must not revoke a session outside the current organization",
+  );
+  assert.deepEqual(
+    await revokeSyntheticOrganizationSession(ids.revocableAdminSession),
+    [{ target_id: ids.revocableAdminSession }],
+  );
+
+  const [revocationState] = await fixtureAdmin`
+    select
+      exists (
+        select 1 from auth.session
+        where id = ${ids.revocableAdminSession}
+      ) as session_exists,
+      (
+        select count(*)::integer
+        from audit.events
+        where action = 'auth.session_revoked_by_owner'
+          and target_id = ${ids.revocableAdminSession}
+      ) as audit_count
+  `;
+  assert.equal(revocationState.session_exists, false);
+  assert.equal(revocationState.audit_count, 1);
+}
+
+async function verifyAdminTotpAssurance() {
+  const firstCounter = await consumeSyntheticTotpCounter({
+    counter: 10,
+    sessionId: ids.nonStepUpAdminSession,
+  });
+  assert.deepEqual(firstCounter, [{ session_id: ids.nonStepUpAdminSession }]);
+
+  const sameCounterInAnotherSession = await consumeSyntheticTotpCounter({
+    counter: 10,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    sameCounterInAnotherSession,
+    [],
+    "a TOTP counter must be accepted only once across all user sessions",
+  );
+
+  const olderCounter = await consumeSyntheticTotpCounter({
+    counter: 9,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    olderCounter,
+    [],
+    "an older TOTP counter must not be accepted after a newer counter",
+  );
+
+  const nextCounter = await consumeSyntheticTotpCounter({
+    counter: 11,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(nextCounter, [{ session_id: ids.activeAdminSession }]);
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await recordSyntheticTotpFailure();
+  }
+
+  const [locked] = await admin`
+    select failed_attempts, locked_until
+    from auth.admin_totp_security
+    where user_id = ${ids.adminUser}
+  `;
+  assert.equal(locked.failed_attempts, 10);
+  assert.ok(
+    locked.locked_until.getTime() > Date.now(),
+    "ten failed TOTP checks must lock the account",
+  );
+
+  const whileLocked = await consumeSyntheticTotpCounter({
+    counter: 12,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    whileLocked,
+    [],
+    "a valid TOTP counter must fail closed during lockout",
+  );
+
+  await fixtureAdmin`
+    update auth.admin_totp_security
+    set locked_until = now() - interval '1 second'
+    where user_id = ${ids.adminUser}
+  `;
+
+  const afterLockout = await consumeSyntheticTotpCounter({
+    counter: 12,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(afterLockout, [{ session_id: ids.activeAdminSession }]);
+
+  const [recovered] = await admin`
+    select failed_attempts, last_accepted_counter, locked_until
+    from auth.admin_totp_security
+    where user_id = ${ids.adminUser}
+  `;
+  assert.equal(recovered.failed_attempts, 0);
+  assert.equal(Number(recovered.last_accepted_counter), 12);
+  assert.equal(recovered.locked_until, null);
+
+  for (const [label, client] of [
+    ["public", publicReader],
+    ["web", web],
+  ]) {
+    await expectDenied(
+      client`select user_id from auth.admin_totp_security`,
+      `${label} TOTP replay-guard read`,
+    );
+    await expectDenied(
+      client`insert into auth.admin_totp_security (user_id)
+        values (${ids.adminUser})`,
+      `${label} TOTP replay-guard write`,
+    );
+  }
+}
+
 async function verifyPublicAndWebBoundaries() {
   const publicDocuments = await publicReader`
     select id
@@ -603,13 +1133,31 @@ async function verifyPublicAndWebBoundaries() {
     where id in (
       ${ids.draftDocument},
       ${ids.publishedDocumentA},
-      ${ids.publishedDocumentB}
+      ${ids.publishedDocumentB},
+      ${ids.workflowDocument}
     )
     order by id
   `;
   assert.deepEqual(
     new Set(publicDocuments.map(({ id }) => id)),
     new Set([ids.publishedDocumentA, ids.publishedDocumentB]),
+  );
+
+  const publicRevisions = await publicReader`
+    select id
+    from app.content_revisions
+    where id in (
+      ${ids.draftRevisionOne},
+      ${ids.draftRevisionTwo},
+      ${ids.publishedRevisionA},
+      ${ids.publishedRevisionB},
+      ${ids.workflowRevision}
+    )
+    order by id
+  `;
+  assert.deepEqual(
+    new Set(publicRevisions.map(({ id }) => id)),
+    new Set([ids.publishedRevisionA, ids.publishedRevisionB]),
   );
 
   await expectDenied(
@@ -1063,13 +1611,15 @@ try {
   await verifyRoleAttributes();
   await verifyRlsCoverage();
   await verifyAdminSessionAssurance();
+  await verifyAdminTotpAssurance();
+  await verifyAdminSessionManagement();
   await verifyAdminIsolation();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant isolation, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

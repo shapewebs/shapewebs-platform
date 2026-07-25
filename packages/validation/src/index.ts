@@ -303,15 +303,53 @@ export const mfaEnrollSchema = z.object({
   friendlyName: z.string().trim().min(2).max(80).default("Shapewebs Admin"),
 });
 
+const contentTypeSchema = z.enum([
+  "page",
+  "post",
+  "project",
+  "service",
+  "method",
+  "legal",
+]);
+const contentStateSchema = z.enum([
+  "draft",
+  "review",
+  "scheduled",
+  "published",
+  "archived",
+]);
+const contentSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(180)
+  .regex(/^[a-z0-9-]+$/)
+  .refine(
+    (value) =>
+      !value.startsWith("-") && !value.endsWith("-") && !value.includes("--"),
+    "Slug must use single hyphens between lowercase letters and numbers.",
+  );
+
 export const documentFiltersSchema = z.object({
-  contentType: z
-    .enum(["page", "post", "project", "service", "method", "legal"])
-    .optional(),
+  contentType: contentTypeSchema.optional(),
   localeCode: localeCodeEnum.optional(),
-  state: z
-    .enum(["draft", "review", "scheduled", "published", "archived"])
-    .optional(),
+  state: contentStateSchema.optional(),
 });
+
+export const contentDocumentListItemSchema = z
+  .object({
+    contentType: contentTypeSchema,
+    documentId: z.uuid(),
+    localeCode: localeCodeEnum,
+    pageKind: z.string().trim().min(1).max(80).nullable(),
+    publishedAt: z.iso.datetime({ offset: true }).nullable(),
+    slug: contentSlugSchema,
+    state: contentStateSchema,
+    summary: z.string().trim().max(320).nullable(),
+    title: z.string().trim().min(1).max(140),
+    updatedAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .strict();
 
 const canonicalHttpsUrlSchema = z
   .string()
@@ -341,17 +379,7 @@ export const pageEditorInputSchema = z.object({
   localeCode: localeCodeEnum.default("en"),
   pageKind: z.string().trim().min(1).max(80).default("standard"),
   title: z.string().trim().min(1).max(140),
-  slug: z
-    .string()
-    .trim()
-    .min(1)
-    .max(180)
-    .regex(/^[a-z0-9-]+$/)
-    .refine(
-      (value) =>
-        !value.startsWith("-") && !value.endsWith("-") && !value.includes("--"),
-      "Slug must use single hyphens between lowercase letters and numbers.",
-    ),
+  slug: contentSlugSchema,
   summary: z.string().trim().max(320).optional(),
   metaTitle: z.string().trim().max(160).optional(),
   metaDescription: z.string().trim().max(320).optional(),
@@ -390,6 +418,9 @@ export type MfaChallengeInput = z.infer<typeof mfaChallengeSchema>;
 export type MfaEnrollInput = z.infer<typeof mfaEnrollSchema>;
 export type PageEditorInput = z.infer<typeof pageEditorInputSchema>;
 export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
+export type ContentDocumentListItem = z.infer<
+  typeof contentDocumentListItemSchema
+>;
 export type MediaUploadInput = z.infer<typeof mediaUploadSchema>;
 export type OrganizationSettingsValue = z.infer<
   typeof organizationSettingsValueSchema

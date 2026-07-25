@@ -1,5 +1,9 @@
 import "server-only";
 
+export {
+  getDefaultContentDocumentList,
+  listContentDocuments,
+} from "./content-list";
 export { pingDatabase } from "./readiness";
 export { createDatabase } from "./client";
 export type { ShapewebsDatabase } from "./client";
@@ -7,10 +11,16 @@ export {
   appendAdminAuditEvent,
   appendSystemAuditEvent,
   authorizeAdminSession,
+  consumeAdminTotpCounter,
+  isAdminTotpLocked,
+  listOrganizationAdminSessions,
   provisionOwnerAdminSession,
-  recordAdminStepUp,
+  recordAdminTotpFailure,
+  revokeOrganizationAdminSession,
   revokeAdminSessionSecurity,
+  rotateAdminSessionToken,
   type AdminAuthorizationContext,
+  type AdminSessionSummary,
 } from "./admin-auth";
 export {
   claimLeadNotification,
