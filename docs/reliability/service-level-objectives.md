@@ -52,3 +52,24 @@ procedure.
 
 Alerts must contain only service, environment, deployment, event code,
 request/trace ID, safe reason code and runbook link.
+
+## Resource-demanding functions and availability controls
+
+| Function                   | Enforced bound                                                                 | Failure behavior and consumer protection                                        |
+| -------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Contact/project submission | 16 KiB streamed body, strict schema and local/provider abuse controls          | Reject before persistence; acknowledge only after lead and outbox commit        |
+| Turnstile verification     | 2,048-character token and five-second provider timeout                         | Reject fail-closed; never follow a provider redirect                            |
+| Admin TOTP step-up         | 1 KiB JSON, exact six digits, database rate/lock state                         | Ten failures lock for 15 minutes; anonymous callers cannot reach the counter    |
+| CMS content revision       | 65,536-character JSON plus strict typed content blocks                         | Reject unknown/oversized fields before repository mutation                      |
+| Preview activation         | 512-byte form body, exactly one 43-character token, five-minute one-time grant | POST only; invalid, duplicate or expired grants return no session               |
+| Resend webhook             | Bounded raw body, signature timestamp and event-ID deduplication               | Reject forged/oversized input; out-of-order delivery remains monotonic          |
+| Outbox worker              | Ten items, 20-second work budget, 30-second function maximum                   | Durable claim/retry state; heartbeat only after a valid completed response      |
+| Worker response            | 2 KiB JSON maximum and 25-second request timeout                               | No heartbeat on malformed, oversized, redirected or failed output               |
+| Synthetic retention        | Exact marker identity, six-day minimum age and tenant-scoped deletion          | POST only; ordinary, fresh and cross-tenant leads are never selected            |
+| Database lists             | Explicit select lists, tenant scope and bounded limits                         | Minimal DTOs; unavailable dependencies fail closed                              |
+| Release scans              | Exact staging allowlist and CI time limits                                     | ZAP/k6 refuse production or arbitrary targets; threshold failure blocks release |
+
+The capacity table is reviewed before raising any size, duration, batch or
+concurrency limit. Load, spike and soak testing must demonstrate that increased
+limits do not consume the error budget or starve authentication and lead
+acceptance.

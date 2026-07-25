@@ -17,6 +17,19 @@ import {
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
 
+export type PreviewSavedPageState =
+  | {
+      status: "idle";
+    }
+  | {
+      endpoint: string;
+      status: "ready";
+      token: string;
+    }
+  | {
+      status: "unavailable";
+    };
+
 function getSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
@@ -46,6 +59,7 @@ async function triggerWebRevalidation(input: {
         path: input.slug === "home" ? "/" : `/${input.slug}`,
       }),
       cache: "no-store",
+      redirect: "error",
       signal: AbortSignal.timeout(5_000),
     });
 
@@ -206,7 +220,10 @@ export async function savePageEditorAction(formData: FormData) {
   );
 }
 
-export async function previewSavedPageAction(formData: FormData) {
+export async function previewSavedPageAction(
+  _state: PreviewSavedPageState,
+  formData: FormData,
+): Promise<PreviewSavedPageState> {
   const runtime = await requireAdminSession({
     redirectTo: "/content",
     roles: ["owner", "editor"],
@@ -218,22 +235,13 @@ export async function previewSavedPageAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(
-      getEditorPath(normalizeOptionalValue(formData.get("documentId")), {
-        error: "preview",
-      }),
-    );
+    return { status: "unavailable" };
   }
 
   const databaseUrl = getAdminDatabaseUrl();
 
   if (runtime.setupMode || !databaseUrl || !runtime.authorization) {
-    redirect(
-      getEditorPath(parsed.data.documentId, {
-        error: "setup",
-        localeCode: parsed.data.localeCode,
-      }),
-    );
+    return { status: "unavailable" };
   }
 
   const requestHeaders = await headers();
@@ -248,15 +256,13 @@ export async function previewSavedPageAction(formData: FormData) {
   );
 
   if (!grant) {
-    redirect(
-      getEditorPath(parsed.data.documentId, {
-        error: "preview",
-        localeCode: parsed.data.localeCode,
-      }),
-    );
+    return { status: "unavailable" };
   }
 
   const previewUrl = new URL("/api/preview", getSiteOrigin());
-  previewUrl.searchParams.set("token", grant.token);
-  redirect(previewUrl.toString());
+  return {
+    endpoint: previewUrl.toString(),
+    status: "ready",
+    token: grant.token,
+  };
 }

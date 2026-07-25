@@ -1,6 +1,7 @@
 import { toNextJsHandler } from "@shapewebs/auth/server";
 
 import { getAdminAuth } from "@/lib/better-auth";
+import { hardenAuthResponse } from "@/lib/auth-response";
 
 const unavailableHandler = async (request: Request) => {
   const auth = getAdminAuth();
@@ -17,7 +18,7 @@ const unavailableHandler = async (request: Request) => {
     );
   }
 
-  return auth.handler(request);
+  return hardenAuthResponse(request, await auth.handler(request));
 };
 
 export const { DELETE, GET, PATCH, POST, PUT } =

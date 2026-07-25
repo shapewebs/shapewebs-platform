@@ -1,6 +1,6 @@
-import { draftMode } from "next/headers";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { hasContentPreviewSession } from "@/lib/content";
 import styles from "./layout.module.css";
 
 export default async function MarketingLayout({
@@ -8,11 +8,11 @@ export default async function MarketingLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const draft = await draftMode();
+  const previewEnabled = await hasContentPreviewSession();
 
   return (
     <div className={styles.shellG6p2v8}>
-      {draft.isEnabled ? (
+      {previewEnabled ? (
         <aside
           aria-label="Content preview"
           className={styles["sw-preview-banner-r7m2q5"]}

@@ -4,19 +4,35 @@
 - Review cadence: quarterly and before collecting a new category
 - Principle: collect the minimum data needed for the documented purpose
 
+## Protection levels
+
+| Level        | Examples                                                                                                    | Required controls                                                                                                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public       | Published pages, public company details, non-secret client IDs and site keys                                | Integrity-controlled source, reviewed publishing, HTTPS delivery and no accidental draft exposure                                                                                                                        |
+| Internal     | Deployment identifiers, aggregate availability metrics, non-sensitive operational metadata                  | Authenticated provider access, bounded retention, redacted logs and no public application route                                                                                                                          |
+| Confidential | Lead identity, unpublished CMS content, email delivery metadata, OAuth profile and customer/project records | Least-privilege authorization, forced tenant isolation where stored, TLS, encrypted provider storage, no URL placement, minimal DTOs and documented deletion                                                             |
+| Restricted   | Session tokens, TOTP seeds/codes, OAuth tokens, database URLs, API keys, webhook and bearer secrets         | Server-only access, encrypted secret store or authenticated encryption, independent rotation, never logged/cached/in URLs, no browser storage except host-only HttpOnly session cookies, and immediate incident rotation |
+
+Every new data element must be assigned a level before collection. The highest
+level present controls the complete payload, cache, log entry, export and
+backup. Restricted values are prohibited from application telemetry and
+support conversations.
+
 ## Retention schedule
 
-| Data                                     | Purpose                                   | Location/processors                | Default retention                        | Disposal                                        |
-| ---------------------------------------- | ----------------------------------------- | ---------------------------------- | ---------------------------------------- | ----------------------------------------------- |
-| Operational application logs             | Reliability and debugging                 | Vercel/selected telemetry backend  | 30 days                                  | Automated deletion                              |
-| Security and administrative audit events | Incident investigation and accountability | Neon/Vercel                        | 365 days                                 | Automated deletion or anonymization             |
-| Unconverted leads                        | Respond to inquiries and sales follow-up  | Neon, Resend notification metadata | 12 months after last meaningful contact  | Delete or irreversibly anonymize                |
-| Active customer/project records          | Contract delivery and customer portal     | Neon, Vercel Blob                  | Contract term plus approved legal period | Controlled export and deletion                  |
-| Accounting records                       | Legal/accounting obligation               | Approved accounting systems        | Legally required period                  | Do not automate until schedule is approved      |
-| OAuth profile                            | Admin identity and allowlisting           | Google, Better Auth, Neon          | Account lifetime plus 30 days            | Revoke sessions, delete account/profile         |
-| TOTP secrets and backup codes            | Administrative MFA                        | Better Auth/Neon                   | Account lifetime                         | Revoke and securely delete                      |
-| Email delivery events                    | Delivery operations and abuse response    | Neon, Resend                       | 90 days unless linked to an incident     | Automated deletion                              |
-| Synthetic test data                      | Verification                              | Non-production Neon, CI artifacts  | 7 days maximum                           | Daily marker-restricted cleanup/artifact expiry |
+| Data                                     | Level                                                               | Purpose                                   | Location/processors                                                  | Default retention                                   | Disposal                                        |
+| ---------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
+| Published content                        | Public                                                              | Portfolio and company communication       | Neon, Vercel                                                         | While published plus revision policy                | Unpublish, then revision-controlled deletion    |
+| Operational application logs             | Internal; Confidential if a safe pseudonymous actor hash is present | Reliability and debugging                 | Vercel/selected telemetry backend                                    | 30 days                                             | Automated deletion                              |
+| Security and administrative audit events | Confidential                                                        | Incident investigation and accountability | Neon/Vercel                                                          | 365 days                                            | Automated deletion or anonymization             |
+| Unconverted leads                        | Confidential                                                        | Respond to inquiries and sales follow-up  | Neon, Resend notification metadata                                   | 12 months after last meaningful contact             | Delete or irreversibly anonymize                |
+| Unpublished CMS content                  | Confidential                                                        | Review and publishing workflow            | Neon                                                                 | While actively edited plus approved revision period | Controlled revision deletion                    |
+| Active customer/project records          | Confidential                                                        | Contract delivery and customer portal     | Neon, Vercel Blob                                                    | Contract term plus approved legal period            | Controlled export and deletion                  |
+| Accounting records                       | Confidential                                                        | Legal/accounting obligation               | Approved accounting systems                                          | Legally required period                             | Do not automate until schedule is approved      |
+| OAuth profile                            | Confidential                                                        | Admin identity and allowlisting           | Google, Better Auth, Neon                                            | Account lifetime plus 30 days                       | Revoke sessions, delete account/profile         |
+| Session, OAuth and TOTP secrets          | Restricted                                                          | Administrative authentication             | Browser HttpOnly cookie, Better Auth/Neon, encrypted provider stores | Session/account/credential lifetime                 | Revoke, expire and securely delete              |
+| Email delivery events                    | Confidential                                                        | Delivery operations and abuse response    | Neon, Resend                                                         | 90 days unless linked to an incident                | Automated deletion                              |
+| Synthetic test data                      | Confidential synthetic data only                                    | Verification                              | Non-production Neon, CI artifacts                                    | 7 days maximum                                      | Daily marker-restricted cleanup/artifact expiry |
 
 Deletion jobs must be idempotent, auditable, tenant-scoped and tested against a
 synthetic database before production scheduling.
@@ -55,3 +71,9 @@ Do not log:
 
 Use request/trace IDs, stable event codes, reason codes and keyed/pseudonymous
 actor hashes instead.
+
+Sensitive responses and authenticated pages use `private, no-store` or
+`no-store`. Shapewebs does not place credentials or personal data in URL query
+parameters and does not persist sensitive data in `localStorage` or
+`sessionStorage`. Successful administrative logout clears browser cache,
+cookies and storage for the admin origin.

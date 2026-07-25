@@ -52,7 +52,13 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  if (protectedPath && !setupMode && !getSessionCookie(request)) {
+  if (
+    protectedPath &&
+    !setupMode &&
+    !getSessionCookie(request, {
+      production: process.env.NODE_ENV === "production",
+    })
+  ) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
     return withSecurityHeaders(NextResponse.redirect(loginUrl), csp);

@@ -222,19 +222,20 @@ async function invokeOutbox(
   requestId: string,
   dependencies: SchedulerDependencies,
 ): Promise<OutboxResult> {
+  const headers = {
+    Accept: "application/json",
+    Authorization: `Bearer ${environment.OUTBOX_CRON_SECRET}`,
+    "User-Agent": "shapewebs-outbox-scheduler/1.0",
+    "x-request-id": requestId,
+    "x-vercel-protection-bypass": environment.VERCEL_AUTOMATION_BYPASS,
+  };
   let response: Response;
 
   try {
     response = await dependencies.fetch(environment.OUTBOX_TARGET_URL, {
       cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${environment.OUTBOX_CRON_SECRET}`,
-        "User-Agent": "shapewebs-outbox-scheduler/1.0",
-        "x-request-id": requestId,
-        "x-vercel-protection-bypass": environment.VERCEL_AUTOMATION_BYPASS,
-      },
-      method: "GET",
+      headers,
+      method: "POST",
       redirect: "manual",
       signal: AbortSignal.timeout(outboxTimeoutMs),
     });

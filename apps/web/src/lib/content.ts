@@ -1,4 +1,4 @@
-import { cookies, draftMode } from "next/headers";
+import { cookies } from "next/headers";
 import { siteConfig, type ContentType } from "@shapewebs/config";
 import {
   buildContentRevalidationTags,
@@ -10,10 +10,7 @@ import {
   type PublicLocaleCode,
 } from "@shapewebs/database/server";
 import { buildPageMetadata, getAbsoluteSiteUrl } from "./metadata";
-
-export const previewCookieNames = {
-  token: "sw-preview-token",
-} as const;
+import { getPreviewCookiePolicy } from "./preview-cookie";
 
 export function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -107,16 +104,17 @@ export function buildDocumentMetadata(document: PublishedDocument) {
 
 async function getPreviewToken() {
   const cookieStore = await cookies();
-  return cookieStore.get(previewCookieNames.token)?.value ?? null;
+  const cookiePolicy = getPreviewCookiePolicy(
+    process.env.NODE_ENV === "production",
+  );
+  return cookieStore.get(cookiePolicy.name)?.value ?? null;
+}
+
+export async function hasContentPreviewSession() {
+  return Boolean(await getPreviewToken());
 }
 
 async function getPreviewDocument() {
-  const draft = await draftMode();
-
-  if (!draft.isEnabled) {
-    return null;
-  }
-
   const token = await getPreviewToken();
 
   if (!token) {

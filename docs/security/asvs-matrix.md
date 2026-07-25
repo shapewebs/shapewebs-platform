@@ -11,7 +11,7 @@ exact, version-qualified requirement register and pinned official catalog index
 are maintained in `assurance/asvs`. The structural check runs in `pnpm verify`;
 the stricter production launch gate fails while any target requirement remains
 unreviewed. The current exact register contains 253 Level 1/Level 2
-requirements: 160 reviewed and 93 deliberately unreviewed.
+requirements: all 253 are reviewed and zero remain unreviewed.
 
 | Control area                                 | Target | Status      | Implementation/evidence                                                                                               | Owner        |
 | -------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -19,10 +19,10 @@ requirements: 160 reviewed and 93 deliberately unreviewed.
 | Secure development lifecycle                 | L2     | Implemented | Required CI, roadmap, ADRs, PR template, repository ruleset                                                           | Owner        |
 | Authentication library                       | L2     | Implemented | Admin-only Better Auth route, Drizzle adapter, Google-only UI, fail-closed environment validation                     | Owner        |
 | Authentication/session documentation         | L2     | Implemented | Versioned pathway, attack-resistance, timeout, federation, concurrency, step-up and recovery contract                 | Owner        |
-| OAuth state, PKCE and exact callback origins | L2     | Partial     | Better Auth protocol handling and exact-origin validation; fixed staging Google client still requires setup           | Owner        |
+| OAuth state, PKCE and exact callback origins | L2     | Implemented | Better Auth protocol handling, exact-origin validation and fixed-staging Google client verification                   | Owner        |
 | Public registration disabled                 | L2     | Implemented | Email/password paths disabled; only allowlisted Google users can create users/sessions                                | Owner        |
-| MFA and administrative step-up               | L2     | Partial     | Exact-step TOTP, global one-time counters, lockout and server step-up proven; provider journey and recovery remain    | Owner        |
-| Session cookie attributes                    | L2     | Partial     | Host-only Secure/HttpOnly/SameSite policy implemented; deployed cookie inspection remains a launch gate               | Owner        |
+| MFA and administrative step-up               | L2     | Implemented | Exact-step TOTP, global one-time counters, lockout and full fixed-staging Google-to-TOTP journey proven               | Owner        |
+| Session cookie attributes                    | L2     | Implemented | `__Host-`, Secure, HttpOnly, SameSite=Lax and host-only policies with automated evidence                              | Owner        |
 | Session expiry and revocation                | L2     | Implemented | Fixed 8-hour expiry, 30-minute inactivity, 256-bit reauth rotation and owner-controlled session termination proven    | Owner        |
 | Per-entry-point authorization                | L2     | Partial     | Migrated admin/lead paths re-authorize; transitional Supabase CMS paths still require replacement                     | Owner        |
 | Tenant isolation                             | L2     | Implemented | Forced RLS, transaction-local context, role and cross-tenant negative Neon suite                                      | Owner        |

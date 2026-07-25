@@ -1625,6 +1625,668 @@
       "id": "v5.0.0-17.3.2",
       "notes": "Shapewebs has no WebRTC signaling-message parser or signaling server.",
       "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/http.ts",
+        "apps/web/src/lib/preview-request.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-1.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-1.2.5",
+      "notes": "No deployed Shapewebs runtime constructs or executes operating-system commands from untrusted input. Child-process use is confined to fixed-argument schema and disposable migration tooling outside the deployed applications.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/content-schema/src/index.ts",
+        "tests/unit/content-validation.test.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-2.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/cookie-policy.ts",
+        "apps/web/src/lib/preview-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-3.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/cookie-policy.ts",
+        "apps/web/src/lib/preview-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-3.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/cookie-policy.ts",
+        "apps/web/src/lib/preview-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-3.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/cookie-policy.ts",
+        "apps/web/src/lib/preview-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-3.3.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/jobs/outbox/route.ts",
+        "apps/web/src/app/api/preview/route.ts",
+        "workers/outbox-scheduler/src/scheduler.ts",
+        "tests/unit/outbox-scheduler.test.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-3.5.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "accepted_risk",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md"
+      ],
+      "expiresOn": "2026-10-25",
+      "id": "v5.0.0-4.1.2",
+      "notes": "The Vercel managed edge redirects both pages and API requests from HTTP to HTTPS. Compensating controls are HSTS, hardcoded HTTPS clients, redirect refusal for backend calls, Secure __Host cookies, POST-only sensitive routes and no secrets in URLs. Re-review is required before production.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "accepted_risk",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md"
+      ],
+      "expiresOn": "2026-10-25",
+      "id": "v5.0.0-4.2.1",
+      "notes": "Vercel owns the public HTTP parser and request-framing controls. Conflicting-framing probes were intercepted by deployment protection and could not independently prove parser behavior. Shapewebs sends normalized requests, does not proxy arbitrary framing and requires provider review before production.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/auth.ts",
+        "docs/audits/authentication-session-verification-2026-07-25.md"
+      ],
+      "id": "v5.0.0-6.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-6.4.4",
+      "notes": "Shapewebs exposes no lost-factor recovery, backup-code, factor reset or factor replacement path. Loss of the local factor fails closed; an identity-proofed recovery procedure is a production gate before any recovery feature is enabled.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/admin-totp.test.ts"
+      ],
+      "id": "v5.0.0-6.5.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/admin-auth.ts",
+        "packages/database/src/schema/auth.ts",
+        "docs/security/authentication-session-contract.md",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-7.4.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/authentication-session-contract.md",
+        "packages/auth/src/create-auth.ts",
+        "apps/admin/src/lib/auth.ts"
+      ],
+      "id": "v5.0.0-7.6.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/(auth)/login/login-form.tsx",
+        "packages/auth/src/create-auth.ts",
+        "docs/security/authentication-session-contract.md"
+      ],
+      "id": "v5.0.0-7.6.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-10.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "tests/unit/auth-config.test.ts",
+        "docs/security/authentication-session-contract.md"
+      ],
+      "id": "v5.0.0-10.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/create-auth.ts",
+        "packages/auth/src/google-user-info.ts",
+        "tests/unit/auth-config.test.ts"
+      ],
+      "id": "v5.0.0-10.5.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/session-cookie.ts",
+        "packages/database/src/public-content.ts"
+      ],
+      "id": "v5.0.0-11.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/session-cookie.ts",
+        "tests/unit/admin-session-cookie.test.ts"
+      ],
+      "id": "v5.0.0-11.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "packages/auth/src/google-user-info.ts",
+        "packages/auth/src/session-cookie.ts",
+        "tests/unit/admin-totp.test.ts"
+      ],
+      "id": "v5.0.0-11.6.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md"
+      ],
+      "id": "v5.0.0-12.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md"
+      ],
+      "id": "v5.0.0-12.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-12.1.3",
+      "notes": "Shapewebs does not authenticate clients with mutual TLS or client certificates.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "apps/web/src/lib/forms.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-12.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md"
+      ],
+      "id": "v5.0.0-12.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "docs/security/cryptographic-key-management.md"
+      ],
+      "id": "v5.0.0-12.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "apps/web/src/lib/forms.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-12.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "packages/database/src/client.ts"
+      ],
+      "id": "v5.0.0-12.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "not_applicable",
+      "evidence": [],
+      "id": "v5.0.0-12.3.4",
+      "notes": "Shapewebs operates no private CA or self-signed internal service certificate; current internal and provider connections use publicly trusted or provider-managed TLS.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "docs/security/threat-model.md"
+      ],
+      "id": "v5.0.0-13.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "accepted_risk",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/communication-inventory.md",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "expiresOn": "2026-10-25",
+      "id": "v5.0.0-13.2.1",
+      "notes": "The staging Worker uses independently rotatable long-lived route and bypass secrets instead of short-lived workload identity. They are encrypted, staging-only, exact-route scoped, bounded, monitored and documented for replacement with provider-native OIDC or mTLS before production when supported.",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "drizzle/0001_security-hardening.sql",
+        "packages/database/scripts/verify-security.mjs"
+      ],
+      "id": "v5.0.0-13.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "docs/security/cryptographic-key-management.md",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-13.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "apps/web/src/lib/forms.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-13.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/communication-inventory.md",
+        "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
+        "apps/web/src/lib/forms.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-13.2.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        ".gitignore",
+        "tests/unit/observability.test.ts"
+      ],
+      "id": "v5.0.0-13.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/cryptographic-key-management.md",
+        "docs/security/communication-inventory.md",
+        "packages/validation/src/index.ts"
+      ],
+      "id": "v5.0.0-13.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-13.4.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/next.config.ts",
+        "apps/web/next.config.ts",
+        "packages/config/src/security.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-13.4.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-13.4.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "manual",
+      "evidence": ["docs/audits/asvs-level-2-review-2026-07-25.md"],
+      "id": "v5.0.0-13.4.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/app/api/health/ready/route.ts",
+        "apps/web/src/app/api/health/ready/route.ts",
+        "docs/audits/asvs-level-2-review-2026-07-25.md"
+      ],
+      "id": "v5.0.0-13.4.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/data-retention-register.md",
+        "docs/security/threat-model.md"
+      ],
+      "id": "v5.0.0-14.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/data-retention-register.md",
+        "docs/security/cryptographic-key-management.md",
+        "docs/security/logging-inventory.md"
+      ],
+      "id": "v5.0.0-14.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/app/api/preview/route.ts",
+        "apps/admin/src/app/(dashboard)/content/_components/preview-saved-revision-form.tsx",
+        "apps/web/src/lib/preview-request.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-14.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/proxy.ts",
+        "apps/web/src/app/api/preview/route.ts",
+        "docs/security/data-retention-register.md"
+      ],
+      "id": "v5.0.0-14.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/data-retention-register.md",
+        "apps/web/src/lib/forms.ts",
+        "packages/config/src/security.ts",
+        "tests/e2e/security.spec.ts"
+      ],
+      "id": "v5.0.0-14.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/security/data-retention-register.md",
+        "docs/security/communication-inventory.md",
+        "docs/security/logging-inventory.md"
+      ],
+      "id": "v5.0.0-14.2.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/lib/auth-response.ts",
+        "apps/admin/src/app/(dashboard)/logout-button.tsx",
+        "tests/unit/admin-auth-response.test.ts"
+      ],
+      "id": "v5.0.0-14.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/admin/src/proxy.ts",
+        "apps/web/src/app/api/preview/route.ts",
+        "apps/web/src/app/api/preview/exit/route.ts",
+        "docs/security/data-retention-register.md"
+      ],
+      "id": "v5.0.0-14.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/auth/src/cookie-policy.ts",
+        "apps/web/src/lib/preview-cookie.ts",
+        "docs/security/data-retention-register.md",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-14.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": ["SECURITY.md", "docs/plans/roadmap-2026-07-24.md"],
+      "id": "v5.0.0-15.1.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "pnpm-lock.yaml",
+        "package.json",
+        ".github/dependabot.yml",
+        ".github/workflows/security.yml"
+      ],
+      "id": "v5.0.0-15.1.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/reliability/service-level-objectives.md",
+        "tests/unit/reliability-boundaries.test.ts",
+        "tests/unit/outbox-scheduler.test.ts"
+      ],
+      "id": "v5.0.0-15.1.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "pnpm-lock.yaml",
+        ".github/workflows/security.yml",
+        "SECURITY.md"
+      ],
+      "id": "v5.0.0-15.2.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/reliability/service-level-objectives.md",
+        "apps/web/src/lib/rate-limit.ts",
+        "workers/outbox-scheduler/src/scheduler.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-15.2.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "docs/quality/code-hygiene.md",
+        "tooling/scripts/check-client-boundaries.mjs",
+        "package.json"
+      ],
+      "id": "v5.0.0-15.2.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/database/src/content-list.ts",
+        "packages/database/src/lead-outbox.ts",
+        "packages/database/src/public-content.ts",
+        "tests/unit/public-content.test.ts"
+      ],
+      "id": "v5.0.0-15.3.1",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/forms.ts",
+        "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
+        "workers/outbox-scheduler/src/scheduler.ts"
+      ],
+      "id": "v5.0.0-15.3.2",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/content-schema/src/index.ts",
+        "tests/unit/content-validation.test.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-15.3.3",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/request-identity.ts",
+        "tests/unit/reliability-boundaries.test.ts"
+      ],
+      "id": "v5.0.0-15.3.4",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "tsconfig.base.json",
+        "packages/validation/src/index.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-15.3.5",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "packages/validation/src/index.ts",
+        "packages/content-schema/src/index.ts",
+        "tests/unit/content-validation.test.ts"
+      ],
+      "id": "v5.0.0-15.3.6",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "implemented",
+      "evidence": [
+        "apps/web/src/lib/preview-request.ts",
+        "packages/validation/src/index.ts",
+        "tests/unit/preview-security.test.ts"
+      ],
+      "id": "v5.0.0-15.3.7",
+      "owner": "Shapewebs owner"
+    },
+    {
+      "disposition": "accepted_risk",
+      "evidence": [
+        "docs/audits/asvs-level-2-review-2026-07-25.md",
+        "docs/security/logging-inventory.md"
+      ],
+      "expiresOn": "2026-10-25",
+      "id": "v5.0.0-16.4.3",
+      "notes": "Operational logs are separated across independent provider control planes and durable security audit events are append-only in Neon, but immutable centralized export with the required retention needs paid production capabilities. This remains a launch gate with monthly review and external monitoring as compensating controls.",
+      "owner": "Shapewebs owner"
     }
   ],
   "version": "5.0.0"

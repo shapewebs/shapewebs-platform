@@ -102,24 +102,55 @@ remaining `codex-lifecycle-*` branch.
   Checkly compilation, worker runtime tests, application boundaries, Knip,
   dependency cycles, generated schemas and Drizzle consistency: passed.
 - `pnpm audit`: zero known vulnerabilities.
-- ASVS register: 253 Level 1/Level 2 requirements, 160 reviewed and 93
-  explicitly unreviewed.
+- The branch-time ASVS register contained 253 Level 1/Level 2 requirements,
+  with 160 reviewed and 93 explicitly unreviewed. The later complete review in
+  `docs/audits/asvs-level-2-review-2026-07-25.md` dispositions all 253.
 - Admin Next.js 16.2.11 Turbopack production build: passed.
 - Admin Next.js 16.2.11 webpack production build: passed.
 - Deterministic artifact cleanup: passed; eight known generated artifact paths
   were removed without touching environment, provider-link or unknown files.
 
-## Deliberate launch gates
+## Fixed-staging completion
+
+The fixed staging Google OAuth client and exact callback origin were
+provisioned after the original branch audit. The first live TOTP attempts
+correctly reached the protected step-up route but exposed invalid PostgreSQL
+target-column qualification in both counter mutations. Pull request `#25`
+repaired the SQL, added a disposable-database integration test and passed the
+complete migration, forced-RLS, rollback, export, restore and cleanup
+lifecycle.
+
+After deployment `dpl_HS4jvEAUmfnqVcnYNWN6n6V9DeNU` reached the fixed
+`admin-staging.shapewebs.com` alias, the owner:
+
+1. authenticated with the exact allowlisted `admin@shapewebs.com` Google
+   identity;
+2. completed local TOTP enrollment;
+3. submitted a fresh code directly in the protected browser; and
+4. reached `/dashboard`.
+
+The authoritative runtime evidence recorded:
+
+- `POST /api/admin/step-up` returned `200`;
+- `shapewebs.auth.totp_step_up` recorded `result: success` with a pseudonymous
+  actor and trace ID;
+- `/dashboard` returned `200`; and
+- protected `/audit`, `/content`, `/media`, `/settings` and `/submissions`
+  requests returned `200`.
+
+No TOTP seed or one-time code was stored in the repository, audit record or
+operational log.
+
+## Remaining launch gates
 
 The branch does not claim complete ASVS Level 2 verification. The following
 remain explicit launch gates:
 
-- configure the fixed staging Google OAuth client and exact callback origins;
-- complete the deployed Google-to-TOTP journey and inspect production-style
-  cookie attributes;
 - define and rehearse identity-proofed TOTP recovery and factor replacement;
 - verify underlying Google Workspace MFA and recovery configuration;
-- review every remaining exact-ID ASVS requirement.
+- inspect the deployed `__Host-` cookie after the next staging hardening
+  release; and
+- retain full exact-ID ASVS evidence and accepted-risk expiry review.
 
-These gaps remain `unreviewed` or partial in the checked-in assurance evidence
-and therefore continue to fail the production ASVS launch gate.
+These operational items remain production gates even though every exact ASVS
+requirement now has an evidence-backed disposition.

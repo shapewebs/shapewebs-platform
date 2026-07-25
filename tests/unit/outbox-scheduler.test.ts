@@ -117,7 +117,7 @@ describe("Cloudflare outbox scheduler", () => {
     expect(calls[0]?.url).toBe(outboxTarget);
     expect(calls[0]?.init).toMatchObject({
       cache: "no-store",
-      method: "GET",
+      method: "POST",
       redirect: "manual",
     });
 
