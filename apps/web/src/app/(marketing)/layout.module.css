@@ -15,3 +15,40 @@
   padding-top: 64px;
   padding-bottom: 64px;
 }
+
+.sw-preview-banner-r7m2q5 {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 16px;
+  color: #fff;
+  background: #111;
+  font-size: 0.875rem;
+}
+
+.sw-preview-banner-r7m2q5 + header {
+  top: 40px;
+}
+
+.sw-preview-exit-k4n8p2 {
+  padding: 4px 10px;
+  border: 1px solid rgb(255 255 255 / 50%);
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sw-preview-exit-k4n8p2:hover,
+.sw-preview-exit-k4n8p2:focus-visible {
+  border-color: #fff;
+  background: rgb(255 255 255 / 12%);
+}

@@ -103,6 +103,11 @@ Verification on the correction branch:
 - missing-auth session revocation: bounded
   `503 {"error":"authentication_unavailable"}`.
 
-The correction is not yet merged or deployed. Fixed staging therefore retains
-the observed API `500` behavior until its own reviewed pull request passes and
-is explicitly authorized for staging promotion.
+Pull request `#18` passed its required checks and was squash-merged into
+protected `staging` as `41d9556` on 25 July 2026. After the restricted Google
+OAuth variables were added and the fixed staging branch was redeployed at
+`732c563`, a protected runtime probe returned the sanitized response `200
+{"status":"ready"}` from `/api/health/ready`. This proves the complete
+authentication environment and database dependency are usable without
+disclosing provider details. The interactive Google-to-TOTP, step-up-expiry
+and session-revocation journeys remain required.

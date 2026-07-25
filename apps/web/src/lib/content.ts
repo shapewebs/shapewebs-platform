@@ -1,25 +1,48 @@
 import { cookies, draftMode } from "next/headers";
 import { siteConfig, type ContentType } from "@shapewebs/config";
 import {
-  buildRevalidationTags,
-  createAdminSupabaseClient,
-  getPageByKind,
-  getPreviewContentByRevision,
+  buildContentRevalidationTags,
+  getPreviewContentByToken,
   getPublishedContentBySlug,
+  getPublishedPageByKind,
   listPublishedContent,
   type PublishedDocument,
-} from "@shapewebs/db";
-import { getWebServerSupabaseClient } from "./supabase";
+  type PublicLocaleCode,
+} from "@shapewebs/database/server";
 import { buildPageMetadata, getAbsoluteSiteUrl } from "./metadata";
 
 export const previewCookieNames = {
-  documentId: "sw-preview-document-id",
-  localeCode: "sw-preview-locale-code",
-  revisionId: "sw-preview-revision-id",
+  token: "sw-preview-token",
 } as const;
 
 export function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+}
+
+function getContentDatabaseConfiguration() {
+  const databaseUrl = process.env.DATABASE_URL ?? null;
+  const organizationId = process.env.SHAPEWEBS_ORGANIZATION_ID ?? null;
+
+  if (Boolean(databaseUrl) !== Boolean(organizationId)) {
+    if (process.env.VERCEL_ENV) {
+      throw new Error(
+        "DATABASE_URL and SHAPEWEBS_ORGANIZATION_ID must be configured together.",
+      );
+    }
+
+    return { databaseUrl: null, organizationId: null };
+  }
+
+  if (
+    process.env.VERCEL_ENV === "production" &&
+    (!databaseUrl || !organizationId)
+  ) {
+    throw new Error(
+      "Public content is not configured for the production environment.",
+    );
+  }
+
+  return { databaseUrl, organizationId };
 }
 
 function joinPath(localeCode: string, pathname: string) {
@@ -82,21 +105,9 @@ export function buildDocumentMetadata(document: PublishedDocument) {
   };
 }
 
-async function getPreviewSelection() {
+async function getPreviewToken() {
   const cookieStore = await cookies();
-  const documentId = cookieStore.get(previewCookieNames.documentId)?.value;
-  const localeCode = cookieStore.get(previewCookieNames.localeCode)?.value;
-  const revisionId = cookieStore.get(previewCookieNames.revisionId)?.value;
-
-  if (!documentId || !localeCode || !revisionId) {
-    return null;
-  }
-
-  return {
-    documentId,
-    localeCode,
-    revisionId,
-  };
+  return cookieStore.get(previewCookieNames.token)?.value ?? null;
 }
 
 async function getPreviewDocument() {
@@ -106,22 +117,38 @@ async function getPreviewDocument() {
     return null;
   }
 
-  const selection = await getPreviewSelection();
+  const token = await getPreviewToken();
 
-  if (!selection) {
+  if (!token) {
     return null;
   }
 
-  const supabase = createAdminSupabaseClient();
+  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
 
-  if (!supabase) {
+  if (!databaseUrl || !organizationId) {
     return null;
   }
 
-  return getPreviewContentByRevision(supabase, selection);
+  return getPreviewContentByToken(databaseUrl, organizationId, token);
 }
 
-async function getResolvedHomepage(localeCode = siteConfig.defaultLocale) {
+export async function getPublishedContentList(
+  contentType: ContentType,
+  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
+) {
+  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
+
+  return listPublishedContent(
+    databaseUrl,
+    organizationId,
+    contentType,
+    localeCode,
+  );
+}
+
+async function getResolvedHomepage(
+  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
+) {
   const previewDocument = await getPreviewDocument();
 
   if (
@@ -133,14 +160,19 @@ async function getResolvedHomepage(localeCode = siteConfig.defaultLocale) {
     return previewDocument;
   }
 
-  const supabase = await getWebServerSupabaseClient();
-  return getPageByKind(supabase, "home", localeCode);
+  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
+  return getPublishedPageByKind(
+    databaseUrl,
+    organizationId,
+    "home",
+    localeCode,
+  );
 }
 
 export async function getResolvedContentBySlug(
   contentType: ContentType,
   slug: string,
-  localeCode = siteConfig.defaultLocale,
+  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
   const previewDocument = await getPreviewDocument();
 
@@ -153,8 +185,8 @@ export async function getResolvedContentBySlug(
     return previewDocument;
   }
 
-  const supabase = await getWebServerSupabaseClient();
-  return getPublishedContentBySlug(supabase, {
+  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
+  return getPublishedContentBySlug(databaseUrl, organizationId, {
     contentType,
     localeCode,
     slug,
@@ -163,10 +195,9 @@ export async function getResolvedContentBySlug(
 
 export async function getResolvedContentList(
   contentType: ContentType,
-  localeCode = siteConfig.defaultLocale,
+  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
-  const supabase = await getWebServerSupabaseClient();
-  const items = await listPublishedContent(supabase, contentType, localeCode);
+  const items = await getPublishedContentList(contentType, localeCode);
   const previewDocument = await getPreviewDocument();
 
   if (
@@ -183,7 +214,7 @@ export async function getResolvedContentList(
 
 export async function getResolvedGenericPage(
   slug: string,
-  localeCode = siteConfig.defaultLocale,
+  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
 ) {
   const homepage = await getResolvedHomepage(localeCode);
 
@@ -191,7 +222,13 @@ export async function getResolvedGenericPage(
     return homepage;
   }
 
-  return getResolvedContentBySlug("page", slug, localeCode);
+  const page = await getResolvedContentBySlug("page", slug, localeCode);
+
+  if (page) {
+    return page;
+  }
+
+  return getResolvedContentBySlug("method", slug, localeCode);
 }
 
 export function buildRevalidationPayload(input: {
@@ -199,5 +236,5 @@ export function buildRevalidationPayload(input: {
   documentId: string;
   localeCode: string;
 }) {
-  return buildRevalidationTags(input);
+  return buildContentRevalidationTags(input);
 }

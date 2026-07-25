@@ -87,6 +87,7 @@ export const outboxStatus = appSchema.enum("outbox_status", [
 const currentOrganizationId = sql`nullif(current_setting('app.organization_id', true), '')::uuid`;
 const currentUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const currentMembershipRole = sql`nullif(current_setting('app.membership_role', true), '')`;
+const currentPreviewTokenHash = sql`nullif(current_setting('app.preview_token_hash', true), '')`;
 const isOwner = sql`${currentMembershipRole} = 'owner'`;
 const isEditorOrOwner = sql`${currentMembershipRole} in ('owner', 'editor')`;
 const projectBelongsToCurrentOrganization = (projectId: unknown) =>
@@ -441,13 +442,26 @@ export const contentDocuments = appSchema.table(
     pgPolicy("web runtime reads published content", {
       for: "select",
       to: webRuntimeRole,
-      using: sql`exists (
-        select 1
-        from "app"."content_localizations" as localization
-        where localization."document_id" = ${table.id}
-          and localization."published_revision_id" is not null
-          and localization."published_at" is not null
-      )`,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and (
+          exists (
+            select 1
+            from "app"."content_localizations" as localization
+            where localization."document_id" = ${table.id}
+              and localization."organization_id" = ${currentOrganizationId}
+              and localization."published_revision_id" is not null
+              and localization."published_at" is not null
+          )
+          or exists (
+            select 1
+            from "app"."content_preview_grants" as preview_grant
+            where preview_grant."document_id" = ${table.id}
+              and preview_grant."organization_id" = ${currentOrganizationId}
+              and preview_grant."session_token_hash" = ${currentPreviewTokenHash}
+              and preview_grant."consumed_at" is not null
+              and preview_grant."expires_at" > now()
+          )
+        )`,
     }),
   ],
 );
@@ -563,7 +577,9 @@ export const contentLocalizations = appSchema.table(
     pgPolicy("web runtime reads published localization pointers", {
       for: "select",
       to: webRuntimeRole,
-      using: sql`${table.publishedRevisionId} is not null and ${table.publishedAt} is not null`,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.publishedRevisionId} is not null
+        and ${table.publishedAt} is not null`,
     }),
   ],
 );
@@ -678,14 +694,160 @@ export const contentRevisions = appSchema.table(
     pgPolicy("web runtime reads published revisions", {
       for: "select",
       to: webRuntimeRole,
-      using: sql`${table.publishedAt} is not null and exists (
+      using: sql`(
+        ${table.publishedAt} is not null
+        and exists (
+          select 1
+          from ${contentLocalizations}
+          where ${contentLocalizations.documentId} = ${table.documentId}
+            and ${contentLocalizations.organizationId} = ${currentOrganizationId}
+            and ${contentLocalizations.locale} = ${table.locale}
+            and ${contentLocalizations.publishedRevisionId} = ${table.id}
+            and ${contentLocalizations.publishedAt} is not null
+        )
+      ) or exists (
         select 1
-        from ${contentLocalizations}
-        where ${contentLocalizations.documentId} = ${table.documentId}
-          and ${contentLocalizations.locale} = ${table.locale}
-          and ${contentLocalizations.publishedRevisionId} = ${table.id}
-          and ${contentLocalizations.publishedAt} is not null
+        from "app"."content_preview_grants" as preview_grant
+        where preview_grant."revision_id" = ${table.id}
+          and preview_grant."document_id" = ${table.documentId}
+          and preview_grant."locale" = ${table.locale}
+          and preview_grant."organization_id" = ${currentOrganizationId}
+          and preview_grant."session_token_hash" = ${currentPreviewTokenHash}
+          and preview_grant."consumed_at" is not null
+          and preview_grant."expires_at" > now()
       )`,
+    }),
+  ],
+);
+
+export const contentPreviewGrants = appSchema.table(
+  "content_preview_grants",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => contentDocuments.id, { onDelete: "cascade" }),
+    revisionId: uuid("revision_id")
+      .notNull()
+      .references(() => contentRevisions.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    path: text("path").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    sessionTokenHash: text("session_token_hash"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("content_preview_grants_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("content_preview_grants_session_token_hash_unique").on(
+      table.sessionTokenHash,
+    ),
+    index("content_preview_grants_expiry_idx").on(table.expiresAt),
+    index("content_preview_grants_document_revision_idx").on(
+      table.documentId,
+      table.revisionId,
+    ),
+    check(
+      "content_preview_grants_locale_supported",
+      sql`${table.locale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "content_preview_grants_path_safe",
+      sql`char_length(${table.path}) between 1 and 240
+        and left(${table.path}, 1) = '/'
+        and left(${table.path}, 2) <> '//'
+        and strpos(${table.path}, chr(92)) = 0
+        and ${table.path} !~ '[[:cntrl:]]'`,
+    ),
+    check(
+      "content_preview_grants_token_hash_format",
+      sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "content_preview_grants_session_token_hash_format",
+      sql`${table.sessionTokenHash} is null or ${table.sessionTokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "content_preview_grants_expiry_bounded",
+      sql`${table.expiresAt} > ${table.createdAt}
+        and ${table.expiresAt} <= ${table.createdAt} + interval '30 minutes'`,
+    ),
+    check(
+      "content_preview_grants_consumption_bounded",
+      sql`(
+        ${table.consumedAt} is null
+        and ${table.sessionTokenHash} is null
+      ) or (
+        ${table.consumedAt} is not null
+        and ${table.sessionTokenHash} is not null
+        and ${table.consumedAt} >= ${table.createdAt}
+        and ${table.consumedAt} < ${table.expiresAt}
+      )`,
+    ),
+    pgPolicy("editors create preview grants", {
+      for: "insert",
+      to: adminRuntimeRole,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.createdByUserId} = ${currentUserId}
+        and ${isEditorOrOwner}
+        and ${table.consumedAt} is null
+        and ${table.sessionTokenHash} is null
+        and exists (
+          select 1
+          from ${contentDocuments}
+          where ${contentDocuments.id} = ${table.documentId}
+            and ${contentDocuments.organizationId} = ${table.organizationId}
+        )
+        and exists (
+          select 1
+          from ${contentRevisions}
+          where ${contentRevisions.id} = ${table.revisionId}
+            and ${contentRevisions.documentId} = ${table.documentId}
+            and ${contentRevisions.locale} = ${table.locale}
+        )`,
+    }),
+    pgPolicy("editors read current organization preview grants", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("web runtime reads exact preview grant", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.expiresAt} > now()
+        and (
+          (
+            ${table.tokenHash} = ${currentPreviewTokenHash}
+            and ${table.createdAt} > now() - interval '5 minutes'
+          )
+          or (
+            ${table.sessionTokenHash} = ${currentPreviewTokenHash}
+            and ${table.consumedAt} is not null
+          )
+        )`,
+    }),
+    pgPolicy("web runtime consumes fresh preview grant", {
+      for: "update",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.tokenHash} = ${currentPreviewTokenHash}
+        and ${table.consumedAt} is null
+        and ${table.expiresAt} > now()
+        and ${table.createdAt} > now() - interval '5 minutes'`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.tokenHash} = ${currentPreviewTokenHash}
+        and ${table.consumedAt} is not null
+        and ${table.sessionTokenHash} is not null
+        and ${table.expiresAt} > now()`,
     }),
   ],
 );

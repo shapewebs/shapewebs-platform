@@ -311,6 +311,19 @@ const contentTypeSchema = z.enum([
   "method",
   "legal",
 ]);
+const revalidationPathSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(240)
+  .refine(
+    (value) =>
+      value.startsWith("/") &&
+      !value.startsWith("//") &&
+      !value.includes("\\") &&
+      !/[\u0000-\u0020\u007f]/u.test(value),
+    "Revalidation paths must be normalized internal paths.",
+  );
 const contentStateSchema = z.enum([
   "draft",
   "review",
@@ -336,10 +349,27 @@ export const documentFiltersSchema = z.object({
   state: contentStateSchema.optional(),
 });
 
+export const revalidationPayloadSchema = z
+  .object({
+    contentType: contentTypeSchema,
+    documentId: z.uuid(),
+    localeCode: localeCodeEnum,
+    path: revalidationPathSchema.optional(),
+  })
+  .strict();
+
 export const contentEditorSelectionSchema = z
   .object({
     documentId: z.uuid(),
     localeCode: localeCodeEnum.optional(),
+  })
+  .strict();
+
+export const contentPreviewSelectionSchema = z
+  .object({
+    documentId: z.uuid(),
+    localeCode: localeCodeEnum,
+    revisionId: z.uuid(),
   })
   .strict();
 
@@ -455,6 +485,7 @@ export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
 export type ContentDocumentListItem = z.infer<
   typeof contentDocumentListItemSchema
 >;
+export type RevalidationPayload = z.infer<typeof revalidationPayloadSchema>;
 export type MediaUploadInput = z.infer<typeof mediaUploadSchema>;
 export type OrganizationSettingsValue = z.infer<
   typeof organizationSettingsValueSchema

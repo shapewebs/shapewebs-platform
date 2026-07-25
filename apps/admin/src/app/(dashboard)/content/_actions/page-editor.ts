@@ -4,8 +4,15 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { contentDocumentSchema } from "@shapewebs/content-schema";
-import { savePageContentRevision } from "@shapewebs/database/server";
-import { pageEditorInputSchema } from "@shapewebs/validation";
+import {
+  createContentPreviewGrant,
+  savePageContentRevision,
+  type PublicLocaleCode,
+} from "@shapewebs/database/server";
+import {
+  contentPreviewSelectionSchema,
+  pageEditorInputSchema,
+} from "@shapewebs/validation";
 
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
@@ -197,4 +204,59 @@ export async function savePageEditorAction(formData: FormData) {
       status,
     }),
   );
+}
+
+export async function previewSavedPageAction(formData: FormData) {
+  const runtime = await requireAdminSession({
+    redirectTo: "/content",
+    roles: ["owner", "editor"],
+  });
+  const parsed = contentPreviewSelectionSchema.safeParse({
+    documentId: formData.get("documentId"),
+    localeCode: formData.get("localeCode"),
+    revisionId: formData.get("revisionId"),
+  });
+
+  if (!parsed.success) {
+    redirect(
+      getEditorPath(normalizeOptionalValue(formData.get("documentId")), {
+        error: "preview",
+      }),
+    );
+  }
+
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (runtime.setupMode || !databaseUrl || !runtime.authorization) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: "setup",
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  const requestHeaders = await headers();
+  const grant = await createContentPreviewGrant(
+    databaseUrl,
+    runtime.authorization,
+    {
+      ...parsed.data,
+      localeCode: parsed.data.localeCode as PublicLocaleCode,
+      requestId: requestHeaders.get("x-request-id") ?? undefined,
+    },
+  );
+
+  if (!grant) {
+    redirect(
+      getEditorPath(parsed.data.documentId, {
+        error: "preview",
+        localeCode: parsed.data.localeCode,
+      }),
+    );
+  }
+
+  const previewUrl = new URL("/api/preview", getSiteOrigin());
+  previewUrl.searchParams.set("token", grant.token);
+  redirect(previewUrl.toString());
 }

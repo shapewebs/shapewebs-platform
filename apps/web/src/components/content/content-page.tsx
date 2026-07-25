@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PublishedDocument } from "@shapewebs/db";
+import type { PublishedDocument } from "@shapewebs/database/server";
 import { ContentRenderer } from "./content-renderer";
 import styles from "./content-page.module.css";
 

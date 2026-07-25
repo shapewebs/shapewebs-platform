@@ -1,67 +1,76 @@
 import { cookies, draftMode } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { consumePreviewToken, createAdminSupabaseClient } from "@shapewebs/db";
+import { consumeContentPreviewGrant } from "@shapewebs/database/server";
 import { getPublicSiteOrigin, previewCookieNames } from "@/lib/content";
+
+const invalidPreviewResponse = () =>
+  NextResponse.json(
+    { error: "Invalid or expired preview token." },
+    {
+      headers: { "Cache-Control": "private, no-store" },
+      status: 401,
+    },
+  );
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
-  const signature = request.nextUrl.searchParams.get("signature");
-  const path = request.nextUrl.searchParams.get("path") ?? "/";
 
-  if (!token || !signature) {
-    return NextResponse.json(
-      { error: "Missing preview credentials." },
-      { status: 400 },
-    );
+  if (!token) {
+    return invalidPreviewResponse();
   }
 
-  const supabase = createAdminSupabaseClient();
+  const databaseUrl = process.env.DATABASE_URL;
+  const organizationId = process.env.SHAPEWEBS_ORGANIZATION_ID;
 
-  if (!supabase) {
+  if (!databaseUrl || !organizationId) {
     return NextResponse.json(
       { error: "Preview is not configured." },
-      { status: 503 },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+        status: 503,
+      },
     );
   }
 
-  const previewSelection = await consumePreviewToken(supabase, {
-    token,
-    signature,
-  });
+  let previewGrant;
 
-  if (!previewSelection) {
-    return NextResponse.json(
-      { error: "Invalid or expired preview token." },
-      { status: 401 },
+  try {
+    previewGrant = await consumeContentPreviewGrant(
+      databaseUrl,
+      organizationId,
+      token,
     );
+  } catch {
+    return NextResponse.json(
+      { error: "Preview is temporarily unavailable." },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+        status: 503,
+      },
+    );
+  }
+
+  if (!previewGrant) {
+    return invalidPreviewResponse();
   }
 
   const draft = await draftMode();
   draft.enable();
 
   const cookieStore = await cookies();
-  cookieStore.set(previewCookieNames.documentId, previewSelection.documentId, {
+  cookieStore.set(previewCookieNames.token, previewGrant.sessionToken, {
     httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  cookieStore.set(previewCookieNames.localeCode, previewSelection.localeCode, {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  cookieStore.set(previewCookieNames.revisionId, previewSelection.revisionId, {
-    httpOnly: true,
+    maxAge: Math.max(
+      1,
+      Math.floor(
+        (new Date(previewGrant.expiresAt).getTime() - Date.now()) / 1_000,
+      ),
+    ),
     path: "/",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   });
 
-  const redirectUrl = new URL(
-    path.startsWith("/") ? path : "/",
-    getPublicSiteOrigin(),
-  );
+  const redirectUrl = new URL(previewGrant.path, getPublicSiteOrigin());
   return NextResponse.redirect(redirectUrl);
 }

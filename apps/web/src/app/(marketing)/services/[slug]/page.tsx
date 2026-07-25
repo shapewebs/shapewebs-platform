@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { listPublishedContent } from "@shapewebs/db";
 import { ContentPage } from "@/components/content/content-page";
-import { buildDocumentMetadata, getResolvedContentBySlug } from "@/lib/content";
+import {
+  buildDocumentMetadata,
+  getPublishedContentList,
+  getResolvedContentBySlug,
+} from "@/lib/content";
 
 type ServiceDetailPageProps = {
   params: Promise<{
@@ -11,7 +14,7 @@ type ServiceDetailPageProps = {
 };
 
 export async function generateStaticParams() {
-  const services = await listPublishedContent(null, "service", "en");
+  const services = await getPublishedContentList("service", "en");
 
   return services.map((service) => ({
     slug: service.slug,

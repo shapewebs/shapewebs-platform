@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ContentPage } from "@/components/content/content-page";
-import { buildDocumentMetadata, getResolvedGenericPage } from "@/lib/content";
+import {
+  buildDocumentMetadata,
+  getResolvedContentBySlug,
+  getResolvedGenericPage,
+} from "@/lib/content";
+import {
+  resolveContentRoute,
+  type ResolvedContentRoute,
+} from "@/lib/content-routing";
 import { buildPageMetadata } from "@/lib/metadata";
 
 function formatSlugLabel(slug: string[]) {
@@ -20,11 +28,28 @@ type CatchAllPageProps = {
   }>;
 };
 
+function getRoutedDocument(route: ResolvedContentRoute) {
+  return route.kind === "generic"
+    ? getResolvedGenericPage(route.slug, route.localeCode)
+    : getResolvedContentBySlug(route.contentType, route.slug, route.localeCode);
+}
+
 export async function generateMetadata(
   props: CatchAllPageProps,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const document = await getResolvedGenericPage(slug.at(-1) ?? "page");
+  const route = resolveContentRoute(slug);
+
+  if (!route) {
+    return buildPageMetadata({
+      title: formatSlugLabel(slug),
+      description: "This route is not published on Shapewebs.",
+      path: `/${slug.join("/")}`,
+      noIndex: true,
+    });
+  }
+
+  const document = await getRoutedDocument(route);
 
   if (document) {
     return buildDocumentMetadata(document);
@@ -40,7 +65,13 @@ export async function generateMetadata(
 
 export default async function CatchAllPage(props: CatchAllPageProps) {
   const { slug } = await props.params;
-  const document = await getResolvedGenericPage(slug.at(-1) ?? "page");
+  const route = resolveContentRoute(slug);
+
+  if (!route) {
+    notFound();
+  }
+
+  const document = await getRoutedDocument(route);
 
   if (document) {
     return <ContentPage document={document} />;

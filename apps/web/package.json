@@ -14,7 +14,7 @@
     "@shapewebs/config": "workspace:*",
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/database": "workspace:*",
-    "@shapewebs/db": "workspace:*",
+    "@shapewebs/i18n": "workspace:*",
     "@shapewebs/observability": "workspace:*",
     "@shapewebs/ui": "workspace:*",
     "@shapewebs/validation": "workspace:*",

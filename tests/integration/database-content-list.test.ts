@@ -5,12 +5,21 @@ import {
   getContentEditorState,
   savePageContentRevision,
 } from "../../packages/database/src/content-editor";
+import {
+  consumeContentPreviewGrant,
+  createContentPreviewGrant,
+  getPublishedContentBySlug,
+  getPublishedPageByKind,
+  getPreviewContentByToken,
+  listPublishedContent,
+} from "../../packages/database/src/public-content";
 
 const databaseUrl = process.env.DATABASE_ADMIN_URL;
+const webDatabaseUrl = process.env.DATABASE_WEB_URL;
 
-if (!databaseUrl) {
+if (!databaseUrl || !webDatabaseUrl) {
   throw new Error(
-    "DATABASE_ADMIN_URL is required for the content integration test.",
+    "DATABASE_ADMIN_URL and DATABASE_WEB_URL are required for the content integration test.",
   );
 }
 
@@ -92,6 +101,7 @@ describe.sequential("Neon content-editor repository", () => {
   };
   let documentId = "";
   let publishedRevisionId = "";
+  let postPublishDraftRevisionId = "";
 
   it("creates one immutable draft and treats an exact command replay idempotently", async () => {
     const created = await savePageContentRevision(
@@ -188,6 +198,12 @@ describe.sequential("Neon content-editor repository", () => {
       status: "saved",
       version: 3,
     });
+
+    if (!("revisionId" in drafted)) {
+      throw new Error("The post-publication draft was not created.");
+    }
+
+    postPublishDraftRevisionId = drafted.revisionId;
 
     const state = await getContentEditorState(databaseUrl, authorization, {
       documentId,
@@ -290,6 +306,131 @@ describe.sequential("Neon content-editor repository", () => {
       localeCode: "da-DK",
       publishedRevisionId: published.revisionId,
     });
+  });
+
+  it("serves only exact published revision pointers through the web role", async () => {
+    const englishPages = await listPublishedContent(
+      webDatabaseUrl,
+      authorization.organizationId,
+      "page",
+      "en",
+    );
+    const publishedPage = englishPages.find(
+      (page) => page.documentId === documentId,
+    );
+
+    expect(publishedPage).toMatchObject({
+      localeCode: "en",
+      source: "neon",
+      title: "CMS integration page",
+    });
+    expect(publishedPage?.title).not.toBe("Unpublished follow-up draft");
+
+    const danishPages = await listPublishedContent(
+      webDatabaseUrl,
+      authorization.organizationId,
+      "page",
+      "da-DK",
+    );
+    expect(
+      danishPages.find((page) => page.documentId === documentId),
+    ).toMatchObject({
+      localeCode: "da-DK",
+      title: "Dansk integrationsside",
+    });
+
+    await expect(
+      getPublishedContentBySlug(webDatabaseUrl, authorization.organizationId, {
+        contentType: "page",
+        localeCode: "da-DK",
+        slug: "cms-integrationsside",
+      }),
+    ).resolves.toMatchObject({
+      documentId,
+      localeCode: "da-DK",
+      title: "Dansk integrationsside",
+    });
+
+    await expect(
+      getPublishedPageByKind(
+        webDatabaseUrl,
+        authorization.organizationId,
+        "standard",
+        "en",
+      ),
+    ).resolves.toMatchObject({
+      documentId,
+      localeCode: "en",
+      title: "CMS integration page",
+    });
+  });
+
+  it("consumes a preview grant once and reads only its exact revision", async () => {
+    const grant = await createContentPreviewGrant(databaseUrl, authorization, {
+      documentId,
+      localeCode: "en",
+      revisionId: postPublishDraftRevisionId,
+    });
+
+    expect(grant).toMatchObject({
+      path: "/cms-integration-page",
+    });
+
+    if (!grant) {
+      throw new Error("The preview grant was not created.");
+    }
+
+    const consumed = await consumeContentPreviewGrant(
+      webDatabaseUrl,
+      authorization.organizationId,
+      grant.token,
+    );
+
+    expect(consumed).toMatchObject({
+      documentId,
+      localeCode: "en",
+      revisionId: postPublishDraftRevisionId,
+    });
+
+    if (!consumed) {
+      throw new Error("The preview grant was not consumed.");
+    }
+
+    await expect(
+      consumeContentPreviewGrant(
+        webDatabaseUrl,
+        authorization.organizationId,
+        grant.token,
+      ),
+    ).resolves.toBeNull();
+
+    await expect(
+      getPreviewContentByToken(
+        webDatabaseUrl,
+        authorization.organizationId,
+        grant.token,
+      ),
+    ).resolves.toBeNull();
+
+    await expect(
+      getPreviewContentByToken(
+        webDatabaseUrl,
+        authorization.organizationId,
+        consumed.sessionToken,
+      ),
+    ).resolves.toMatchObject({
+      documentId,
+      source: "neon",
+      title: "Unpublished follow-up draft",
+    });
+
+    await expect(
+      getPreviewContentByToken(
+        webDatabaseUrl,
+        "20000000-0000-4000-8000-000000000001",
+        consumed.sessionToken,
+      ),
+    ).resolves.toBeNull();
   });
 
   it("rejects a locale/type slug collision atomically", async () => {
