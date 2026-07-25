@@ -108,6 +108,11 @@ export async function POST(request: Request) {
   const auth = getAdminAuth();
   const databaseUrl = getAdminDatabaseUrl();
 
+  if (!runtime.authenticationAvailable) {
+    auditStepUp("denied");
+    return jsonNoStore({ error: "authentication_unavailable" }, 503);
+  }
+
   if (
     runtime.setupMode ||
     !runtime.primarySession ||

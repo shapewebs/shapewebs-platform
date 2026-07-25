@@ -7,19 +7,21 @@
   `codex/asvs-auth-session-review`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
-  `shapewebs/shapewebs-platform#16` merged; draft foundation promotion
-  `shapewebs/shapewebs-platform#7`; draft authentication, session and Neon CMS
-  migration pull request `shapewebs/shapewebs-platform#17` targets the
-  protected `staging` branch
+  `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
+  migration pull request `shapewebs/shapewebs-platform#17` merged into
+  protected `staging` at `a56a771`; foundation promotion pull request
+  `shapewebs/shapewebs-platform#7` remains draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
-Production remains on the known-good baseline. Pull request `#16` is merged
-into protected `staging`, while its fixed staging Vercel deployment is waiting
-for Hobby deployment quota. The current branch has not been merged, connected
-to production data, or promoted to the production domains.
+Production remains on the known-good baseline. Pull requests `#16` and `#17`
+are merged into protected `staging`, and both fixed staging applications
+successfully deployed merge `a56a771`. The current
+`codex/staging-auth-readiness` branch contains an unmerged fail-closed
+readiness/API correction discovered by post-merge staging probes. It has not
+been connected to production data or promoted to the production domains.
 
 ## Implemented on this branch
 
@@ -78,10 +80,11 @@ to production data, or promoted to the production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0008`, including marker-restricted synthetic lead retention and
-  owner-only organization settings. The runtime roles passed the complete RLS
-  and authorization suite. Neon Free cannot protect the persistent branch, so
-  a protected paid production branch remains a launch gate.
+  through `0010`, including marker-restricted synthetic lead retention,
+  owner-only organization settings, complete content/workflow enums and the
+  administrative TOTP replay/lockout table. The runtime roles passed the
+  complete RLS and authorization suite. Neon Free cannot protect the persistent
+  branch, so a protected paid production branch remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget remains restricted to the public
   staging hostname. Automated staging uses Cloudflare's official test pair in
@@ -271,6 +274,25 @@ Evidence is recorded in:
 
 - `docs/audits/authentication-session-verification-2026-07-25.md`.
 
+Pull request `#17` then passed every required quality, security, disposable
+Neon and Vercel check and was squash-merged into protected `staging` at
+`a56a771`. Both fixed staging aliases received `READY` Preview deployments, and
+the post-merge k6/ZAP job passed. The persistent synthetic database advanced
+from nine to eleven journaled migrations and direct checks verified the new
+enum values plus the TOTP table's admin-only privileges.
+
+The post-merge runtime probe also found that missing Google OAuth
+configuration produced bounded `503` responses for protected pages but
+unhandled `500` responses from the step-up and session-revocation APIs, while
+admin readiness incorrectly returned `200`. The isolated
+`codex/staging-auth-readiness` correction makes required auth configuration a
+readiness dependency, returns explicit `503` API results, and omits undefined
+optional fields from structured logs. Its production-mode six-test security
+suite and both application builds pass locally; it is not yet merged or
+deployed. Evidence is recorded in:
+
+- `docs/audits/staging-auth-readiness-regression-2026-07-25.md`.
+
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
 legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
@@ -346,20 +368,15 @@ public-content paths have verified Neon parity.
 
 ## Next implementation slices
 
-1. Retry the exact merged organization-settings staging deployments after the
-   Vercel daily allowance recovers or an authorized plan change, then verify
-   the owner-only route on the fixed staging domain.
-2. Publish the Neon content-list and authentication/session slices through the
-   protected staging workflow, apply migrations `0009` and `0010` with the
-   dedicated staging migrator, and verify the deployed owner/editor,
-   Google-token and TOTP paths.
+1. Publish the isolated admin readiness/API correction through protected
+   staging, then re-run the exact readiness, step-up and session-revocation
+   probes to replace the observed `500` evidence with bounded `503` results.
+2. Configure the Workspace-owned Google OAuth client, then verify the deployed
+   owner/editor, Google-token and TOTP paths on the fixed staging domain.
 3. Complete mailbox MFA, recovery-address verification and the remaining
    `security@shapewebs.com` send-as/outbound identity verification.
-4. Configure the Workspace-owned Google OAuth client when the new account can
-   access Google Cloud, then complete the Google-to-TOTP fail-closed staging
-   journey.
-5. Replace the Supabase CMS paths one vertical slice at a time, then remove
+4. Replace the Supabase CMS paths one vertical slice at a time, then remove
    Supabase only after parity and rollback evidence.
-6. Build the CMS lifecycle, storage controls, final public studio design, and
+5. Build the CMS lifecycle, storage controls, final public studio design, and
    production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

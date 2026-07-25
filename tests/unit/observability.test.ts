@@ -74,7 +74,16 @@ describe("structured observability", () => {
         },
       },
     });
-    expect(sanitizeLogValue(undefined)).toBe("undefined");
+    expect(sanitizeLogValue(undefined)).toBeUndefined();
+    expect(
+      sanitizeLogValue({
+        actorIdHash: undefined,
+        requestId: undefined,
+        safe: "available",
+      }),
+    ).toEqual({
+      safe: "available",
+    });
   });
 
   it("emits the stable service, environment, deployment and event contract", () => {

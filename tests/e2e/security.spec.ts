@@ -52,6 +52,51 @@ test("admin routes fail closed when authentication is unconfigured", async ({
   expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
 });
 
+test("admin readiness and mutation APIs fail closed without authentication configuration", async ({
+  request,
+}) => {
+  const readinessResponse = await request.get(
+    `${adminOrigin}/api/health/ready`,
+  );
+
+  expect(readinessResponse.status()).toBe(503);
+  expect(readinessResponse.headers()["cache-control"]).toBe("no-store");
+  await expect(readinessResponse.json()).resolves.toEqual({
+    status: "unavailable",
+  });
+
+  const stepUpResponse = await request.post(
+    `${adminOrigin}/api/admin/step-up`,
+    {
+      data: { code: "000000" },
+      headers: {
+        Origin: adminOrigin,
+      },
+    },
+  );
+
+  expect(stepUpResponse.status()).toBe(503);
+  expect(stepUpResponse.headers()["cache-control"]).toBe("no-store");
+  await expect(stepUpResponse.json()).resolves.toEqual({
+    error: "authentication_unavailable",
+  });
+
+  const revocationResponse = await request.delete(
+    `${adminOrigin}/api/admin/sessions/stagingprobe01`,
+    {
+      headers: {
+        Origin: adminOrigin,
+      },
+    },
+  );
+
+  expect(revocationResponse.status()).toBe(503);
+  expect(revocationResponse.headers()["cache-control"]).toBe("no-store");
+  await expect(revocationResponse.json()).resolves.toEqual({
+    error: "authentication_unavailable",
+  });
+});
+
 test("form endpoints reject malformed payloads and missing production controls", async ({
   request,
 }) => {

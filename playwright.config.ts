@@ -3,9 +3,17 @@ import { defineConfig, devices } from "@playwright/test";
 const webOrigin = "http://127.0.0.1:3100";
 const adminOrigin = "http://127.0.0.1:3101";
 const missingAuthEnvironment = {
+  ADMIN_OWNER_EMAILS: "admin@shapewebs.test",
+  BETTER_AUTH_SECRET: "shapewebs-test-secret-with-at-least-32-characters",
+  BETTER_AUTH_TRUSTED_ORIGINS: adminOrigin,
+  BETTER_AUTH_URL: adminOrigin,
+  DATABASE_URL: "",
+  GOOGLE_CLIENT_ID: "",
+  GOOGLE_CLIENT_SECRET: "",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
   NEXT_PUBLIC_SUPABASE_URL: "",
   RESEND_API_KEY: "",
+  SHAPEWEBS_ORGANIZATION_ID: "00000000-0000-4000-8000-000000000001",
   SUPABASE_SERVICE_ROLE_KEY: "",
   TURNSTILE_SECRET_KEY: "",
 };

@@ -31,6 +31,7 @@ type BetterAuthSession = NonNullable<
 >;
 
 export type AdminRuntimeState = {
+  authenticationAvailable: boolean;
   authorization: AdminAuthorizationContext | null;
   primarySession: BetterAuthSession | null;
   session: AdminRuntimeSession | null;
@@ -38,6 +39,7 @@ export type AdminRuntimeState = {
 };
 
 type AuthorizedAdminRuntimeState = AdminRuntimeState & {
+  authenticationAvailable: true;
   authorization: AdminAuthorizationContext;
   primarySession: BetterAuthSession;
   session: AdminRuntimeSession;
@@ -50,9 +52,13 @@ export type AdminApiAuthorizationResult =
       status: "authorized";
     }
   | {
-      error: "authentication_required" | "forbidden" | "step_up_required";
+      error:
+        | "authentication_required"
+        | "authentication_unavailable"
+        | "forbidden"
+        | "step_up_required";
       status: "denied";
-      statusCode: 401 | 403;
+      statusCode: 401 | 403 | 503;
     };
 
 type AdminRuntimeSession = {
@@ -160,6 +166,7 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
 
   if (setupMode) {
     return {
+      authenticationAvailable: false,
       authorization: null,
       primarySession: null,
       session: null,
@@ -172,9 +179,13 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   const organizationId = getAdminOrganizationId();
 
   if (!auth || !databaseUrl || !organizationId) {
-    throw new Error(
-      "Admin authentication is unavailable because its required configuration is missing.",
-    );
+    return {
+      authenticationAvailable: false,
+      authorization: null,
+      primarySession: null,
+      session: null,
+      setupMode: false,
+    };
   }
 
   const primarySession = await auth.api.getSession({
@@ -183,6 +194,7 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
 
   if (!primarySession) {
     return {
+      authenticationAvailable: true,
       authorization: null,
       primarySession: null,
       session: null,
@@ -197,6 +209,7 @@ async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   });
 
   return {
+    authenticationAvailable: true,
     authorization,
     primarySession,
     session:
@@ -215,6 +228,15 @@ export async function authorizeAdminApiSession(options?: {
   const primarySession = runtime.primarySession;
   const authorization = runtime.authorization;
   const session = runtime.session;
+
+  if (!runtime.authenticationAvailable) {
+    await recordAuthorizationDenial(runtime, "api_authentication_unavailable");
+    return {
+      error: "authentication_unavailable",
+      status: "denied",
+      statusCode: 503,
+    };
+  }
 
   if (runtime.setupMode || !primarySession || !authorization || !session) {
     if (!runtime.setupMode) {
@@ -265,6 +287,7 @@ export async function authorizeAdminApiSession(options?: {
   return {
     runtime: {
       ...runtime,
+      authenticationAvailable: true,
       authorization,
       primarySession,
       session,
@@ -288,6 +311,11 @@ export async function requireAdminSession(options?: {
   const redirectTo = getSafeAdminRedirectTarget(options?.redirectTo);
   const session = runtime.session;
   const authorization = runtime.authorization;
+
+  if (!runtime.authenticationAvailable) {
+    await recordAuthorizationDenial(runtime, "authentication_unavailable");
+    redirect(`/login?error=setup&redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
 
   if (!session || !authorization || !runtime.primarySession) {
     await recordAuthorizationDenial(runtime, "session_unavailable");
@@ -331,6 +359,10 @@ export async function requirePrimaryAdminSession(redirectTo = "/dashboard") {
   const runtime = await getAdminRuntimeState();
 
   if (runtime.setupMode) {
+    return runtime;
+  }
+
+  if (!runtime.authenticationAvailable) {
     return runtime;
   }
 
