@@ -32,9 +32,11 @@ function withSecurityHeaders(response: NextResponse, csp: string) {
 
 export function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
-  const publicSiteOrigin = process.env.NEXT_PUBLIC_SITE_URL
-    ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
-    : undefined;
+  const authConfigured = hasAdminAuthConfig();
+  const publicSiteOrigin =
+    authConfigured && process.env.NEXT_PUBLIC_SITE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
+      : undefined;
   const csp = buildAdminContentSecurityPolicy(nonce, {
     formActionOrigins: publicSiteOrigin ? [publicSiteOrigin] : [],
   });
@@ -45,7 +47,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("Content-Security-Policy", csp);
   requestHeaders.set("x-nonce", nonce);
 
-  if (!hasAdminAuthConfig() && protectedPath && !setupMode) {
+  if (!authConfigured && protectedPath && !setupMode) {
     return withSecurityHeaders(
       new NextResponse("Admin authentication is unavailable.", {
         status: 503,
