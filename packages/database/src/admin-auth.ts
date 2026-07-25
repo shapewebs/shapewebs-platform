@@ -515,14 +515,14 @@ export async function recordAdminTotpFailure(
 
   await database.execute(sql`
     insert into ${adminTotpSecurity} (
-      ${adminTotpSecurity.userId},
-      ${adminTotpSecurity.failedAttempts},
-      ${adminTotpSecurity.updatedAt}
+      ${sql.identifier("user_id")},
+      ${sql.identifier("failed_attempts")},
+      ${sql.identifier("updated_at")}
     )
     values (${userId}, 1, ${failedAt})
-    on conflict (${adminTotpSecurity.userId}) do update
+    on conflict (${sql.identifier("user_id")}) do update
     set
-      ${adminTotpSecurity.failedAttempts} = case
+      ${sql.identifier("failed_attempts")} = case
         when ${adminTotpSecurity.lockedUntil} is not null
           and ${adminTotpSecurity.lockedUntil} <= ${failedAt}
           then 1
@@ -531,7 +531,7 @@ export async function recordAdminTotpFailure(
           then ${adminTotpSecurity.failedAttempts}
         else ${adminTotpSecurity.failedAttempts} + 1
       end,
-      ${adminTotpSecurity.lockedUntil} = case
+      ${sql.identifier("locked_until")} = case
         when ${adminTotpSecurity.lockedUntil} is not null
           and ${adminTotpSecurity.lockedUntil} > ${failedAt}
           then ${adminTotpSecurity.lockedUntil}
@@ -542,7 +542,7 @@ export async function recordAdminTotpFailure(
           then cast(${failedAt} as timestamptz) + interval '15 minutes'
         else null
       end,
-      ${adminTotpSecurity.updatedAt} = ${failedAt}
+      ${sql.identifier("updated_at")} = ${failedAt}
   `);
 }
 
@@ -561,19 +561,19 @@ export async function consumeAdminTotpCounter(
   const result = await database.execute<{ sessionId: string }>(sql`
     with accepted_counter as (
       insert into ${adminTotpSecurity} (
-        ${adminTotpSecurity.userId},
-        ${adminTotpSecurity.lastAcceptedCounter},
-        ${adminTotpSecurity.failedAttempts},
-        ${adminTotpSecurity.lockedUntil},
-        ${adminTotpSecurity.updatedAt}
+        ${sql.identifier("user_id")},
+        ${sql.identifier("last_accepted_counter")},
+        ${sql.identifier("failed_attempts")},
+        ${sql.identifier("locked_until")},
+        ${sql.identifier("updated_at")}
       )
       values (${input.userId}, ${input.counter}, 0, null, ${verifiedAt})
-      on conflict (${adminTotpSecurity.userId}) do update
+      on conflict (${sql.identifier("user_id")}) do update
       set
-        ${adminTotpSecurity.lastAcceptedCounter} = excluded.${sql.identifier("last_accepted_counter")},
-        ${adminTotpSecurity.failedAttempts} = 0,
-        ${adminTotpSecurity.lockedUntil} = null,
-        ${adminTotpSecurity.updatedAt} = excluded.${sql.identifier("updated_at")}
+        ${sql.identifier("last_accepted_counter")} = excluded.${sql.identifier("last_accepted_counter")},
+        ${sql.identifier("failed_attempts")} = 0,
+        ${sql.identifier("locked_until")} = null,
+        ${sql.identifier("updated_at")} = excluded.${sql.identifier("updated_at")}
       where (
         ${adminTotpSecurity.lockedUntil} is null
         or ${adminTotpSecurity.lockedUntil} <= ${verifiedAt}
@@ -586,8 +586,8 @@ export async function consumeAdminTotpCounter(
     )
     update ${adminSessionSecurity}
     set
-      ${adminSessionSecurity.lastSeenAt} = ${verifiedAt},
-      ${adminSessionSecurity.stepUpVerifiedAt} = ${verifiedAt}
+      ${sql.identifier("last_seen_at")} = ${verifiedAt},
+      ${sql.identifier("step_up_verified_at")} = ${verifiedAt}
     where ${adminSessionSecurity.sessionId} = ${input.sessionId}
       and ${adminSessionSecurity.userId} = ${input.userId}
       and ${adminSessionSecurity.revokedAt} is null
