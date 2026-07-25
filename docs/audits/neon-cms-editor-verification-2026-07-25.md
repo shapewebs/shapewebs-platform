@@ -8,9 +8,10 @@ Branch: `codex/neon-cms-editor`
 
 This stacked slice moves the authenticated CMS page editor and its mutations
 from the transitional Supabase path to the Neon/Drizzle repository boundary.
-It is based on the unmerged admin-readiness correction in pull request `#18`.
-It does not change the public content repository, enable preview, apply the new
-migration to persistent staging, or promote a production deployment.
+Draft pull request `#19` is based on the unmerged admin-readiness correction in
+pull request `#18`. It does not change the public content repository, enable
+preview, apply the new migration to persistent staging, or promote a
+production deployment.
 
 The implementation:
 

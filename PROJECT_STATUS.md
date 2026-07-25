@@ -10,7 +10,8 @@
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
   migration pull request `shapewebs/shapewebs-platform#17` merged into
   protected `staging` at `a56a771`; fail-closed admin-readiness pull request
-  `shapewebs/shapewebs-platform#18` and foundation promotion pull request
+  `shapewebs/shapewebs-platform#18`, stacked Neon CMS editor pull request
+  `shapewebs/shapewebs-platform#19`, and foundation promotion pull request
   `shapewebs/shapewebs-platform#7` remain draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
