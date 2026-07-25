@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging`; current implementation branch
-  `codex/wait-for-staging-deployments`
+- Branch: protected `staging` at `d22ca30`; current evidence branch
+  `codex/record-staging-assurance`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -17,14 +17,15 @@
   diagnostic evidence `#24`, and the counter-persistence repair `#25` are
   merged; complete foundation pull request
   `shapewebs/shapewebs-platform#26` merged into protected `staging` at
-  `52680c4`
+  `52680c4`; deployment-sequencing pull request
+  `shapewebs/shapewebs-platform#27` merged at `d22ca30`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#26` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#27` are merged into protected `staging`. Migrations `0000` through `0012` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. No
@@ -280,6 +281,8 @@ Staging provisioning and runtime evidence is recorded in:
 - `docs/audits/staging-runtime-verification-2026-07-24.md`;
 - `docs/audits/checkly-monitoring-2026-07-24.md`;
 - `docs/audits/staging-outbox-scheduler-2026-07-24.md`;
+- `docs/audits/staging-assurance-sequencing-2026-07-25.md`;
+- `docs/audits/admin-mfa-cms-recovery-2026-07-26.md`;
 - `docs/audits/workspace-mail-verification-2026-07-24.md`;
 - and `docs/audits/google-oauth-staging-provisioning-2026-07-25.md`.
 
@@ -412,8 +415,14 @@ complete protected disposable Neon lifecycle before merging. After both fixed
 staging deployments reached success, manually dispatched staging-assurance run
 [`30177841421`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30177841421)
 passed its k6 smoke thresholds and passive ZAP baseline against merge commit
-`52680c4`. A deployment-status wait guard is being added so future
-push-triggered scans cannot begin before both exact Vercel contexts succeed.
+`52680c4`.
+
+Pull request `#27` added the deployment-status wait guard and merged at
+`d22ca30`. Its push-triggered staging-assurance run
+[`30178108239`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30178108239)
+waited until the exact public and admin Vercel contexts succeeded, then passed
+k6 and ZAP. The sequence and timestamps are recorded in
+`docs/audits/staging-assurance-sequencing-2026-07-25.md`.
 
 ## External launch gates
 
@@ -473,6 +482,14 @@ recorded both heartbeats, Neon contained only suppressed synthetic outbox
 events and Resend had no new email. The owner-approved missed-heartbeat
 exercise then delivered both failure and recovery notifications, restored the
 exact five-minute Cron Trigger and recovered only after a real Worker success.
+The temporary compatibility Worker was then replaced by the tracked POST-only
+implementation. When a later CLI inspection rendered the private heartbeat
+token, it was treated as compromised and rotated immediately in both Checkly
+and the encrypted Worker binding. The current secret-only Worker deployment
+`a428805a-81e2-417c-8cff-359c8f09df3c` serves version
+`ed4d707f-9f62-4545-abcb-3e2fd1ccb953` at 100%; a real scheduled success
+updated the healthy Checkly monitor at `2026-07-25T22:55:52.701Z` without a
+manual ping.
 An external Resend MX test also delivered to `admin@shapewebs.com`, all six
 role aliases and `lukasthomsen@shapewebs.com`; all eight arrived in the central
 Workspace inbox. Production database/auth/email variables remain
@@ -486,12 +503,15 @@ persistent-staging deployment and rollback evidence.
    browser-state hardening on fixed staging.
 2. Verify step-up expiry, session revocation, audit evidence, and the
    anonymous/expired/revoked/wrong-role fail-closed cases on fixed staging.
-3. Exercise authenticated Neon draft, revision, POST-only preview, publish,
-   exact public read, preview replay denial and preview exit journeys on
-   persistent staging.
+3. Merge the administrative session-rotation correction and audited CMS
+   unpublish/rollback controls, then exercise authenticated draft, revision,
+   POST-only preview, publish, exact public read, unpublish, rollback, preview
+   replay denial and preview exit journeys on persistent staging. The complete
+   fresh-and-restored disposable Neon lifecycle is green with 15 integration
+   tests; fixed-staging browser evidence remains pending.
 4. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-5. Add audited rollback and unpublish commands, followed by storage controls,
-   the final public studio design, and production recovery gates in the
-   milestone order documented in
+5. After fixed-staging recovery evidence, add storage controls, the final
+   public studio design, and production recovery gates in the milestone order
+   documented in
    `docs/plans/roadmap-2026-07-24.md`.

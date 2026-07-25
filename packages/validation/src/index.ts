@@ -381,6 +381,25 @@ export const contentPreviewSelectionSchema = z
   })
   .strict();
 
+const contentWorkflowCommandFields = {
+  commandId: z.uuid(),
+  confirmation: z.literal("true"),
+  documentId: z.uuid(),
+  expectedVersion: z.coerce.number().int().min(1).max(2_147_483_646),
+  localeCode: localeCodeEnum,
+};
+
+export const contentUnpublishCommandSchema = z
+  .object(contentWorkflowCommandFields)
+  .strict();
+
+export const contentRollbackCommandSchema = z
+  .object({
+    ...contentWorkflowCommandFields,
+    revisionId: z.uuid(),
+  })
+  .strict();
+
 export const contentDocumentListItemSchema = z
   .object({
     contentType: contentTypeSchema,
@@ -495,6 +514,12 @@ export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type MfaChallengeInput = z.infer<typeof mfaChallengeSchema>;
 export type MfaEnrollInput = z.infer<typeof mfaEnrollSchema>;
 export type PageEditorInput = z.infer<typeof pageEditorInputSchema>;
+export type ContentRollbackCommandInput = z.infer<
+  typeof contentRollbackCommandSchema
+>;
+export type ContentUnpublishCommandInput = z.infer<
+  typeof contentUnpublishCommandSchema
+>;
 export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
 export type ContentDocumentListItem = z.infer<
   typeof contentDocumentListItemSchema

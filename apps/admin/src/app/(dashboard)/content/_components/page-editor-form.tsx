@@ -1,8 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { Buttons } from "@shapewebs/ui";
 import type { ContentEditorState } from "@shapewebs/database/server";
 import {
   previewSavedPageAction,
+  rollbackPageAction,
   savePageEditorAction,
+  unpublishPageAction,
 } from "../_actions/page-editor";
 import { PreviewSavedRevisionForm } from "./preview-saved-revision-form";
 import styles from "./page-editor-form.module.css";
@@ -173,6 +177,7 @@ export function PageEditorForm({
             kind="secondary"
             name="intent"
             size="small"
+            type="submit"
             value="draft"
           >
             Save draft
@@ -182,6 +187,7 @@ export function PageEditorForm({
             kind="secondary"
             name="intent"
             size="small"
+            type="submit"
             value="review"
           >
             Submit for review
@@ -191,6 +197,7 @@ export function PageEditorForm({
             kind="primary"
             name="intent"
             size="small"
+            type="submit"
             value="publish"
           >
             Publish
@@ -209,6 +216,119 @@ export function PageEditorForm({
         localeCode={editorState.localeCode}
         revisionId={editorState.revisions[0]?.revisionId ?? ""}
       />
+
+      {editorState.documentId && editorState.revisions.length > 0 ? (
+        <section className={styles.sectionQ7m3n9}>
+          <h2>Publication recovery</h2>
+          <p className={styles.mutedW2m7n4}>
+            These commands immediately change the public site, preserve
+            immutable revision history, and require a TOTP check from the
+            preceding five minutes.
+          </p>
+
+          {editorState.publishedRevisionId ? (
+            <form action={unpublishPageAction} className={styles.formN5m2p8}>
+              <input name="commandId" type="hidden" value={randomUUID()} />
+              <input
+                name="documentId"
+                type="hidden"
+                value={editorState.documentId}
+              />
+              <input
+                name="expectedVersion"
+                type="hidden"
+                value={editorState.version}
+              />
+              <input
+                name="localeCode"
+                type="hidden"
+                value={editorState.localeCode}
+              />
+              <p className={styles.mutedW2m7n4}>
+                Unpublish the current {editorState.localeCode} page while
+                retaining its content and revision history.
+              </p>
+              <label className={styles.checkboxG2m4n8}>
+                <input
+                  name="confirmation"
+                  required
+                  type="checkbox"
+                  value="true"
+                />
+                <span>
+                  I understand this removes the page from public view.
+                </span>
+              </label>
+              <div className={styles.actionsM8q2r6}>
+                <Buttons.Button
+                  disabled={setupMode}
+                  kind="secondary"
+                  size="small"
+                  type="submit"
+                >
+                  Unpublish page
+                </Buttons.Button>
+              </div>
+            </form>
+          ) : (
+            <p className={styles.mutedW2m7n4}>
+              This locale is not currently published.
+            </p>
+          )}
+
+          <form action={rollbackPageAction} className={styles.formN5m2p8}>
+            <input name="commandId" type="hidden" value={randomUUID()} />
+            <input
+              name="documentId"
+              type="hidden"
+              value={editorState.documentId}
+            />
+            <input
+              name="expectedVersion"
+              type="hidden"
+              value={editorState.version}
+            />
+            <input
+              name="localeCode"
+              type="hidden"
+              value={editorState.localeCode}
+            />
+            <label className={styles.fieldY2m7q3}>
+              <span>Revision to restore and publish</span>
+              <select name="revisionId" required>
+                {editorState.revisions.map((revision) => (
+                  <option key={revision.revisionId} value={revision.revisionId}>
+                    Revision {revision.revisionNumber} · {revision.editorState}{" "}
+                    · {revision.createdAt}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={styles.checkboxG2m4n8}>
+              <input
+                name="confirmation"
+                required
+                type="checkbox"
+                value="true"
+              />
+              <span>
+                I understand this creates and publishes a new immutable
+                revision.
+              </span>
+            </label>
+            <div className={styles.actionsM8q2r6}>
+              <Buttons.Button
+                disabled={setupMode}
+                kind="secondary"
+                size="small"
+                type="submit"
+              >
+                Restore and publish revision
+              </Buttons.Button>
+            </div>
+          </form>
+        </section>
+      ) : null}
 
       <section className={styles.sectionQ7m3n9}>
         <h2>Revision history</h2>

@@ -351,6 +351,8 @@ export async function rotateAdminSessionToken(
     throw new Error("The replacement session token is invalid.");
   }
 
+  const rotatedAtIso = input.rotatedAt.toISOString();
+  const verifiedAtIso = input.verifiedAt.toISOString();
   const database = createDatabase(databaseUrl);
   const authorization = input.authorization;
   const context = contextQueries(
@@ -363,22 +365,25 @@ export async function rotateAdminSessionToken(
   );
   const results = await database.batch([
     ...context,
-    database.execute<{ expiresAt: Date }>(sql`
+    database.execute<{ expiresAtEpochMs: string }>(sql`
       with rotated as (
         update ${authSession}
         set
-          ${authSession.token} = ${input.newToken},
-          ${authSession.updatedAt} = ${input.rotatedAt}
+          ${sql.identifier("token")} = ${input.newToken},
+          ${sql.identifier("updated_at")} =
+            timezone('UTC', ${rotatedAtIso}::timestamptz)
         where ${authSession.id} = ${authorization.session.id}
           and ${authSession.userId} = ${authorization.actor.id}
-          and ${authSession.expiresAt} > ${input.rotatedAt}
+          and ${authSession.expiresAt} >
+            timezone('UTC', ${rotatedAtIso}::timestamptz)
           and exists (
             select 1
             from ${adminSessionSecurity}
             where ${adminSessionSecurity.sessionId} = ${authorization.session.id}
               and ${adminSessionSecurity.userId} = ${authorization.actor.id}
               and ${adminSessionSecurity.revokedAt} is null
-              and ${adminSessionSecurity.stepUpVerifiedAt} = ${input.verifiedAt}
+              and ${adminSessionSecurity.stepUpVerifiedAt} =
+                ${verifiedAtIso}::timestamptz
           )
         returning
           ${authSession.id},
@@ -386,13 +391,13 @@ export async function rotateAdminSessionToken(
       ),
       audited as (
         insert into ${auditEvents} (
-          ${auditEvents.organizationId},
-          ${auditEvents.actorUserId},
-          ${auditEvents.action},
-          ${auditEvents.targetType},
-          ${auditEvents.targetId},
-          ${auditEvents.requestId},
-          ${auditEvents.metadata}
+          "organization_id",
+          "actor_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "request_id",
+          "metadata"
         )
         select
           ${authorization.organizationId},
@@ -403,16 +408,33 @@ export async function rotateAdminSessionToken(
           ${input.requestId ?? null},
           jsonb_build_object('result', 'success')
         from rotated
-        returning ${auditEvents.targetId}
+        returning "target_id"
       )
-      select rotated.${sql.identifier("expires_at")} as "expiresAt"
+      select
+        floor(
+          extract(
+            epoch from rotated.${sql.identifier("expires_at")} at time zone 'UTC'
+          ) * 1000
+        )::bigint::text as "expiresAtEpochMs"
       from rotated
       inner join audited
         on audited.${sql.identifier("target_id")} = rotated.${sql.identifier("id")}
     `),
   ]);
 
-  return results[3].rows[0] ?? null;
+  const result = results[3].rows[0];
+
+  if (!result) {
+    return null;
+  }
+
+  const expiresAtEpochMs = Number(result.expiresAtEpochMs);
+
+  if (!Number.isFinite(expiresAtEpochMs)) {
+    throw new Error("The rotated session expiry is invalid.");
+  }
+
+  return { expiresAt: new Date(expiresAtEpochMs) };
 }
 
 export async function revokeOrganizationAdminSession(
@@ -462,13 +484,13 @@ export async function revokeOrganizationAdminSession(
       ),
       audited as (
         insert into ${auditEvents} (
-          ${auditEvents.organizationId},
-          ${auditEvents.actorUserId},
-          ${auditEvents.action},
-          ${auditEvents.targetType},
-          ${auditEvents.targetId},
-          ${auditEvents.requestId},
-          ${auditEvents.metadata}
+          "organization_id",
+          "actor_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "request_id",
+          "metadata"
         )
         select
           ${authorization.organizationId},
@@ -479,7 +501,7 @@ export async function revokeOrganizationAdminSession(
           ${input.requestId ?? null},
           jsonb_build_object('result', 'success')
         from revoked
-        returning ${auditEvents.targetId}
+        returning "target_id"
       )
       select audited.${sql.identifier("target_id")} as "targetId"
       from audited
