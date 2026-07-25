@@ -65,6 +65,10 @@ const secretValuePattern =
   /(?:bearer\s+\S+|postgres(?:ql)?:\/\/|(?:api[_-]?key|password|secret|token)=\S+|github_pat_[a-z0-9_]+|gh[pousr]_[a-z0-9]+|\bre_[a-z0-9_-]{16,}\b|\bsk_[a-z0-9_-]+\b|eyJ[a-z0-9_-]+\.[a-z0-9_-]+\.[a-z0-9_-]+|-----BEGIN [A-Z ]+PRIVATE KEY-----)/i;
 
 export function sanitizeLogValue(value: unknown, key = "", depth = 0): unknown {
+  if (value === undefined) {
+    return undefined;
+  }
+
   if (sensitiveKeyPattern.test(key)) {
     return "[REDACTED]";
   }
@@ -95,10 +99,17 @@ export function sanitizeLogValue(value: unknown, key = "", depth = 0): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
         .slice(0, 30)
-        .map(([entryKey, entryValue]) => [
-          entryKey,
-          sanitizeLogValue(entryValue, entryKey, depth + 1),
-        ]),
+        .flatMap(([entryKey, entryValue]) => {
+          const sanitizedValue = sanitizeLogValue(
+            entryValue,
+            entryKey,
+            depth + 1,
+          );
+
+          return sanitizedValue === undefined
+            ? []
+            : [[entryKey, sanitizedValue]];
+        }),
     );
   }
 
@@ -155,7 +166,7 @@ export function createStructuredLogger(options: StructuredLoggerOptions) {
 
 export type ReadinessCheck = {
   check: () => Promise<void>;
-  name: "database" | "email" | "captcha" | "storage";
+  name: "authentication" | "captcha" | "database" | "email" | "storage";
 };
 
 export type ReadinessResult = {

@@ -5,6 +5,8 @@ import {
   resolveShapewebsEnvironment,
 } from "@shapewebs/observability";
 
+import { hasAdminAuthConfig } from "./auth-environment";
+
 const logger = createStructuredLogger({
   deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   environment: resolveShapewebsEnvironment(),
@@ -14,16 +16,25 @@ const logger = createStructuredLogger({
 export async function getAdminReadiness() {
   const startedAt = performance.now();
   const databaseUrl = process.env.DATABASE_URL;
-  const result = await evaluateReadiness(
-    databaseUrl
+  const authenticationConfigured = hasAdminAuthConfig();
+  const result = await evaluateReadiness([
+    {
+      name: "authentication",
+      check: async () => {
+        if (!authenticationConfigured) {
+          throw new Error("Authentication is unavailable.");
+        }
+      },
+    },
+    ...(databaseUrl
       ? [
           {
             name: "database",
             check: () => pingDatabase(databaseUrl),
           } as const,
         ]
-      : [],
-  );
+      : []),
+  ]);
 
   logger.log({
     durationMs: Math.round(performance.now() - startedAt),
