@@ -4,6 +4,7 @@ import {
   generateAdminSessionToken,
   serializeAdminSessionCookie,
 } from "../../packages/auth/src/session-cookie";
+import { getSessionCookie } from "../../packages/auth/src/proxy";
 
 const productionAuthOptions = {
   advanced: {
@@ -22,6 +23,24 @@ const productionAuthOptions = {
 };
 
 describe("administrative session cookie rotation", () => {
+  it("detects only the Shapewebs-prefixed session cookie in the admin proxy", () => {
+    expect(
+      getSessionCookie(
+        new Headers({
+          cookie: "__Secure-shapewebs.session_token=admin-session-token",
+        }),
+      ),
+    ).toBe("admin-session-token");
+
+    expect(
+      getSessionCookie(
+        new Headers({
+          cookie: "__Secure-better-auth.session_token=wrong-prefix-token",
+        }),
+      ),
+    ).toBeNull();
+  });
+
   it("generates distinct 256-bit base64url session tokens", () => {
     const tokens = new Set(
       Array.from({ length: 64 }, () => generateAdminSessionToken()),
