@@ -11,8 +11,10 @@ export {
   appendAdminAuditEvent,
   appendSystemAuditEvent,
   authorizeAdminSession,
+  consumeAdminTotpCounter,
+  isAdminTotpLocked,
   provisionOwnerAdminSession,
-  recordAdminStepUp,
+  recordAdminTotpFailure,
   revokeAdminSessionSecurity,
   type AdminAuthorizationContext,
 } from "./admin-auth";

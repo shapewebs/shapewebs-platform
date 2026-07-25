@@ -646,6 +646,85 @@ async function authorizeSyntheticAdminSession({
   };
 }
 
+async function consumeSyntheticTotpCounter({
+  counter,
+  sessionId,
+  userId = ids.adminUser,
+  verifiedAt = new Date(),
+}) {
+  return admin`
+    with accepted_counter as (
+      insert into auth.admin_totp_security (
+        user_id,
+        last_accepted_counter,
+        failed_attempts,
+        locked_until,
+        updated_at
+      )
+      values (${userId}, ${counter}, 0, null, ${verifiedAt})
+      on conflict (user_id) do update
+      set
+        last_accepted_counter = excluded.last_accepted_counter,
+        failed_attempts = 0,
+        locked_until = null,
+        updated_at = excluded.updated_at
+      where (
+        auth.admin_totp_security.locked_until is null
+        or auth.admin_totp_security.locked_until <= ${verifiedAt}
+      )
+      and (
+        auth.admin_totp_security.last_accepted_counter is null
+        or auth.admin_totp_security.last_accepted_counter
+          < excluded.last_accepted_counter
+      )
+      returning user_id
+    )
+    update auth.admin_session_security
+    set
+      last_seen_at = ${verifiedAt},
+      step_up_verified_at = ${verifiedAt}
+    where session_id = ${sessionId}
+      and user_id = ${userId}
+      and revoked_at is null
+      and exists (select 1 from accepted_counter)
+    returning session_id
+  `;
+}
+
+async function recordSyntheticTotpFailure(failedAt = new Date()) {
+  await admin`
+    insert into auth.admin_totp_security (
+      user_id,
+      failed_attempts,
+      updated_at
+    )
+    values (${ids.adminUser}, 1, ${failedAt})
+    on conflict (user_id) do update
+    set
+      failed_attempts = case
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until <= ${failedAt}
+          then 1
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until > ${failedAt}
+          then auth.admin_totp_security.failed_attempts
+        else auth.admin_totp_security.failed_attempts + 1
+      end,
+      locked_until = case
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until > ${failedAt}
+          then auth.admin_totp_security.locked_until
+        when auth.admin_totp_security.locked_until is not null
+          and auth.admin_totp_security.locked_until <= ${failedAt}
+          then null
+        when auth.admin_totp_security.failed_attempts + 1 >= 10
+          then cast(${failedAt} as timestamptz) + interval '15 minutes'
+        else null
+      end,
+      updated_at = ${failedAt}
+  `;
+}
+
 async function verifyAdminSessionAssurance() {
   const active = await authorizeSyntheticAdminSession({
     sessionId: ids.activeAdminSession,
@@ -675,6 +754,101 @@ async function verifyAdminSessionAssurance() {
       await authorizeSyntheticAdminSession({ sessionId, userId }),
       null,
       `${label} session must fail closed`,
+    );
+  }
+}
+
+async function verifyAdminTotpAssurance() {
+  const firstCounter = await consumeSyntheticTotpCounter({
+    counter: 10,
+    sessionId: ids.nonStepUpAdminSession,
+  });
+  assert.deepEqual(firstCounter, [{ session_id: ids.nonStepUpAdminSession }]);
+
+  const sameCounterInAnotherSession = await consumeSyntheticTotpCounter({
+    counter: 10,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    sameCounterInAnotherSession,
+    [],
+    "a TOTP counter must be accepted only once across all user sessions",
+  );
+
+  const olderCounter = await consumeSyntheticTotpCounter({
+    counter: 9,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    olderCounter,
+    [],
+    "an older TOTP counter must not be accepted after a newer counter",
+  );
+
+  const nextCounter = await consumeSyntheticTotpCounter({
+    counter: 11,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(nextCounter, [{ session_id: ids.activeAdminSession }]);
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await recordSyntheticTotpFailure();
+  }
+
+  const [locked] = await admin`
+    select failed_attempts, locked_until
+    from auth.admin_totp_security
+    where user_id = ${ids.adminUser}
+  `;
+  assert.equal(locked.failed_attempts, 10);
+  assert.ok(
+    locked.locked_until.getTime() > Date.now(),
+    "ten failed TOTP checks must lock the account",
+  );
+
+  const whileLocked = await consumeSyntheticTotpCounter({
+    counter: 12,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(
+    whileLocked,
+    [],
+    "a valid TOTP counter must fail closed during lockout",
+  );
+
+  await fixtureAdmin`
+    update auth.admin_totp_security
+    set locked_until = now() - interval '1 second'
+    where user_id = ${ids.adminUser}
+  `;
+
+  const afterLockout = await consumeSyntheticTotpCounter({
+    counter: 12,
+    sessionId: ids.activeAdminSession,
+  });
+  assert.deepEqual(afterLockout, [{ session_id: ids.activeAdminSession }]);
+
+  const [recovered] = await admin`
+    select failed_attempts, last_accepted_counter, locked_until
+    from auth.admin_totp_security
+    where user_id = ${ids.adminUser}
+  `;
+  assert.equal(recovered.failed_attempts, 0);
+  assert.equal(Number(recovered.last_accepted_counter), 12);
+  assert.equal(recovered.locked_until, null);
+
+  for (const [label, client] of [
+    ["public", publicReader],
+    ["web", web],
+  ]) {
+    await expectDenied(
+      client`select user_id from auth.admin_totp_security`,
+      `${label} TOTP replay-guard read`,
+    );
+    await expectDenied(
+      client`insert into auth.admin_totp_security (user_id)
+        values (${ids.adminUser})`,
+      `${label} TOTP replay-guard write`,
     );
   }
 }
@@ -1164,13 +1338,14 @@ try {
   await verifyRoleAttributes();
   await verifyRlsCoverage();
   await verifyAdminSessionAssurance();
+  await verifyAdminTotpAssurance();
   await verifyAdminIsolation();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

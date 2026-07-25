@@ -4,7 +4,7 @@
 
 - Date: 25 July 2026
 - Branch: protected `staging`; current implementation branch
-  `codex/neon-content-list`
+  `codex/asvs-auth-session-review`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; draft foundation promotion
@@ -35,11 +35,12 @@ to production data, or promoted to the production domains.
   are version controlled.
 - The official stable ASVS 5.0.0 flat catalog is pinned by release asset and
   SHA-256. A generated exact-ID register covers all 253 Level 1/Level 2
-  requirements. Encoding, validation, browser-security, API and transport
-  review has 73 path-validated dispositions and 180 explicitly unreviewed
-  requirements; structural
-  verification is canonical, and the production gate remains fail-closed until
-  every requirement is reviewed.
+  requirements. Encoding, validation, browser-security, API, transport,
+  authentication, session, authorization, token and OAuth review has 156
+  evidence-backed dispositions and 97 explicitly unreviewed requirements.
+  Regeneration is byte-for-byte Prettier-clean, structural verification is
+  canonical, and the production gate remains fail-closed until every
+  requirement is reviewed.
 - `pnpm verify` is the canonical local/CI gate. It includes a deterministic
   compatibility and resource-bound check for the tracked `brace-expansion`
   5.0.8 security patch. `pnpm verify:release` adds dual builds, Playwright,
@@ -100,13 +101,21 @@ to production data, or promoted to the production domains.
   closed.
 - Google authentication is followed by a custom TOTP step-up. Publishing and
   other sensitive mutations require a fresh step-up.
+- Google ID Tokens are cryptographically verified against Google's fixed JWKS
+  endpoint with exact issuer and audience checks, `RS256` only, required
+  identity/lifetime claims and verified email.
+- Administrative TOTP accepts only the exact 30-second period, consumes a
+  per-user counter once across all sessions, and applies a 15-minute lock after
+  ten failed attempts. Recovery codes and public factor-management paths remain
+  disabled until identity-proofed recovery is implemented.
 - Every migrated admin page, Route Handler, and Server Action re-authorizes
   against server-owned session and membership context. Authentication,
   step-up, revocation, and authorization-denial events are audited.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains ten reviewed Drizzle migrations, forced RLS,
+- `packages/database` contains eleven version-controlled Drizzle migrations,
+  forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -240,6 +249,15 @@ disposable source and restore branches were deleted. Evidence is recorded in:
 
 - `docs/audits/neon-content-list-verification-2026-07-25.md`.
 
+The authentication/session slice has 89 passing unit tests, 96.56% statement
+coverage, and passed the canonical verification gate plus both admin production
+builds. A complete disposable Neon migration, security, rollback, export and
+restore lifecycle proved one-time TOTP counters, cross-session replay denial,
+lockout and lock expiry recovery. The source and restore branches were deleted.
+Evidence is recorded in:
+
+- `docs/audits/authentication-session-verification-2026-07-25.md`.
+
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
 legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
@@ -252,9 +270,10 @@ These are intentionally not guessed or provisioned:
 
 - Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
   staging journey;
-- Workspace mailbox MFA plus the remaining alias send-as and controlled
-  outbound identity evidence. External MX delivery, all inbox filters and the
-  `info@` identity are complete;
+- Workspace mailbox MFA plus the remaining `security@shapewebs.com` send-as
+  identity and controlled outbound evidence for the additional aliases.
+  External MX delivery, all inbox filters and the `info@` identity are
+  complete;
 - production Turnstile site/secret keys and the exact production hostname;
 - production Resend key/webhook configuration; the staging recipient is now
   `sales@shapewebs.com`, and staging delivery, bounce, and provider replay
@@ -318,11 +337,12 @@ public-content paths have verified Neon parity.
 1. Retry the exact merged organization-settings staging deployments after the
    Vercel daily allowance recovers or an authorized plan change, then verify
    the owner-only route on the fixed staging domain.
-2. Publish the Neon content-list slice through the protected staging workflow,
-   apply migration `0009` with the dedicated staging migrator, and verify the
-   deployed owner/editor route.
+2. Publish the Neon content-list and authentication/session slices through the
+   protected staging workflow, apply migrations `0009` and `0010` with the
+   dedicated staging migrator, and verify the deployed owner/editor,
+   Google-token and TOTP paths.
 3. Complete mailbox MFA, recovery-address verification and the remaining
-   alias send-as/outbound identity verification.
+   `security@shapewebs.com` send-as/outbound identity verification.
 4. Configure the Workspace-owned Google OAuth client when the new account can
    access Google Cloud, then complete the Google-to-TOTP fail-closed staging
    journey.

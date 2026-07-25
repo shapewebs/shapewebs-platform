@@ -1,0 +1,2827 @@
+{
+  "id": "b2f3a09f-bad9-46dc-8769-bdb226f90388",
+  "prevId": "fdef58bf-baee-4448-8c29-4a28abc926dc",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "app.content_documents": {
+      "name": "content_documents",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "content_kind",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "content_status",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "content_documents_organization_kind_slug_unique": {
+          "name": "content_documents_organization_kind_slug_unique",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "content_documents_publication_idx": {
+          "name": "content_documents_publication_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "content_documents_organization_id_organizations_id_fk": {
+          "name": "content_documents_organization_id_organizations_id_fk",
+          "tableFrom": "content_documents",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "content_documents_created_by_user_id_user_id_fk": {
+          "name": "content_documents_created_by_user_id_user_id_fk",
+          "tableFrom": "content_documents",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins read content in current organization": {
+          "name": "admins read content in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"content_documents\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "editors manage content in current organization": {
+          "name": "editors manage content in current organization",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"content_documents\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')",
+          "withCheck": "\"app\".\"content_documents\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "public reader reads published content": {
+          "name": "public reader reads published content",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_public_reader"
+          ],
+          "using": "\"app\".\"content_documents\".\"status\" = 'published' and \"app\".\"content_documents\".\"published_at\" is not null"
+        },
+        "web runtime reads published content": {
+          "name": "web runtime reads published content",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_web_runtime"
+          ],
+          "using": "\"app\".\"content_documents\".\"status\" = 'published' and \"app\".\"content_documents\".\"published_at\" is not null"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.content_revisions": {
+      "name": "content_revisions",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_number": {
+          "name": "revision_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seo": {
+          "name": "seo",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "content_revisions_document_revision_locale_unique": {
+          "name": "content_revisions_document_revision_locale_unique",
+          "columns": [
+            {
+              "expression": "document_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "revision_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "content_revisions_document_created_idx": {
+          "name": "content_revisions_document_created_idx",
+          "columns": [
+            {
+              "expression": "document_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "content_revisions_document_id_content_documents_id_fk": {
+          "name": "content_revisions_document_id_content_documents_id_fk",
+          "tableFrom": "content_revisions",
+          "tableTo": "content_documents",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "content_revisions_created_by_user_id_user_id_fk": {
+          "name": "content_revisions_created_by_user_id_user_id_fk",
+          "tableFrom": "content_revisions",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins read revisions in current organization": {
+          "name": "admins read revisions in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor') and exists (\n        select 1\n        from \"app\".\"content_documents\"\n        where \"app\".\"content_documents\".\"id\" = \"app\".\"content_revisions\".\"document_id\"\n          and \"app\".\"content_documents\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n      )"
+        },
+        "editors insert immutable revisions": {
+          "name": "editors insert immutable revisions",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "withCheck": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor') and \"app\".\"content_revisions\".\"created_by_user_id\" = nullif(current_setting('app.user_id', true), '') and exists (\n        select 1\n        from \"app\".\"content_documents\"\n        where \"app\".\"content_documents\".\"id\" = \"app\".\"content_revisions\".\"document_id\"\n          and \"app\".\"content_documents\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n      )"
+        },
+        "public reader reads published revisions": {
+          "name": "public reader reads published revisions",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_public_reader"
+          ],
+          "using": "\"app\".\"content_revisions\".\"published_at\" is not null and exists (\n        select 1\n        from \"app\".\"content_documents\"\n        where \"app\".\"content_documents\".\"id\" = \"app\".\"content_revisions\".\"document_id\"\n          and \"app\".\"content_documents\".\"status\" = 'published'\n      )"
+        },
+        "web runtime reads published revisions": {
+          "name": "web runtime reads published revisions",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_web_runtime"
+          ],
+          "using": "\"app\".\"content_revisions\".\"published_at\" is not null and exists (\n        select 1\n        from \"app\".\"content_documents\"\n        where \"app\".\"content_documents\".\"id\" = \"app\".\"content_revisions\".\"document_id\"\n          and \"app\".\"content_documents\".\"status\" = 'published'\n      )"
+        }
+      },
+      "checkConstraints": {
+        "content_revisions_revision_positive": {
+          "name": "content_revisions_revision_positive",
+          "value": "\"app\".\"content_revisions\".\"revision_number\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "app.files": {
+      "name": "files",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "byte_size": {
+          "name": "byte_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_name": {
+          "name": "original_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "uploaded_by_user_id": {
+          "name": "uploaded_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "files_storage_key_unique": {
+          "name": "files_storage_key_unique",
+          "columns": [
+            {
+              "expression": "storage_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "files_organization_id_organizations_id_fk": {
+          "name": "files_organization_id_organizations_id_fk",
+          "tableFrom": "files",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "files_uploaded_by_user_id_user_id_fk": {
+          "name": "files_uploaded_by_user_id_user_id_fk",
+          "tableFrom": "files",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "uploaded_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins read files in current organization": {
+          "name": "admins read files in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"files\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "editors insert files in current organization": {
+          "name": "editors insert files in current organization",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "withCheck": "\"app\".\"files\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor') and \"app\".\"files\".\"uploaded_by_user_id\" = nullif(current_setting('app.user_id', true), '')"
+        },
+        "editors delete files in current organization": {
+          "name": "editors delete files in current organization",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"files\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        }
+      },
+      "checkConstraints": {
+        "files_byte_size_positive": {
+          "name": "files_byte_size_positive",
+          "value": "\"app\".\"files\".\"byte_size\" > 0"
+        },
+        "files_visibility_valid": {
+          "name": "files_visibility_valid",
+          "value": "\"app\".\"files\".\"visibility\" in ('public', 'private')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "app.lead_submissions": {
+      "name": "lead_submissions",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "command_id": {
+          "name": "command_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "lead_kind",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "lead_status",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new'"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "source_ip_hash": {
+          "name": "source_ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_fingerprint": {
+          "name": "request_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "lead_submissions_command_unique": {
+          "name": "lead_submissions_command_unique",
+          "columns": [
+            {
+              "expression": "command_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "lead_submissions_organization_status_created_idx": {
+          "name": "lead_submissions_organization_status_created_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lead_submissions_organization_id_organizations_id_fk": {
+          "name": "lead_submissions_organization_id_organizations_id_fk",
+          "tableFrom": "lead_submissions",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins read leads in current organization": {
+          "name": "admins read leads in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "editors update leads in current organization": {
+          "name": "editors update leads in current organization",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')",
+          "withCheck": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "owners delete expired synthetic leads": {
+          "name": "owners delete expired synthetic leads",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and nullif(current_setting('app.membership_role', true), '') = 'owner'\n        and \"app\".\"lead_submissions\".\"kind\" = 'contact'\n        and \"app\".\"lead_submissions\".\"name\" = 'Checkly Synthetic Monitor'\n        and lower(\"app\".\"lead_submissions\".\"email\") = 'synthetic-monitor@shapewebs.invalid'\n        and \"app\".\"lead_submissions\".\"message\" = 'Synthetic staging reliability check. Safe to delete.'\n        and \"app\".\"lead_submissions\".\"payload\"->>'company' = 'CHECKLY_SYNTHETIC_DO_NOT_CONTACT'\n        and \"app\".\"lead_submissions\".\"created_at\" < now() - interval '6 days'"
+        },
+        "web runtime inserts leads for configured organization": {
+          "name": "web runtime inserts leads for configured organization",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_web_runtime"
+          ],
+          "withCheck": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid"
+        },
+        "web runtime reads its lead receipts": {
+          "name": "web runtime reads its lead receipts",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_web_runtime"
+          ],
+          "using": "\"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.memberships": {
+      "name": "memberships",
+      "schema": "app",
+      "columns": {
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "membership_role",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "membership_status",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'invited'"
+        },
+        "invited_by_user_id": {
+          "name": "invited_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "memberships_user_idx": {
+          "name": "memberships_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "memberships_organization_id_organizations_id_fk": {
+          "name": "memberships_organization_id_organizations_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "memberships_user_id_user_id_fk": {
+          "name": "memberships_user_id_user_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "memberships_invited_by_user_id_user_id_fk": {
+          "name": "memberships_invited_by_user_id_user_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "invited_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "memberships_pkey": {
+          "name": "memberships_pkey",
+          "columns": [
+            "organization_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "members read memberships in current organization": {
+          "name": "members read memberships in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"memberships\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and (nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor') or \"app\".\"memberships\".\"user_id\" = nullif(current_setting('app.user_id', true), ''))"
+        },
+        "owner inserts memberships in current organization": {
+          "name": "owner inserts memberships in current organization",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "withCheck": "\"app\".\"memberships\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        },
+        "owner updates memberships in current organization": {
+          "name": "owner updates memberships in current organization",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"memberships\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'",
+          "withCheck": "\"app\".\"memberships\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        },
+        "owner deletes memberships in current organization": {
+          "name": "owner deletes memberships in current organization",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"memberships\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.organization_settings": {
+      "name": "organization_settings",
+      "schema": "app",
+      "columns": {
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "locales": {
+          "name": "locales",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region_profiles": {
+          "name": "region_profiles",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feature_flags": {
+          "name": "feature_flags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consent_rule_sets": {
+          "name": "consent_rule_sets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cookie_policy_versions": {
+          "name": "cookie_policy_versions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "organization_settings_organization_id_organizations_id_fk": {
+          "name": "organization_settings_organization_id_organizations_id_fk",
+          "tableFrom": "organization_settings",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "owner reads current organization settings": {
+          "name": "owner reads current organization settings",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"organization_settings\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        },
+        "owner manages current organization settings": {
+          "name": "owner manages current organization settings",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"organization_settings\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'",
+          "withCheck": "\"app\".\"organization_settings\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        }
+      },
+      "checkConstraints": {
+        "organization_settings_locales_array": {
+          "name": "organization_settings_locales_array",
+          "value": "jsonb_typeof(\"app\".\"organization_settings\".\"locales\") = 'array'"
+        },
+        "organization_settings_region_profiles_array": {
+          "name": "organization_settings_region_profiles_array",
+          "value": "jsonb_typeof(\"app\".\"organization_settings\".\"region_profiles\") = 'array'"
+        },
+        "organization_settings_feature_flags_array": {
+          "name": "organization_settings_feature_flags_array",
+          "value": "jsonb_typeof(\"app\".\"organization_settings\".\"feature_flags\") = 'array'"
+        },
+        "organization_settings_consent_rule_sets_array": {
+          "name": "organization_settings_consent_rule_sets_array",
+          "value": "jsonb_typeof(\"app\".\"organization_settings\".\"consent_rule_sets\") = 'array'"
+        },
+        "organization_settings_cookie_policy_versions_array": {
+          "name": "organization_settings_cookie_policy_versions_array",
+          "value": "jsonb_typeof(\"app\".\"organization_settings\".\"cookie_policy_versions\") = 'array'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "app.organizations": {
+      "name": "organizations",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "organizations_slug_unique": {
+          "name": "organizations_slug_unique",
+          "columns": [
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admin runtime reads current organization": {
+          "name": "admin runtime reads current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"organizations\".\"id\" = nullif(current_setting('app.organization_id', true), '')::uuid"
+        },
+        "owner updates current organization": {
+          "name": "owner updates current organization",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"organizations\".\"id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'",
+          "withCheck": "\"app\".\"organizations\".\"id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        }
+      },
+      "checkConstraints": {
+        "organizations_slug_format": {
+          "name": "organizations_slug_format",
+          "value": "\"app\".\"organizations\".\"slug\" ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "app.outbox_events": {
+      "name": "outbox_events",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "outbox_status",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_by": {
+          "name": "locked_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_message_id": {
+          "name": "provider_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_status": {
+          "name": "delivery_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_occurred_at": {
+          "name": "delivery_occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error_code": {
+          "name": "last_error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "outbox_events_idempotency_unique": {
+          "name": "outbox_events_idempotency_unique",
+          "columns": [
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_events_pending_idx": {
+          "name": "outbox_events_pending_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_events_organization_created_idx": {
+          "name": "outbox_events_organization_created_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_events_provider_message_idx": {
+          "name": "outbox_events_provider_message_idx",
+          "columns": [
+            {
+              "expression": "provider_message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "outbox_events_organization_id_organizations_id_fk": {
+          "name": "outbox_events_organization_id_organizations_id_fk",
+          "tableFrom": "outbox_events",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "outbox_events_lead_id_lead_submissions_id_fk": {
+          "name": "outbox_events_lead_id_lead_submissions_id_fk",
+          "tableFrom": "outbox_events",
+          "tableTo": "lead_submissions",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins manage outbox in current organization": {
+          "name": "admins manage outbox in current organization",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"outbox_events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')",
+          "withCheck": "\"app\".\"outbox_events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "web runtime inserts lead outbox events": {
+          "name": "web runtime inserts lead outbox events",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_web_runtime"
+          ],
+          "withCheck": "\"app\".\"outbox_events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and \"app\".\"outbox_events\".\"event_type\" = 'lead.notification.requested'\n        and exists (\n          select 1\n          from \"app\".\"lead_submissions\"\n          where \"app\".\"lead_submissions\".\"id\" = \"app\".\"outbox_events\".\"lead_id\"\n            and \"app\".\"lead_submissions\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        )"
+        }
+      },
+      "checkConstraints": {
+        "outbox_events_attempts_nonnegative": {
+          "name": "outbox_events_attempts_nonnegative",
+          "value": "\"app\".\"outbox_events\".\"attempts\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "app.project_memberships": {
+      "name": "project_memberships",
+      "schema": "app",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "project_memberships_user_idx": {
+          "name": "project_memberships_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_memberships_project_id_projects_id_fk": {
+          "name": "project_memberships_project_id_projects_id_fk",
+          "tableFrom": "project_memberships",
+          "tableTo": "projects",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "project_memberships_user_id_user_id_fk": {
+          "name": "project_memberships_user_id_user_id_fk",
+          "tableFrom": "project_memberships",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "project_memberships_pkey": {
+          "name": "project_memberships_pkey",
+          "columns": [
+            "project_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "authorized members read project assignments": {
+          "name": "authorized members read project assignments",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "(\n        nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        and app.project_belongs_to_current_organization(\"app\".\"project_memberships\".\"project_id\")\n      ) or (\n        nullif(current_setting('app.membership_role', true), '') = 'customer'\n        and \"app\".\"project_memberships\".\"user_id\" = nullif(current_setting('app.user_id', true), '')\n        and app.current_user_has_project_access(\"app\".\"project_memberships\".\"project_id\")\n      )"
+        },
+        "editors manage project assignments": {
+          "name": "editors manage project assignments",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        and app.project_belongs_to_current_organization(\"app\".\"project_memberships\".\"project_id\")",
+          "withCheck": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        and app.project_belongs_to_current_organization(\"app\".\"project_memberships\".\"project_id\")"
+        },
+        "migrator reads project assignments for policy evaluation": {
+          "name": "migrator reads project assignments for policy evaluation",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_migrator"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.project_updates": {
+      "name": "project_updates",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visible_to_customer": {
+          "name": "visible_to_customer",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "project_updates_project_created_idx": {
+          "name": "project_updates_project_created_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_updates_project_id_projects_id_fk": {
+          "name": "project_updates_project_id_projects_id_fk",
+          "tableFrom": "project_updates",
+          "tableTo": "projects",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "project_updates_created_by_user_id_user_id_fk": {
+          "name": "project_updates_created_by_user_id_user_id_fk",
+          "tableFrom": "project_updates",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "authorized members read project updates": {
+          "name": "authorized members read project updates",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "app.project_belongs_to_current_organization(\"app\".\"project_updates\".\"project_id\") and (\n        nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        or (\n          nullif(current_setting('app.membership_role', true), '') = 'customer'\n          and \"app\".\"project_updates\".\"visible_to_customer\"\n          and app.current_user_has_project_access(\"app\".\"project_updates\".\"project_id\")\n        )\n      )"
+        },
+        "editors manage updates for current organization": {
+          "name": "editors manage updates for current organization",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        and app.project_belongs_to_current_organization(\"app\".\"project_updates\".\"project_id\")",
+          "withCheck": "nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n        and app.project_belongs_to_current_organization(\"app\".\"project_updates\".\"project_id\")"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.projects": {
+      "name": "projects",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "project_status",
+          "typeSchema": "app",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'planned'"
+        },
+        "website_url": {
+          "name": "website_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "projects_organization_slug_unique": {
+          "name": "projects_organization_slug_unique",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "projects_organization_status_idx": {
+          "name": "projects_organization_status_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "projects_organization_id_organizations_id_fk": {
+          "name": "projects_organization_id_organizations_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "authorized members read projects in current organization": {
+          "name": "authorized members read projects in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"projects\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and (\n          nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')\n          or (\n            nullif(current_setting('app.membership_role', true), '') = 'customer'\n            and app.current_user_has_project_access(\"app\".\"projects\".\"id\")\n          )\n        )"
+        },
+        "editors manage projects in current organization": {
+          "name": "editors manage projects in current organization",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"projects\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')",
+          "withCheck": "\"app\".\"projects\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "migrator reads projects for policy evaluation": {
+          "name": "migrator reads projects for policy evaluation",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_migrator"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "app.provider_webhook_events": {
+      "name": "provider_webhook_events",
+      "schema": "app",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_message_id": {
+          "name": "provider_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_hash": {
+          "name": "body_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "provider_webhook_message_occurred_idx": {
+          "name": "provider_webhook_message_occurred_idx",
+          "columns": [
+            {
+              "expression": "provider_message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "provider_webhook_events_organization_id_organizations_id_fk": {
+          "name": "provider_webhook_events_organization_id_organizations_id_fk",
+          "tableFrom": "provider_webhook_events",
+          "tableTo": "organizations",
+          "schemaTo": "app",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "admins read provider webhook events": {
+          "name": "admins read provider webhook events",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"app\".\"provider_webhook_events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid and nullif(current_setting('app.membership_role', true), '') in ('owner', 'editor')"
+        },
+        "admin runtime inserts provider webhook events": {
+          "name": "admin runtime inserts provider webhook events",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "withCheck": "\"app\".\"provider_webhook_events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and \"app\".\"provider_webhook_events\".\"provider\" = 'resend'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.admin_session_security": {
+      "name": "admin_session_security",
+      "schema": "auth",
+      "columns": {
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "step_up_verified_at": {
+          "name": "step_up_verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "admin_session_security_user_idx": {
+          "name": "admin_session_security_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "admin_session_security_last_seen_idx": {
+          "name": "admin_session_security_last_seen_idx",
+          "columns": [
+            {
+              "expression": "last_seen_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admin_session_security_session_id_session_id_fk": {
+          "name": "admin_session_security_session_id_session_id_fk",
+          "tableFrom": "admin_session_security",
+          "tableTo": "session",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "admin_session_security_user_id_user_id_fk": {
+          "name": "admin_session_security_user_id_user_id_fk",
+          "tableFrom": "admin_session_security",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.admin_totp_security": {
+      "name": "admin_totp_security",
+      "schema": "auth",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "last_accepted_counter": {
+          "name": "last_accepted_counter",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "failed_attempts": {
+          "name": "failed_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "locked_until": {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "admin_totp_security_locked_idx": {
+          "name": "admin_totp_security_locked_idx",
+          "columns": [
+            {
+              "expression": "locked_until",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admin_totp_security_user_id_user_id_fk": {
+          "name": "admin_totp_security_user_id_user_id_fk",
+          "tableFrom": "admin_totp_security",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "audit.events": {
+      "name": "events",
+      "schema": "audit",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_type": {
+          "name": "target_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_organization_occurred_idx": {
+          "name": "audit_events_organization_occurred_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_actor_occurred_idx": {
+          "name": "audit_events_actor_occurred_idx",
+          "columns": [
+            {
+              "expression": "actor_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "runtime inserts its own audit events": {
+          "name": "runtime inserts its own audit events",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "withCheck": "\"audit\".\"events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and (\"audit\".\"events\".\"actor_user_id\" is null or \"audit\".\"events\".\"actor_user_id\" = nullif(current_setting('app.user_id', true), ''))"
+        },
+        "owner reads audit events in current organization": {
+          "name": "owner reads audit events in current organization",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "shapewebs_admin_runtime"
+          ],
+          "using": "\"audit\".\"events\".\"organization_id\" = nullif(current_setting('app.organization_id', true), '')::uuid\n        and nullif(current_setting('app.membership_role', true), '') = 'owner'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.account": {
+      "name": "account",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "account_userId_idx": {
+          "name": "account_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.rate_limit": {
+      "name": "rate_limit",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_request": {
+          "name": "last_request",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rate_limit_key_unique": {
+          "name": "rate_limit_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.session": {
+      "name": "session",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "session_userId_idx": {
+          "name": "session_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.two_factor": {
+      "name": "two_factor",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "secret": {
+          "name": "secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "backup_codes": {
+          "name": "backup_codes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "failed_verification_count": {
+          "name": "failed_verification_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "locked_until": {
+          "name": "locked_until",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "twoFactor_secret_idx": {
+          "name": "twoFactor_secret_idx",
+          "columns": [
+            {
+              "expression": "secret",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "twoFactor_userId_idx": {
+          "name": "twoFactor_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "two_factor_user_id_user_id_fk": {
+          "name": "two_factor_user_id_user_id_fk",
+          "tableFrom": "two_factor",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.user": {
+      "name": "user",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "two_factor_enabled": {
+          "name": "two_factor_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.verification": {
+      "name": "verification",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "verification_identifier_idx": {
+          "name": "verification_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "app.content_kind": {
+      "name": "content_kind",
+      "schema": "app",
+      "values": [
+        "page",
+        "post",
+        "project",
+        "service",
+        "method",
+        "legal"
+      ]
+    },
+    "app.content_status": {
+      "name": "content_status",
+      "schema": "app",
+      "values": [
+        "draft",
+        "review",
+        "scheduled",
+        "published",
+        "archived"
+      ]
+    },
+    "app.lead_kind": {
+      "name": "lead_kind",
+      "schema": "app",
+      "values": [
+        "contact",
+        "project_inquiry"
+      ]
+    },
+    "app.lead_status": {
+      "name": "lead_status",
+      "schema": "app",
+      "values": [
+        "new",
+        "reviewed",
+        "qualified",
+        "closed",
+        "spam"
+      ]
+    },
+    "app.membership_role": {
+      "name": "membership_role",
+      "schema": "app",
+      "values": [
+        "owner",
+        "editor",
+        "customer"
+      ]
+    },
+    "app.membership_status": {
+      "name": "membership_status",
+      "schema": "app",
+      "values": [
+        "invited",
+        "active",
+        "suspended"
+      ]
+    },
+    "app.outbox_status": {
+      "name": "outbox_status",
+      "schema": "app",
+      "values": [
+        "pending",
+        "processing",
+        "sent",
+        "permanent_failure"
+      ]
+    },
+    "app.project_status": {
+      "name": "project_status",
+      "schema": "app",
+      "values": [
+        "planned",
+        "in_progress",
+        "review",
+        "launched",
+        "paused",
+        "archived"
+      ]
+    }
+  },
+  "schemas": {
+    "app": "app",
+    "audit": "audit",
+    "auth": "auth"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

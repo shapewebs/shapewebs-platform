@@ -33,8 +33,11 @@ engineering orientation, but they do not replace this exact-ID register.
 
 ## Commands
 
+- `pnpm security:asvs:generate` regenerates the complete evidence register from
+  the pinned catalog index and human-reviewed decisions.
 - `pnpm security:asvs:check` validates the pinned catalog and complete register
-  structure while reporting reviewed and unreviewed counts.
+  structure, proves regeneration would be byte-for-byte clean, and reports
+  reviewed and unreviewed counts.
 - `pnpm security:asvs:gate` applies the production launch rule and fails if any
   target requirement is unreviewed or has incomplete evidence.
 - `pnpm security:asvs:update -- <downloaded-flat-json>` regenerates the catalog

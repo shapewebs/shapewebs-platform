@@ -3,6 +3,7 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { createDatabase } from "./client";
 import {
   adminSessionSecurity,
+  adminTotpSecurity,
   auditEvents,
   memberships,
   membershipRole,
@@ -30,6 +31,7 @@ export type AdminAuthorizationContext = {
 type AdminSessionIdentity = {
   organizationId: string;
   sessionId: string;
+  stepUpVerifiedAt?: Date;
   userId: string;
 };
 
@@ -79,6 +81,7 @@ export async function provisionOwnerAdminSession(
     database
       .insert(adminSessionSecurity)
       .values({
+        stepUpVerifiedAt: identity.stepUpVerifiedAt,
         sessionId: identity.sessionId,
         userId: identity.userId,
       })
@@ -242,28 +245,113 @@ export async function authorizeAdminSession(
   };
 }
 
-export async function recordAdminStepUp(
+export async function isAdminTotpLocked(
   databaseUrl: string,
-  identity: Omit<AdminSessionIdentity, "organizationId">,
-  verifiedAt = new Date(),
+  userId: string,
+  now = new Date(),
 ): Promise<boolean> {
   const database = createDatabase(databaseUrl);
-  const updated = await database
-    .update(adminSessionSecurity)
-    .set({
-      lastSeenAt: verifiedAt,
-      stepUpVerifiedAt: verifiedAt,
-    })
-    .where(
-      and(
-        eq(adminSessionSecurity.sessionId, identity.sessionId),
-        eq(adminSessionSecurity.userId, identity.userId),
-        isNull(adminSessionSecurity.revokedAt),
-      ),
-    )
-    .returning({ sessionId: adminSessionSecurity.sessionId });
+  const [security] = await database
+    .select({ lockedUntil: adminTotpSecurity.lockedUntil })
+    .from(adminTotpSecurity)
+    .where(eq(adminTotpSecurity.userId, userId))
+    .limit(1);
 
-  return updated.length === 1;
+  return Boolean(
+    security?.lockedUntil && security.lockedUntil.getTime() > now.getTime(),
+  );
+}
+
+export async function recordAdminTotpFailure(
+  databaseUrl: string,
+  userId: string,
+  failedAt = new Date(),
+): Promise<void> {
+  const database = createDatabase(databaseUrl);
+
+  await database.execute(sql`
+    insert into ${adminTotpSecurity} (
+      ${adminTotpSecurity.userId},
+      ${adminTotpSecurity.failedAttempts},
+      ${adminTotpSecurity.updatedAt}
+    )
+    values (${userId}, 1, ${failedAt})
+    on conflict (${adminTotpSecurity.userId}) do update
+    set
+      ${adminTotpSecurity.failedAttempts} = case
+        when ${adminTotpSecurity.lockedUntil} is not null
+          and ${adminTotpSecurity.lockedUntil} <= ${failedAt}
+          then 1
+        when ${adminTotpSecurity.lockedUntil} is not null
+          and ${adminTotpSecurity.lockedUntil} > ${failedAt}
+          then ${adminTotpSecurity.failedAttempts}
+        else ${adminTotpSecurity.failedAttempts} + 1
+      end,
+      ${adminTotpSecurity.lockedUntil} = case
+        when ${adminTotpSecurity.lockedUntil} is not null
+          and ${adminTotpSecurity.lockedUntil} > ${failedAt}
+          then ${adminTotpSecurity.lockedUntil}
+        when ${adminTotpSecurity.lockedUntil} is not null
+          and ${adminTotpSecurity.lockedUntil} <= ${failedAt}
+          then null
+        when ${adminTotpSecurity.failedAttempts} + 1 >= 10
+          then cast(${failedAt} as timestamptz) + interval '15 minutes'
+        else null
+      end,
+      ${adminTotpSecurity.updatedAt} = ${failedAt}
+  `);
+}
+
+export async function consumeAdminTotpCounter(
+  databaseUrl: string,
+  input: Omit<AdminSessionIdentity, "organizationId" | "stepUpVerifiedAt"> & {
+    counter: number;
+  },
+  verifiedAt = new Date(),
+): Promise<boolean> {
+  if (!Number.isSafeInteger(input.counter) || input.counter < 0) {
+    throw new Error("The TOTP counter must be a non-negative safe integer.");
+  }
+
+  const database = createDatabase(databaseUrl);
+  const result = await database.execute<{ sessionId: string }>(sql`
+    with accepted_counter as (
+      insert into ${adminTotpSecurity} (
+        ${adminTotpSecurity.userId},
+        ${adminTotpSecurity.lastAcceptedCounter},
+        ${adminTotpSecurity.failedAttempts},
+        ${adminTotpSecurity.lockedUntil},
+        ${adminTotpSecurity.updatedAt}
+      )
+      values (${input.userId}, ${input.counter}, 0, null, ${verifiedAt})
+      on conflict (${adminTotpSecurity.userId}) do update
+      set
+        ${adminTotpSecurity.lastAcceptedCounter} = excluded.${sql.identifier("last_accepted_counter")},
+        ${adminTotpSecurity.failedAttempts} = 0,
+        ${adminTotpSecurity.lockedUntil} = null,
+        ${adminTotpSecurity.updatedAt} = excluded.${sql.identifier("updated_at")}
+      where (
+        ${adminTotpSecurity.lockedUntil} is null
+        or ${adminTotpSecurity.lockedUntil} <= ${verifiedAt}
+      )
+      and (
+        ${adminTotpSecurity.lastAcceptedCounter} is null
+        or ${adminTotpSecurity.lastAcceptedCounter} < excluded.${sql.identifier("last_accepted_counter")}
+      )
+      returning ${adminTotpSecurity.userId}
+    )
+    update ${adminSessionSecurity}
+    set
+      ${adminSessionSecurity.lastSeenAt} = ${verifiedAt},
+      ${adminSessionSecurity.stepUpVerifiedAt} = ${verifiedAt}
+    where ${adminSessionSecurity.sessionId} = ${input.sessionId}
+      and ${adminSessionSecurity.userId} = ${input.userId}
+      and ${adminSessionSecurity.revokedAt} is null
+      and exists (select 1 from accepted_counter)
+    returning ${adminSessionSecurity.sessionId} as "sessionId"
+  `);
+
+  return result.rows.length === 1;
 }
 
 export async function revokeAdminSessionSecurity(

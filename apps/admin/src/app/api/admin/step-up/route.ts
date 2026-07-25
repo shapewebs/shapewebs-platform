@@ -1,8 +1,8 @@
 import { createHmac, randomUUID } from "node:crypto";
 
+import { verifyAdminTotpCode } from "@shapewebs/auth/server";
 import {
   appendAdminAuditEvent,
-  recordAdminStepUp,
   type AdminAuthorizationContext,
 } from "@shapewebs/database/server";
 import {
@@ -32,13 +32,35 @@ function isValidCode(value: unknown): value is string {
 function jsonNoStore(
   body: { error: string } | { status: string },
   status = 200,
+  setCookies: string[] = [],
 ) {
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+  });
+
+  for (const cookie of setCookies) {
+    headers.append("Set-Cookie", cookie);
+  }
+
   return Response.json(body, {
-    headers: {
-      "Cache-Control": "no-store",
-    },
+    headers,
     status,
   });
+}
+
+function readSetCookies(headers: Headers): string[] {
+  const headersWithCookies = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const setCookies = headersWithCookies.getSetCookie?.();
+
+  if (setCookies) {
+    return setCookies;
+  }
+
+  const combinedCookie = headers.get("set-cookie");
+
+  return combinedCookie ? [combinedCookie] : [];
 }
 
 function auditStepUp(
@@ -92,11 +114,31 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "authentication_required" }, 401);
   }
 
+  const authorization = runtime.authorization;
+  const primarySession = runtime.primarySession;
+  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  const recordDurableStepUp = (
+    result: "failure" | "success",
+  ): Promise<void> => {
+    return appendAdminAuditEvent(databaseUrl, {
+      action: "auth.totp_step_up",
+      organizationId: authorization.organizationId,
+      requestId,
+      result,
+      role: authorization.role,
+      sessionId: primarySession.session.id,
+      targetId: primarySession.session.id,
+      targetType: "session",
+      userId: primarySession.user.id,
+    });
+  };
+
   let body: unknown;
 
   try {
     body = JSON.parse(rawBody.value) as unknown;
   } catch {
+    await Promise.allSettled([recordDurableStepUp("failure")]);
     auditStepUp("denied", runtime.authorization);
     return jsonNoStore({ error: "invalid_request" }, 400);
   }
@@ -107,48 +149,59 @@ export async function POST(request: Request) {
       : null;
 
   if (!isValidCode(code)) {
+    await Promise.allSettled([recordDurableStepUp("failure")]);
     auditStepUp("denied", runtime.authorization);
     return jsonNoStore({ error: "invalid_code" }, 400);
   }
 
   try {
-    await auth.api.verifyTOTP({
-      body: {
-        code,
-        trustDevice: false,
-      },
-      headers: request.headers,
-    });
-
-    const recorded = await recordAdminStepUp(
+    const verification = await verifyAdminTotpCode({
+      code,
       databaseUrl,
-      {
-        sessionId: runtime.primarySession.session.id,
-        userId: runtime.primarySession.user.id,
-      },
-      new Date(),
-    );
-
-    if (!recorded) {
-      auditStepUp("failure", runtime.authorization);
-      return jsonNoStore({ error: "session_unavailable" }, 401);
-    }
-
-    await appendAdminAuditEvent(databaseUrl, {
-      action: "auth.totp_step_up",
-      organizationId: runtime.authorization.organizationId,
-      requestId: request.headers.get("x-request-id") ?? randomUUID(),
-      result: "success",
-      role: runtime.authorization.role,
+      secret: process.env.BETTER_AUTH_SECRET as string,
       sessionId: runtime.primarySession.session.id,
-      targetId: runtime.primarySession.session.id,
-      targetType: "session",
       userId: runtime.primarySession.user.id,
     });
 
+    if (verification.status !== "accepted") {
+      await Promise.allSettled([recordDurableStepUp("failure")]);
+      auditStepUp("failure", runtime.authorization);
+      return jsonNoStore({ error: "verification_failed" }, 401);
+    }
+
+    let setCookies: string[] = [];
+
+    if (verification.enrollmentPending) {
+      const enrollmentResponse = await auth.api.verifyTOTP({
+        asResponse: true,
+        body: {
+          code,
+          trustDevice: false,
+        },
+        headers: request.headers,
+      });
+
+      if (!enrollmentResponse.ok) {
+        await Promise.allSettled([recordDurableStepUp("failure")]);
+        auditStepUp("failure", runtime.authorization);
+        return jsonNoStore({ error: "verification_failed" }, 401);
+      }
+
+      setCookies = readSetCookies(enrollmentResponse.headers);
+
+      if (setCookies.length === 0) {
+        await Promise.allSettled([recordDurableStepUp("failure")]);
+        auditStepUp("failure", runtime.authorization);
+        return jsonNoStore({ error: "session_unavailable" }, 401);
+      }
+    }
+
+    await recordDurableStepUp("success");
+
     auditStepUp("success", runtime.authorization);
-    return jsonNoStore({ status: "verified" });
+    return jsonNoStore({ status: "verified" }, 200, setCookies);
   } catch {
+    await Promise.allSettled([recordDurableStepUp("failure")]);
     auditStepUp("failure", runtime.authorization);
     return jsonNoStore({ error: "verification_failed" }, 401);
   }

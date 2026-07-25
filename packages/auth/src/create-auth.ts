@@ -196,10 +196,14 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
 
             assertAllowedEmail(sessionUser.email);
           },
-          after: async (newSession) => {
+          after: async (newSession, context) => {
             await provisionOwnerAdminSession(options.databaseUrl, {
               organizationId: options.organizationId,
               sessionId: newSession.id,
+              stepUpVerifiedAt:
+                context?.path === "/two-factor/verify-totp"
+                  ? new Date()
+                  : undefined,
               userId: newSession.userId,
             });
           },
@@ -264,6 +268,9 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     plugins: [
       twoFactor({
         allowPasswordless: true,
+        backupCodeOptions: {
+          amount: 0,
+        },
         issuer: "Shapewebs",
       }),
     ],

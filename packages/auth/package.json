@@ -18,6 +18,7 @@
     "@shapewebs/validation": "workspace:*",
     "better-auth": "1.6.25",
     "drizzle-orm": "0.45.2",
+    "jose": "6.2.4",
     "server-only": "0.0.1"
   },
   "devDependencies": {

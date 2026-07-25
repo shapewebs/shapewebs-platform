@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { format } from "prettier";
 
 const sourceArgument = process.argv
   .slice(2)
@@ -128,10 +129,10 @@ const evidence = {
 };
 
 await writeFile("assurance/asvs/catalog-index.json", catalogText);
-await writeFile(
-  "assurance/asvs/evidence.json",
-  `${JSON.stringify(evidence, null, 2)}\n`,
-);
+const evidenceText = await format(JSON.stringify(evidence), {
+  filepath: "assurance/asvs/evidence.json",
+});
+await writeFile("assurance/asvs/evidence.json", evidenceText);
 
 console.log(
   `Generated ${requirements.length} ASVS requirements and ${evidence.requirements.length} L1/L2 evidence records.`,
