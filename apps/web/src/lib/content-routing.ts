@@ -5,6 +5,13 @@ import {
   type LocaleCode,
 } from "@shapewebs/i18n";
 
+type RoutableDocument = {
+  contentType: ContentType;
+  localeCode: string;
+  pageKind: string | null;
+  slug: string;
+};
+
 type CollectionContentType = Extract<
   ContentType,
   "legal" | "post" | "project" | "service"
@@ -74,4 +81,31 @@ export function resolveContentRoute(
     localeCode,
     slug,
   };
+}
+
+export function contentRouteMatchesDocument(
+  route: ResolvedContentRoute,
+  document: RoutableDocument,
+): boolean {
+  if (document.localeCode !== route.localeCode) {
+    return false;
+  }
+
+  if (route.kind === "typed") {
+    return (
+      document.contentType === route.contentType && document.slug === route.slug
+    );
+  }
+
+  if (route.slug === "home") {
+    return (
+      document.contentType === "page" &&
+      (document.pageKind === "home" || document.slug === "home")
+    );
+  }
+
+  return (
+    (document.contentType === "page" || document.contentType === "method") &&
+    document.slug === route.slug
+  );
 }

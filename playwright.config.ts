@@ -10,6 +10,7 @@ const missingAuthEnvironment = {
   DATABASE_URL: "",
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
+  NEXT_PUBLIC_SITE_URL: webOrigin,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
   NEXT_PUBLIC_SUPABASE_URL: "",
   RESEND_API_KEY: "",

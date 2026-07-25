@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-- Date: 25 July 2026
+- Date: 26 July 2026
 - Branch: protected `staging`; current implementation branch
   `codex/complete-asvs-foundation`
 - Pull requests: staging scheduler evidence
@@ -15,8 +15,8 @@
   public-content pull request `#20`, request-rendered login correction `#21`,
   Shapewebs session-cookie correction `#22`, TOTP enrollment correction `#23`,
   diagnostic evidence `#24`, and the counter-persistence repair `#25` are
-  merged; foundation promotion pull request
-  `shapewebs/shapewebs-platform#7` remains draft
+  merged; complete foundation pull request
+  `shapewebs/shapewebs-platform#26` remains draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
@@ -65,6 +65,10 @@ production domains.
 - The public site remains static-first and within its Lighthouse and transfer
   budgets. Speed Insights is loaded only on Vercel. Turnstile is loaded only
   with the contact interface.
+- CMS drafts render only within a dynamic, private/no-store and non-indexable
+  `/preview` namespace. Public marketing layouts do not read request cookies,
+  preserving shared CDN caching. Preview sessions are bound to the exact
+  tenant, document, revision, locale, and resolved route.
 - The admin app has nonce-based dynamic CSP, fail-closed readiness, structured
   logs, OpenTelemetry instrumentation, and request/trace correlation.
 - Typed structured logging rejects or redacts cookies, authorization values,
@@ -136,6 +140,11 @@ production domains.
 - Every migrated admin page, Route Handler, and Server Action re-authorizes
   against server-owned session and membership context. Authentication,
   step-up, revocation, and authorization-denial events are audited.
+- The accepted future customer identity contract uses a separate
+  `apps/portal`, Vercel project, Better Auth instance, cookie namespace, OAuth
+  client, Neon schema, and runtime role. It supports invitation-gated Google
+  and verified email/password onboarding with explicit same-email account
+  linking, without weakening or sharing administrative authentication.
 
 ### Neon lead, retention and email path
 
@@ -388,6 +397,14 @@ The repository also remediates the newly published high-severity
 legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
 Checkly compilation, Lighthouse CLI loading, the compatibility probe, and
 `pnpm audit` all pass; the audit reports zero known vulnerabilities.
+
+The complete foundation branch currently passes the canonical gate with 113
+unit tests, 96.15% statement coverage, all 253 ASVS Level 1/Level 2 evidence
+records reviewed, deterministic schemas, and zero known audited
+vulnerabilities. Both Next.js production applications build successfully. The
+eight-test production HTTP security suite proves shared caching for the public
+homepage, private/no-store and noindex preview behavior, preview-session exit,
+security headers, and administrative fail-closed behavior.
 
 ## External launch gates
 

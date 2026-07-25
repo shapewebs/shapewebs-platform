@@ -5,6 +5,7 @@ import { readBoundedText } from "@shapewebs/validation";
 
 import { getPublicSiteOrigin } from "@/lib/content";
 import { getPreviewCookiePolicy } from "@/lib/preview-cookie";
+import { buildPrivatePreviewPath } from "@/lib/preview-path";
 import { parsePreviewGrantToken } from "@/lib/preview-request";
 
 const invalidPreviewResponse = () =>
@@ -87,6 +88,18 @@ export async function POST(request: Request) {
     return invalidPreviewResponse();
   }
 
+  const previewPath = buildPrivatePreviewPath(previewGrant.path);
+
+  if (!previewPath) {
+    return NextResponse.json(
+      { error: "Preview destination is invalid." },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+        status: 503,
+      },
+    );
+  }
+
   const production = process.env.NODE_ENV === "production";
   const cookiePolicy = getPreviewCookiePolicy(production);
   const cookieStore = await cookies();
@@ -100,7 +113,7 @@ export async function POST(request: Request) {
     ),
   });
 
-  const redirectUrl = new URL(previewGrant.path, getPublicSiteOrigin());
+  const redirectUrl = new URL(previewPath, getPublicSiteOrigin());
   return NextResponse.redirect(redirectUrl, {
     headers: { "Cache-Control": "private, no-store" },
     status: 303,
