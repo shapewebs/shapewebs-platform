@@ -32,6 +32,14 @@ absent, the workflow refuses to scan. Rotate or revoke the bypass immediately
 if it appears in logs or reports. Checkly reads its separate exact origin only
 when the synthetic lead check is deliberately enabled.
 
+For push-triggered runs, the workflow first polls the current commit's exact
+`Vercel – shapewebs-web` and `Vercel – shapewebs-admin` status contexts. Both
+must report their newest state as successful before k6 or ZAP can reach the
+fixed staging aliases. A terminal deployment failure stops the workflow, and a
+ten-minute bound prevents an absent provider status from waiting forever.
+Scheduled and manually dispatched scans test the already-settled fixed aliases
+without this commit-status wait.
+
 ## Toolchain
 
 - CI and maintainer workstations use the same reviewed k6 version. Record each

@@ -4,7 +4,7 @@
 
 - Date: 26 July 2026
 - Branch: protected `staging`; current implementation branch
-  `codex/complete-asvs-foundation`
+  `codex/wait-for-staging-deployments`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -16,14 +16,15 @@
   Shapewebs session-cookie correction `#22`, TOTP enrollment correction `#23`,
   diagnostic evidence `#24`, and the counter-persistence repair `#25` are
   merged; complete foundation pull request
-  `shapewebs/shapewebs-platform#26` remains draft
+  `shapewebs/shapewebs-platform#26` merged into protected `staging` at
+  `52680c4`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#25` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#26` are merged into protected `staging`. Migrations `0000` through `0012` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. No
@@ -405,6 +406,14 @@ vulnerabilities. Both Next.js production applications build successfully. The
 eight-test production HTTP security suite proves shared caching for the public
 homepage, private/no-store and noindex preview behavior, preview-session exit,
 security headers, and administrative fail-closed behavior.
+
+Pull request `#26` passed Quality, Security, both Vercel deployments, and the
+complete protected disposable Neon lifecycle before merging. After both fixed
+staging deployments reached success, manually dispatched staging-assurance run
+[`30177841421`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30177841421)
+passed its k6 smoke thresholds and passive ZAP baseline against merge commit
+`52680c4`. A deployment-status wait guard is being added so future
+push-triggered scans cannot begin before both exact Vercel contexts succeed.
 
 ## External launch gates
 
