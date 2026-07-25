@@ -1,3 +1,9 @@
-import { getSessionCookie } from "better-auth/cookies";
+import { getSessionCookie as getBetterAuthSessionCookie } from "better-auth/cookies";
 
-export { getSessionCookie };
+const adminCookiePrefix = "shapewebs";
+
+export function getSessionCookie(request: Headers | Request): string | null {
+  return getBetterAuthSessionCookie(request, {
+    cookiePrefix: adminCookiePrefix,
+  });
+}
