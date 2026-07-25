@@ -72,7 +72,7 @@ describe("security headers", () => {
     });
 
     expect(csp).toContain("form-action 'self' https://staging.shapewebs.com");
-    expect(csp.match(/https:\/\/staging\.shapewebs\.com/g)).toHaveLength(1);
+    expect(csp.split("https://staging.shapewebs.com")).toHaveLength(2);
     expect(csp).not.toContain("*");
   });
 
