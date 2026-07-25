@@ -21,6 +21,15 @@ export type AdminTotpVerificationResult =
       verifiedAt: Date;
     }
   | {
+      reasonCode:
+        | "counter_state_unavailable"
+        | "factor_decryption_unavailable"
+        | "factor_unavailable"
+        | "failure_state_unavailable"
+        | "invalid_code"
+        | "lock_state_unavailable"
+        | "locked"
+        | "replayed";
       status: "invalid" | "locked" | "replayed" | "unavailable";
     };
 
@@ -83,28 +92,62 @@ export async function verifyAdminTotpCode(input: {
 }): Promise<AdminTotpVerificationResult> {
   const verifiedAt = input.verifiedAt ?? new Date();
 
-  if (await isAdminTotpLocked(input.databaseUrl, input.userId, verifiedAt)) {
-    return { status: "locked" };
+  try {
+    if (await isAdminTotpLocked(input.databaseUrl, input.userId, verifiedAt)) {
+      return { reasonCode: "locked", status: "locked" };
+    }
+  } catch {
+    return {
+      reasonCode: "lock_state_unavailable",
+      status: "unavailable",
+    };
   }
 
-  const database = createDatabase(input.databaseUrl);
-  const [factor] = await database
-    .select({
-      encryptedSecret: authSchema.twoFactor.secret,
-      verified: authSchema.twoFactor.verified,
-    })
-    .from(authSchema.twoFactor)
-    .where(eq(authSchema.twoFactor.userId, input.userId))
-    .limit(1);
+  let factor:
+    | {
+        encryptedSecret: string;
+        verified: boolean | null;
+      }
+    | undefined;
+
+  try {
+    const database = createDatabase(input.databaseUrl);
+    [factor] = await database
+      .select({
+        encryptedSecret: authSchema.twoFactor.secret,
+        verified: authSchema.twoFactor.verified,
+      })
+      .from(authSchema.twoFactor)
+      .where(eq(authSchema.twoFactor.userId, input.userId))
+      .limit(1);
+  } catch {
+    return {
+      reasonCode: "factor_unavailable",
+      status: "unavailable",
+    };
+  }
 
   if (!factor) {
-    return { status: "unavailable" };
+    return {
+      reasonCode: "factor_unavailable",
+      status: "unavailable",
+    };
   }
 
-  const totpSecret = await decryptAdminTotpSecret(
-    factor.encryptedSecret,
-    input.secret,
-  );
+  let totpSecret: string;
+
+  try {
+    totpSecret = await decryptAdminTotpSecret(
+      factor.encryptedSecret,
+      input.secret,
+    );
+  } catch {
+    return {
+      reasonCode: "factor_decryption_unavailable",
+      status: "unavailable",
+    };
+  }
+
   const matchedCounter = findMatchingTotpCounter(
     input.code,
     totpSecret,
@@ -112,22 +155,39 @@ export async function verifyAdminTotpCode(input: {
   );
 
   if (matchedCounter === null) {
-    await recordAdminTotpFailure(input.databaseUrl, input.userId, verifiedAt);
-    return { status: "invalid" };
+    try {
+      await recordAdminTotpFailure(input.databaseUrl, input.userId, verifiedAt);
+    } catch {
+      return {
+        reasonCode: "failure_state_unavailable",
+        status: "unavailable",
+      };
+    }
+
+    return { reasonCode: "invalid_code", status: "invalid" };
   }
 
-  const consumed = await consumeAdminTotpCounter(
-    input.databaseUrl,
-    {
-      counter: matchedCounter,
-      sessionId: input.sessionId,
-      userId: input.userId,
-    },
-    verifiedAt,
-  );
+  let consumed: boolean;
+
+  try {
+    consumed = await consumeAdminTotpCounter(
+      input.databaseUrl,
+      {
+        counter: matchedCounter,
+        sessionId: input.sessionId,
+        userId: input.userId,
+      },
+      verifiedAt,
+    );
+  } catch {
+    return {
+      reasonCode: "counter_state_unavailable",
+      status: "unavailable",
+    };
+  }
 
   if (!consumed) {
-    return { status: "replayed" };
+    return { reasonCode: "replayed", status: "replayed" };
   }
 
   return {

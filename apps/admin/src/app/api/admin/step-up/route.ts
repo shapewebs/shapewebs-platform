@@ -71,6 +71,7 @@ function readSetCookies(headers: Headers): string[] {
 function auditStepUp(
   result: "denied" | "failure" | "success",
   authorization?: AdminAuthorizationContext,
+  reasonCode?: string,
 ) {
   const actorIdHash =
     authorization && process.env.BETTER_AUTH_SECRET
@@ -84,6 +85,7 @@ function auditStepUp(
     actorIdHash,
     eventCode: "shapewebs.auth.totp_step_up",
     level: result === "success" ? "info" : "warn",
+    metadata: reasonCode ? { reasonCode } : undefined,
     result,
   });
 }
@@ -176,7 +178,7 @@ export async function POST(request: Request) {
 
     if (verification.status !== "accepted") {
       await Promise.allSettled([recordDurableStepUp("failure")]);
-      auditStepUp("failure", runtime.authorization);
+      auditStepUp("failure", runtime.authorization, verification.reasonCode);
       return jsonNoStore({ error: "verification_failed" }, 401);
     }
 
@@ -239,7 +241,7 @@ export async function POST(request: Request) {
     return jsonNoStore({ status: "verified" }, 200, setCookies);
   } catch {
     await Promise.allSettled([recordDurableStepUp("failure")]);
-    auditStepUp("failure", runtime.authorization);
+    auditStepUp("failure", runtime.authorization, "verification_exception");
     return jsonNoStore({ error: "verification_failed" }, 401);
   }
 }
