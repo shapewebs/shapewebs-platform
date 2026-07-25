@@ -1,8 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { notFound } from "next/navigation";
-import { getDocumentEditorState } from "@shapewebs/db";
+import { getContentEditorState } from "@shapewebs/database/server";
+
 import { requireAdminSession } from "@/lib/auth";
-import { getTransitionalAdminSupabaseClient } from "@/lib/supabase";
+import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import { PageEditorForm } from "../../_components/page-editor-form";
+import { pageEditorNotices } from "../../_components/page-editor-notices";
 
 type PageEditorRouteProps = {
   params: Promise<{
@@ -15,13 +19,6 @@ type PageEditorRouteProps = {
   }>;
 };
 
-const notices: Record<string, string> = {
-  saved: "Draft saved.",
-  published: "Page published and revalidation requested.",
-  "in-review": "Page submitted for review.",
-  preview: "Preview token could not be created.",
-};
-
 export default async function PageEditorRoute({
   params,
   searchParams,
@@ -32,26 +29,35 @@ export default async function PageEditorRoute({
     redirectTo: `/content/pages/${routeParams.documentId}`,
     roles: ["owner", "editor"],
   });
-  const supabase = await getTransitionalAdminSupabaseClient();
-  const editorState = await getDocumentEditorState(supabase, {
-    documentId: routeParams.documentId,
-    localeCode: query?.locale,
-  });
+  const databaseUrl = getAdminDatabaseUrl();
+
+  if (runtime.setupMode || !databaseUrl || !runtime.authorization) {
+    notFound();
+  }
+
+  const editorState = await getContentEditorState(
+    databaseUrl,
+    runtime.authorization,
+    {
+      documentId: routeParams.documentId,
+      localeCode: query?.locale,
+    },
+  );
 
   if (!editorState) {
     notFound();
   }
 
   const notice =
-    (query?.status && notices[query.status]) ||
-    (query?.error && notices[query.error]) ||
+    (query?.status && pageEditorNotices[query.status]) ||
+    (query?.error && pageEditorNotices[query.error]) ||
     null;
 
   return (
     <PageEditorForm
       editorState={editorState}
+      commandId={randomUUID()}
       notice={notice}
-      setupMode={runtime.setupMode}
     />
   );
 }

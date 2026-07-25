@@ -267,16 +267,6 @@ await Promise.all([
 const appFiles = await listSourceFiles(path.join(workspaceRoot, "apps"));
 const clientEntries = [];
 const adminAuthPath = path.join(workspaceRoot, "apps/admin/src/lib/auth.ts");
-const transitionalAdminSupabasePath = path.join(
-  workspaceRoot,
-  "apps/admin/src/lib/supabase.ts",
-);
-const transitionalAdminSupabaseImporters = new Set(
-  [
-    "apps/admin/src/app/(dashboard)/content/_actions/page-editor.ts",
-    "apps/admin/src/app/(dashboard)/content/pages/[documentId]/page.tsx",
-  ].map((relativePath) => path.join(workspaceRoot, relativePath)),
-);
 
 for (const sourcePath of appFiles) {
   const source = await readFile(sourcePath, "utf8");
@@ -287,19 +277,6 @@ for (const sourcePath of appFiles) {
   }
 
   for (const specifier of imports) {
-    const resolvedImport = await resolveImport(sourcePath, specifier);
-
-    if (
-      resolvedImport === transitionalAdminSupabasePath &&
-      !transitionalAdminSupabaseImporters.has(sourcePath)
-    ) {
-      recordViolation(
-        sourcePath,
-        [sourcePath, resolvedImport],
-        "Transitional admin Supabase access is restricted to the explicit CMS allowlist.",
-      );
-    }
-
     if (
       sourcePath === adminAuthPath &&
       (specifier === "@shapewebs/db" || specifier.startsWith("@shapewebs/db/"))

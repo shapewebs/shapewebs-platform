@@ -1,39 +1,37 @@
-import type { DocumentEditorState } from "@shapewebs/db";
+import { randomUUID } from "node:crypto";
+
+import { getDefaultPageEditorState } from "@shapewebs/database/server";
+
 import { PageEditorForm } from "../../_components/page-editor-form";
+import { pageEditorNotices } from "../../_components/page-editor-notices";
 import { requireAdminSession } from "@/lib/auth";
 
-const newPageState: DocumentEditorState = {
-  documentId: "new",
-  contentType: "page",
-  defaultLocale: "en",
-  localeCode: "en",
-  pageKind: "standard",
-  publishedAt: null,
-  revisions: [],
-  seo: {
-    canonicalUrlOverride: null,
-    metaDescription: null,
-    metaTitle: null,
-    robotsIndex: true,
-  },
-  slug: "",
-  source: "fallback",
-  state: "draft",
-  summary: null,
-  title: "",
-  content: {
-    schemaVersion: 1,
-    blocks: [],
-  },
+type NewPageEditorPageProps = {
+  searchParams?: Promise<{
+    error?: string;
+    status?: string;
+  }>;
 };
 
-export default async function NewPageEditorPage() {
+export default async function NewPageEditorPage({
+  searchParams,
+}: NewPageEditorPageProps) {
+  const query = searchParams ? await searchParams : undefined;
   const runtime = await requireAdminSession({
     redirectTo: "/content/pages/new",
     roles: ["owner", "editor"],
   });
 
   return (
-    <PageEditorForm editorState={newPageState} setupMode={runtime.setupMode} />
+    <PageEditorForm
+      commandId={randomUUID()}
+      editorState={getDefaultPageEditorState()}
+      notice={
+        (query?.status && pageEditorNotices[query.status]) ||
+        (query?.error && pageEditorNotices[query.error]) ||
+        null
+      }
+      setupMode={runtime.setupMode}
+    />
   );
 }

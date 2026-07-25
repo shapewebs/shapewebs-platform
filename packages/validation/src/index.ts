@@ -336,6 +336,13 @@ export const documentFiltersSchema = z.object({
   state: contentStateSchema.optional(),
 });
 
+export const contentEditorSelectionSchema = z
+  .object({
+    documentId: z.uuid(),
+    localeCode: localeCodeEnum.optional(),
+  })
+  .strict();
+
 export const contentDocumentListItemSchema = z
   .object({
     contentType: contentTypeSchema,
@@ -350,6 +357,29 @@ export const contentDocumentListItemSchema = z
     updatedAt: z.iso.datetime({ offset: true }).nullable(),
   })
   .strict();
+
+const pageKindSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine(
+    (value) =>
+      value
+        .split("_")
+        .every(
+          (segment) =>
+            segment.length > 0 &&
+            [...segment].every(
+              (character) =>
+                (character >= "a" && character <= "z") ||
+                (character >= "0" && character <= "9"),
+            ),
+        ),
+    {
+      message: "Page kind must be a normalized lowercase identifier.",
+    },
+  );
 
 const canonicalHttpsUrlSchema = z
   .string()
@@ -374,21 +404,25 @@ const canonicalHttpsUrlSchema = z
     },
   );
 
-export const pageEditorInputSchema = z.object({
-  documentId: z.string().uuid().optional(),
-  localeCode: localeCodeEnum.default("en"),
-  pageKind: z.string().trim().min(1).max(80).default("standard"),
-  title: z.string().trim().min(1).max(140),
-  slug: contentSlugSchema,
-  summary: z.string().trim().max(320).optional(),
-  metaTitle: z.string().trim().max(160).optional(),
-  metaDescription: z.string().trim().max(320).optional(),
-  canonicalUrlOverride: canonicalHttpsUrlSchema.optional(),
-  robotsIndex: z.boolean().default(true),
-  contentJson: z.string().trim().min(2),
-  changeNote: z.string().trim().max(240).optional(),
-  intent: z.enum(["draft", "review", "publish", "preview"]).default("draft"),
-});
+export const pageEditorInputSchema = z
+  .object({
+    commandId: z.uuid(),
+    documentId: z.uuid().optional(),
+    expectedVersion: z.coerce.number().int().min(0).max(2_147_483_646),
+    localeCode: localeCodeEnum.default("en"),
+    pageKind: pageKindSchema.default("standard"),
+    title: z.string().trim().min(1).max(140),
+    slug: contentSlugSchema,
+    summary: z.string().trim().max(320).optional(),
+    metaTitle: z.string().trim().max(160).optional(),
+    metaDescription: z.string().trim().max(320).optional(),
+    canonicalUrlOverride: canonicalHttpsUrlSchema.optional(),
+    robotsIndex: z.boolean().default(true),
+    contentJson: z.string().trim().min(2).max(65_536),
+    changeNote: z.string().trim().max(240).optional(),
+    intent: z.enum(["draft", "review", "publish"]).default("draft"),
+  })
+  .strict();
 
 export const mediaUploadSchema = z.object({
   altText: z.string().trim().min(1).max(180),

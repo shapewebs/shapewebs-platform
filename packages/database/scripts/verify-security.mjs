@@ -65,6 +65,7 @@ const ids = {
   draftRevisionTwo: randomUUID(),
   publishedDocumentA: randomUUID(),
   publishedRevisionA: randomUUID(),
+  nonCurrentPublishedRevisionA: randomUUID(),
   publishedDocumentB: randomUUID(),
   publishedRevisionB: randomUUID(),
   workflowDocument: randomUUID(),
@@ -281,21 +282,53 @@ async function seed() {
     fixtureAdmin`insert into app.content_revisions (
         id,
         document_id,
+        command_id,
         revision_number,
         locale,
+        status,
+        slug,
+        page_kind,
         title,
         summary,
         payload,
         seo,
+        change_note,
         created_by_user_id,
         published_at
       )
       values
-        (${ids.draftRevisionOne}, ${ids.draftDocument}, 1, 'en', 'Draft revision one', null, '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
-        (${ids.draftRevisionTwo}, ${ids.draftDocument}, 2, 'en', 'Draft revision two', 'Latest draft', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null),
-        (${ids.publishedRevisionA}, ${ids.publishedDocumentA}, 1, 'en', 'Published A', 'Organization A', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
-        (${ids.publishedRevisionB}, ${ids.publishedDocumentB}, 1, 'en', 'Published B', 'Organization B', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, now()),
-        (${ids.workflowRevision}, ${ids.workflowDocument}, 1, 'da-DK', 'Sikker metode', 'Workflow enum coverage', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, ${ids.adminUser}, null)`,
+        (${ids.draftRevisionOne}, ${ids.draftDocument}, ${ids.draftRevisionOne}, 1, 'en', 'draft', 'draft', 'standard', 'Draft revision one', null, '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Initial draft', ${ids.adminUser}, null),
+        (${ids.draftRevisionTwo}, ${ids.draftDocument}, ${ids.draftRevisionTwo}, 2, 'en', 'draft', 'draft', 'standard', 'Draft revision two', 'Latest draft', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Second draft', ${ids.adminUser}, null),
+        (${ids.publishedRevisionA}, ${ids.publishedDocumentA}, ${ids.publishedRevisionA}, 1, 'en', 'published', 'published-a', 'standard', 'Published A', 'Organization A', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Publish A', ${ids.adminUser}, now()),
+        (${ids.nonCurrentPublishedRevisionA}, ${ids.publishedDocumentA}, ${ids.nonCurrentPublishedRevisionA}, 2, 'en', 'published', 'published-a', 'standard', 'Non-current published revision', 'Must remain private', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Non-current snapshot', ${ids.adminUser}, now()),
+        (${ids.publishedRevisionB}, ${ids.publishedDocumentB}, ${ids.publishedRevisionB}, 1, 'en', 'published', 'published-b', 'standard', 'Published B', 'Organization B', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Publish B', ${ids.adminUser}, now()),
+        (${ids.workflowRevision}, ${ids.workflowDocument}, ${ids.workflowRevision}, 1, 'da-DK', 'review', 'secure-method', null, 'Sikker metode', 'Workflow enum coverage', '{"schemaVersion":1,"blocks":[]}'::jsonb, '{}'::jsonb, 'Review method', ${ids.adminUser}, null)`,
+    fixtureAdmin`insert into app.content_localizations (
+        organization_id,
+        document_id,
+        kind,
+        locale,
+        slug,
+        title,
+        summary,
+        seo,
+        published_revision_id,
+        published_at
+      )
+      values
+        (${ids.organizationA}, ${ids.draftDocument}, 'page', 'en', 'draft', 'Draft revision two', 'Latest draft', '{}'::jsonb, null, null),
+        (${ids.organizationA}, ${ids.publishedDocumentA}, 'page', 'en', 'published-a', 'Published A', 'Organization A', '{}'::jsonb, ${ids.publishedRevisionA}, now()),
+        (${ids.organizationB}, ${ids.publishedDocumentB}, 'page', 'en', 'published-b', 'Published B', 'Organization B', '{}'::jsonb, ${ids.publishedRevisionB}, now()),
+        (${ids.organizationA}, ${ids.workflowDocument}, 'method', 'da-DK', 'secure-method', 'Sikker metode', 'Workflow enum coverage', '{}'::jsonb, null, null)`,
+    fixtureAdmin`update app.content_documents
+      set
+        page_kind = case when kind = 'page' then 'standard' else null end
+      where id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.publishedDocumentB},
+        ${ids.workflowDocument}
+      )`,
   ]);
 
   await migrator.transaction([
@@ -565,23 +598,21 @@ async function verifyAdminIsolation() {
     organizationId: ids.organizationA,
     userId: ids.adminUser,
     membershipRole: "owner",
-    query: admin`with latest_revisions as (
-        select distinct on (document_id, locale)
-          document_id,
-          locale,
-          title
-        from app.content_revisions
-        order by document_id, locale, revision_number desc, created_at desc
-      )
+    query: admin`
       select
         document.id,
         document.kind,
         document.status,
-        revision.locale,
-        revision.title
+        localization.locale,
+        localization.title
       from app.content_documents as document
-      inner join latest_revisions as revision
-        on revision.document_id = document.id
+      inner join app.content_localizations as localization
+        on localization.document_id = document.id
+      where document.id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.workflowDocument}
+      )
       order by document.slug`,
   });
   assert.deepEqual(organizationAContent, [
@@ -612,7 +643,14 @@ async function verifyAdminIsolation() {
     organizationId: ids.organizationA,
     userId: ids.adminUser,
     membershipRole: "editor",
-    query: admin`select id from app.content_documents order by id`,
+    query: admin`select id
+      from app.content_documents
+      where id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.workflowDocument}
+      )
+      order by id`,
   });
   assert.deepEqual(
     new Set(editorContent.map(({ id }) => id)),
@@ -626,6 +664,111 @@ async function verifyAdminIsolation() {
     query: admin`select id from app.content_documents`,
   });
   assert.deepEqual(customerDrafts, []);
+
+  const organizationALocalizations = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select document_id, locale
+      from app.content_localizations
+      where document_id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.workflowDocument}
+      )
+      order by document_id, locale`,
+  });
+  assert.deepEqual(
+    new Set(
+      organizationALocalizations.map(
+        ({ document_id, locale }) => `${document_id}:${locale}`,
+      ),
+    ),
+    new Set([
+      `${ids.draftDocument}:en`,
+      `${ids.publishedDocumentA}:en`,
+      `${ids.workflowDocument}:da-DK`,
+    ]),
+  );
+
+  const customerLocalizations = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    membershipRole: "customer",
+    query: admin`select id from app.content_localizations`,
+  });
+  assert.deepEqual(
+    customerLocalizations,
+    [],
+    "customers must not read CMS localization drafts",
+  );
+
+  const crossTenantLocalizationUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.content_localizations
+      set updated_at = updated_at
+      where organization_id = ${ids.organizationB}
+      returning id`,
+  });
+  assert.deepEqual(
+    crossTenantLocalizationUpdate,
+    [],
+    "editors must not update another organization's localization",
+  );
+
+  await expectDenied(
+    withAdminContext({
+      organizationId: ids.organizationA,
+      userId: ids.adminUser,
+      membershipRole: "editor",
+      query: admin`update app.content_revisions
+        set title = 'Mutated immutable revision'
+        where id = ${ids.draftRevisionTwo}`,
+    }),
+    "immutable content revision update",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'editor', true)`,
+      admin`insert into app.content_localizations (
+          organization_id,
+          document_id,
+          kind,
+          locale,
+          slug,
+          title
+        )
+        values (
+          ${ids.organizationA},
+          ${ids.draftDocument},
+          'service',
+          'da-DK',
+          'spoofed-kind',
+          'Spoofed kind'
+        )`,
+    ]),
+    "localization kind/document mismatch",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'editor', true)`,
+      admin`update app.content_localizations
+        set
+          published_revision_id = ${ids.publishedRevisionB},
+          published_at = now()
+        where document_id = ${ids.publishedDocumentA}
+          and locale = 'en'`,
+    ]),
+    "localization publication pointer mismatch",
+  );
 }
 
 async function authorizeSyntheticAdminSession({
@@ -1150,6 +1293,7 @@ async function verifyPublicAndWebBoundaries() {
       ${ids.draftRevisionOne},
       ${ids.draftRevisionTwo},
       ${ids.publishedRevisionA},
+      ${ids.nonCurrentPublishedRevisionA},
       ${ids.publishedRevisionB},
       ${ids.workflowRevision}
     )
@@ -1159,6 +1303,44 @@ async function verifyPublicAndWebBoundaries() {
     new Set(publicRevisions.map(({ id }) => id)),
     new Set([ids.publishedRevisionA, ids.publishedRevisionB]),
   );
+
+  for (const [label, client] of [
+    ["public", publicReader],
+    ["web", web],
+  ]) {
+    const localizationPointers = await client`
+      select document_id, locale, published_revision_id
+      from app.content_localizations
+      where document_id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.publishedDocumentB},
+        ${ids.workflowDocument}
+      )
+      order by document_id
+    `;
+    assert.deepEqual(
+      new Set(
+        localizationPointers.map(
+          ({ document_id, locale, published_revision_id }) =>
+            `${document_id}:${locale}:${published_revision_id}`,
+        ),
+      ),
+      new Set([
+        `${ids.publishedDocumentA}:en:${ids.publishedRevisionA}`,
+        `${ids.publishedDocumentB}:en:${ids.publishedRevisionB}`,
+      ]),
+      `${label} must see only exact published localization pointers`,
+    );
+    await expectDenied(
+      client`select slug from app.content_localizations`,
+      `${label} current CMS localization metadata read`,
+    );
+    await expectDenied(
+      client`select slug from app.content_documents`,
+      `${label} current CMS document metadata read`,
+    );
+  }
 
   await expectDenied(
     publicReader`select id from auth.user`,
@@ -1619,7 +1801,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads and latest revisions, public access, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

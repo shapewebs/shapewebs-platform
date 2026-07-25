@@ -68,7 +68,9 @@ describe("content security validation", () => {
 
   it("requires HTTPS canonical overrides without credentials", () => {
     const basePage = {
+      commandId: "10000000-0000-4000-8000-000000000099",
       contentJson: '{"schemaVersion":1,"blocks":[]}',
+      expectedVersion: 0,
       intent: "draft",
       localeCode: "en",
       pageKind: "standard",
@@ -95,6 +97,33 @@ describe("content security validation", () => {
           canonicalUrlOverride,
         }).success,
       ).toBe(false);
+    }
+  });
+
+  it("bounds CMS commands, editor versions, and serialized content", () => {
+    const basePage = {
+      commandId: "10000000-0000-4000-8000-000000000099",
+      contentJson: '{"schemaVersion":1,"blocks":[]}',
+      expectedVersion: 3,
+      intent: "review",
+      localeCode: "en",
+      pageKind: "standard",
+      robotsIndex: true,
+      slug: "bounded-page",
+      title: "Bounded page",
+    };
+
+    expect(pageEditorInputSchema.safeParse(basePage).success).toBe(true);
+
+    for (const unsafePage of [
+      { ...basePage, commandId: "not-a-command" },
+      { ...basePage, expectedVersion: -1 },
+      { ...basePage, expectedVersion: 1.5 },
+      { ...basePage, pageKind: "Bad Page Kind" },
+      { ...basePage, contentJson: "x".repeat(65_537) },
+      { ...basePage, intent: "preview" },
+    ]) {
+      expect(pageEditorInputSchema.safeParse(unsafePage).success).toBe(false);
     }
   });
 

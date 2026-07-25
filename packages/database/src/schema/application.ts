@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -383,6 +384,9 @@ export const contentDocuments = appSchema.table(
     kind: contentKind("kind").notNull(),
     slug: text("slug").notNull(),
     status: contentStatus("status").default("draft").notNull(),
+    defaultLocale: text("default_locale").default("en").notNull(),
+    pageKind: text("page_kind"),
+    version: integer("version").default(1).notNull(),
     createdByUserId: text("created_by_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
@@ -400,6 +404,18 @@ export const contentDocuments = appSchema.table(
       table.status,
       table.publishedAt,
     ),
+    check(
+      "content_documents_default_locale_supported",
+      sql`${table.defaultLocale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "content_documents_page_kind_bounded",
+      sql`${table.pageKind} is null or (
+        char_length(${table.pageKind}) between 1 and 80
+        and ${table.pageKind} ~ '^[a-z0-9]+(?:_[a-z0-9]+)*$'
+      )`,
+    ),
+    check("content_documents_version_positive", sql`${table.version} > 0`),
     pgPolicy("admins read content in current organization", {
       for: "select",
       to: adminRuntimeRole,
@@ -414,12 +430,140 @@ export const contentDocuments = appSchema.table(
     pgPolicy("public reader reads published content", {
       for: "select",
       to: publicReaderRole,
-      using: sql`${table.status} = 'published' and ${table.publishedAt} is not null`,
+      using: sql`exists (
+        select 1
+        from "app"."content_localizations" as localization
+        where localization."document_id" = ${table.id}
+          and localization."published_revision_id" is not null
+          and localization."published_at" is not null
+      )`,
     }),
     pgPolicy("web runtime reads published content", {
       for: "select",
       to: webRuntimeRole,
-      using: sql`${table.status} = 'published' and ${table.publishedAt} is not null`,
+      using: sql`exists (
+        select 1
+        from "app"."content_localizations" as localization
+        where localization."document_id" = ${table.id}
+          and localization."published_revision_id" is not null
+          and localization."published_at" is not null
+      )`,
+    }),
+  ],
+);
+
+export const contentLocalizations = appSchema.table(
+  "content_localizations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => contentDocuments.id, { onDelete: "cascade" }),
+    kind: contentKind("kind").notNull(),
+    locale: text("locale").notNull(),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    seo: jsonb("seo").$type<Record<string, unknown>>().default({}).notNull(),
+    publishedRevisionId: uuid("published_revision_id").references(
+      (): AnyPgColumn => contentRevisions.id,
+      { onDelete: "restrict" },
+    ),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("content_localizations_document_locale_unique").on(
+      table.documentId,
+      table.locale,
+    ),
+    uniqueIndex(
+      "content_localizations_organization_kind_locale_slug_unique",
+    ).on(table.organizationId, table.kind, table.locale, table.slug),
+    index("content_localizations_document_updated_idx").on(
+      table.documentId,
+      table.updatedAt,
+    ),
+    index("content_localizations_publication_idx").on(
+      table.publishedRevisionId,
+      table.publishedAt,
+    ),
+    check(
+      "content_localizations_locale_supported",
+      sql`${table.locale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "content_localizations_slug_format",
+      sql`char_length(${table.slug}) between 1 and 180
+        and ${table.slug} ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'`,
+    ),
+    check(
+      "content_localizations_title_bounded",
+      sql`char_length(${table.title}) between 1 and 140`,
+    ),
+    check(
+      "content_localizations_summary_bounded",
+      sql`${table.summary} is null or char_length(${table.summary}) <= 320`,
+    ),
+    check(
+      "content_localizations_seo_object",
+      sql`jsonb_typeof(${table.seo}) = 'object'`,
+    ),
+    check(
+      "content_localizations_publication_consistent",
+      sql`(
+        ${table.publishedRevisionId} is null
+        and ${table.publishedAt} is null
+      ) or (
+        ${table.publishedRevisionId} is not null
+        and ${table.publishedAt} is not null
+      )`,
+    ),
+    pgPolicy("admins read localizations in current organization", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("editors manage localizations in current organization", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}
+        and exists (
+          select 1
+          from ${contentDocuments}
+          where ${contentDocuments.id} = ${table.documentId}
+            and ${contentDocuments.organizationId} = ${table.organizationId}
+            and ${contentDocuments.kind} = ${table.kind}
+        )
+        and (
+          (
+            ${table.publishedRevisionId} is null
+            and ${table.publishedAt} is null
+          )
+          or exists (
+            select 1
+            from "app"."content_revisions" as revision
+            where revision."id" = ${table.publishedRevisionId}
+              and revision."document_id" = ${table.documentId}
+              and revision."locale" = ${table.locale}
+              and revision."published_at" is not null
+          )
+        )`,
+    }),
+    pgPolicy("public reader reads published localization pointers", {
+      for: "select",
+      to: publicReaderRole,
+      using: sql`${table.publishedRevisionId} is not null and ${table.publishedAt} is not null`,
+    }),
+    pgPolicy("web runtime reads published localization pointers", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.publishedRevisionId} is not null and ${table.publishedAt} is not null`,
     }),
   ],
 );
@@ -431,12 +575,17 @@ export const contentRevisions = appSchema.table(
     documentId: uuid("document_id")
       .notNull()
       .references(() => contentDocuments.id, { onDelete: "cascade" }),
+    commandId: uuid("command_id").notNull(),
     revisionNumber: integer("revision_number").notNull(),
     locale: text("locale").notNull(),
+    status: contentStatus("status").default("draft").notNull(),
+    slug: text("slug").notNull(),
+    pageKind: text("page_kind"),
     title: text("title").notNull(),
     summary: text("summary"),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
     seo: jsonb("seo").$type<Record<string, unknown>>().default({}).notNull(),
+    changeNote: text("change_note"),
     createdByUserId: text("created_by_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
@@ -449,6 +598,7 @@ export const contentRevisions = appSchema.table(
       table.revisionNumber,
       table.locale,
     ),
+    uniqueIndex("content_revisions_command_unique").on(table.commandId),
     index("content_revisions_document_created_idx").on(
       table.documentId,
       table.createdAt,
@@ -456,6 +606,42 @@ export const contentRevisions = appSchema.table(
     check(
       "content_revisions_revision_positive",
       sql`${table.revisionNumber} > 0`,
+    ),
+    check(
+      "content_revisions_locale_supported",
+      sql`${table.locale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "content_revisions_slug_format",
+      sql`char_length(${table.slug}) between 1 and 180
+        and ${table.slug} ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'`,
+    ),
+    check(
+      "content_revisions_page_kind_bounded",
+      sql`${table.pageKind} is null or (
+        char_length(${table.pageKind}) between 1 and 80
+        and ${table.pageKind} ~ '^[a-z0-9]+(?:_[a-z0-9]+)*$'
+      )`,
+    ),
+    check(
+      "content_revisions_title_bounded",
+      sql`char_length(${table.title}) between 1 and 140`,
+    ),
+    check(
+      "content_revisions_summary_bounded",
+      sql`${table.summary} is null or char_length(${table.summary}) <= 320`,
+    ),
+    check(
+      "content_revisions_payload_object",
+      sql`jsonb_typeof(${table.payload}) = 'object'`,
+    ),
+    check(
+      "content_revisions_seo_object",
+      sql`jsonb_typeof(${table.seo}) = 'object'`,
+    ),
+    check(
+      "content_revisions_change_note_bounded",
+      sql`${table.changeNote} is null or char_length(${table.changeNote}) <= 240`,
     ),
     pgPolicy("admins read revisions in current organization", {
       for: "select",
@@ -482,9 +668,11 @@ export const contentRevisions = appSchema.table(
       to: publicReaderRole,
       using: sql`${table.publishedAt} is not null and exists (
         select 1
-        from ${contentDocuments}
-        where ${contentDocuments.id} = ${table.documentId}
-          and ${contentDocuments.status} = 'published'
+        from ${contentLocalizations}
+        where ${contentLocalizations.documentId} = ${table.documentId}
+          and ${contentLocalizations.locale} = ${table.locale}
+          and ${contentLocalizations.publishedRevisionId} = ${table.id}
+          and ${contentLocalizations.publishedAt} is not null
       )`,
     }),
     pgPolicy("web runtime reads published revisions", {
@@ -492,9 +680,11 @@ export const contentRevisions = appSchema.table(
       to: webRuntimeRole,
       using: sql`${table.publishedAt} is not null and exists (
         select 1
-        from ${contentDocuments}
-        where ${contentDocuments.id} = ${table.documentId}
-          and ${contentDocuments.status} = 'published'
+        from ${contentLocalizations}
+        where ${contentLocalizations.documentId} = ${table.documentId}
+          and ${contentLocalizations.locale} = ${table.locale}
+          and ${contentLocalizations.publishedRevisionId} = ${table.id}
+          and ${contentLocalizations.publishedAt} is not null
       )`,
     }),
   ],

@@ -3,14 +3,15 @@
 ## Current milestone
 
 - Date: 25 July 2026
-- Branch: protected `staging`; current implementation branch
-  `codex/asvs-auth-session-review`
+- Branch: protected `staging`; current stacked implementation branch
+  `codex/neon-cms-editor`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
   migration pull request `shapewebs/shapewebs-platform#17` merged into
-  protected `staging` at `a56a771`; foundation promotion pull request
-  `shapewebs/shapewebs-platform#7` remains draft
+  protected `staging` at `a56a771`; fail-closed admin-readiness pull request
+  `shapewebs/shapewebs-platform#18` and foundation promotion pull request
+  `shapewebs/shapewebs-platform#7` remain draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
@@ -20,8 +21,10 @@ Production remains on the known-good baseline. Pull requests `#16` and `#17`
 are merged into protected `staging`, and both fixed staging applications
 successfully deployed merge `a56a771`. The current
 `codex/staging-auth-readiness` branch contains an unmerged fail-closed
-readiness/API correction discovered by post-merge staging probes. It has not
-been connected to production data or promoted to the production domains.
+readiness/API correction discovered by post-merge staging probes. The
+stacked `codex/neon-cms-editor` branch contains the isolated CMS authoring
+migration and repository slice. Neither branch has been connected to
+production data or promoted to the production domains.
 
 ## Implemented on this branch
 
@@ -125,7 +128,7 @@ been connected to production data or promoted to the production domains.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains eleven version-controlled Drizzle migrations,
+- `packages/database` contains twelve version-controlled Drizzle migrations,
   forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
@@ -209,11 +212,14 @@ been connected to production data or promoted to the production domains.
   by restore evidence. Better Auth session resolution no longer initializes
   Supabase. Transitional Supabase access is server-only and limited by an
   automated allowlist to the remaining CMS paths.
-- The current content-list slice moves the CMS document index to a bounded,
-  validated Neon DTO. It selects the latest revision per document and locale,
-  supports the complete checked-in content/workflow filter contract, and
-  reduces the transitional admin Supabase allowlist to the editor page and its
-  mutations.
+- The CMS list and page-editor slices now use bounded, validated Neon DTOs.
+  Owner/editor reads and mutations use transaction-local authorization
+  context, forced RLS, immutable revisions, stable command identifiers,
+  optimistic concurrency and append-only audit events. Locale-specific exact
+  publication pointers preserve live English and Danish revisions
+  independently when newer drafts exist. The last admin Supabase import and
+  its transitional boundary allowlist are removed; public content and preview
+  remain transitional.
 
 ## Verified evidence
 
@@ -292,6 +298,19 @@ suite and both application builds pass locally; it is not yet merged or
 deployed. Evidence is recorded in:
 
 - `docs/audits/staging-auth-readiness-regression-2026-07-25.md`.
+
+The stacked Neon CMS editor slice has 93 passing unit tests, 96.13% statement
+coverage, and passed the canonical verification gate, Worker dry build, both
+public/admin webpack and Turbopack production builds, and all 11 Chromium
+Playwright journeys. A complete disposable Neon source/restore lifecycle
+applied migrations `0000` through `0011`, passed eight real repository
+scenarios plus the complete security and rollback suites, proved
+locale-specific publication pointers and restricted public metadata, and
+produced byte-identical exports with fixture hash
+`5d6bb329a4109f8d6e5a03d851e6a4f7728c6f74f96c036ab9aa905a62f2973c`.
+Both disposable branches were deleted. Evidence is recorded in:
+
+- `docs/audits/neon-cms-editor-verification-2026-07-25.md`.
 
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
@@ -375,8 +394,11 @@ public-content paths have verified Neon parity.
    owner/editor, Google-token and TOTP paths on the fixed staging domain.
 3. Complete mailbox MFA, recovery-address verification and the remaining
    `security@shapewebs.com` send-as/outbound identity verification.
-4. Replace the Supabase CMS paths one vertical slice at a time, then remove
-   Supabase only after parity and rollback evidence.
-5. Build the CMS lifecycle, storage controls, final public studio design, and
-   production recovery gates in the milestone order documented in
+4. Review and apply migration `0011` to persistent staging, then deploy and
+   exercise the Neon editor through the authenticated staging journey.
+5. Migrate public published reads and cryptographically safe preview to Neon;
+   then remove Supabase only after parity and rollback evidence.
+6. Add audited rollback and unpublish commands, followed by storage controls,
+   the final public studio design, and production recovery gates in the
+   milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
