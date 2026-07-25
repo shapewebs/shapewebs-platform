@@ -6,12 +6,11 @@ Branch: `codex/neon-cms-editor`
 
 ## Scope
 
-This stacked slice moves the authenticated CMS page editor and its mutations
-from the transitional Supabase path to the Neon/Drizzle repository boundary.
-Draft pull request `#19` is based on the unmerged admin-readiness correction in
-pull request `#18`. It does not change the public content repository, enable
-preview, apply the new migration to persistent staging, or promote a
-production deployment.
+This slice moves the authenticated CMS page editor and its mutations from the
+transitional Supabase path to the Neon/Drizzle repository boundary. Pull
+request `#19` passed its required checks and was squash-merged into protected
+`staging` at `732c563` after pull request `#18`. It does not change the public
+content repository, enable preview or promote a production deployment.
 
 The implementation:
 
@@ -112,14 +111,29 @@ fail-closed admin readiness and malformed form handling.
 --check` passed and no environment file, provider link, credential, unknown
 file or persistent database state was removed.
 
+## Persistent staging evidence
+
+Before the persistent migration, an automatically expiring Neon safety branch
+captured the exact staging state. The dedicated `shapewebs_migrator` identity
+then applied migration `0011`. A live verification proved:
+
+- the Drizzle journal contains 12 migrations;
+- `app.content_localizations` exists;
+- the document version and revision command columns exist;
+- the complete role-flag, forced-RLS, session, CMS, lead/outbox and audit
+  security suite passes through the owner and all least-privilege runtime
+  identities; and
+- the test's uniquely named synthetic records were removed.
+
+Both fixed Vercel deployments completed, `/api/health/ready` returned the
+sanitized response `200 {"status":"ready"}`, and the staging k6 smoke and ZAP
+baseline workflow passed.
+
 ## Residual gates
 
-- Pull request `#18` remains draft, unmerged and undeployed.
-- Migration `0011` exists only in source control and disposable databases; the
-  persistent staging branch remains on migrations `0000` through `0010`.
-- Public content reads and preview remain transitional Supabase paths.
+- The authenticated Google-to-TOTP authoring journey remains to be exercised
+  on fixed staging.
+- Public content reads and preview remain transitional Supabase paths until the
+  separate public-content slice passes review and staging verification.
 - Rollback and unpublish commands are not part of this slice.
 - No production database, application, domain or environment variable changed.
-- A protected staging deployment and authenticated browser journey require
-  reviewed pull requests, the persistent migration, and the Google OAuth
-  provider configuration.

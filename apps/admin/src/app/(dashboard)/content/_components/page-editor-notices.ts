@@ -9,6 +9,8 @@ export const pageEditorNotices: Record<string, string> = {
   "published-revalidation-pending":
     "Page published. Public cache revalidation could not be confirmed and needs an operational retry.",
   "in-review": "Page submitted for review.",
+  preview:
+    "The selected saved revision could not be opened in a private preview.",
   setup: "The Neon content repository is unavailable.",
   slug_conflict:
     "That slug is already used by another page in this locale. Choose a unique slug.",

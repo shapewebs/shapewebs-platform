@@ -1,6 +1,9 @@
 import { Buttons } from "@shapewebs/ui";
 import type { ContentEditorState } from "@shapewebs/database/server";
-import { savePageEditorAction } from "../_actions/page-editor";
+import {
+  previewSavedPageAction,
+  savePageEditorAction,
+} from "../_actions/page-editor";
 import styles from "./page-editor-form.module.css";
 
 type PageEditorFormProps = {
@@ -183,13 +186,20 @@ export function PageEditorForm({
             Submit for review
           </Buttons.Button>
           <Buttons.Button
-            disabled
+            disabled={
+              setupMode ||
+              !editorState.documentId ||
+              editorState.revisions.length === 0
+            }
+            formAction={previewSavedPageAction}
             kind="tertiary"
+            name="revisionId"
             size="small"
-            title="Preview will be enabled after the public Neon read path is migrated."
-            type="button"
+            title="Preview the most recently saved revision in a private, time-limited session."
+            type="submit"
+            value={editorState.revisions[0]?.revisionId ?? ""}
           >
-            Preview migration pending
+            Preview saved revision
           </Buttons.Button>
           <Buttons.Button
             disabled={setupMode}

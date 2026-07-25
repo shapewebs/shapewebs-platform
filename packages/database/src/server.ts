@@ -14,6 +14,21 @@ export {
   type SavePageContentInput,
   type SavePageContentResult,
 } from "./content-editor";
+export {
+  buildContentRevalidationTags,
+  consumeContentPreviewGrant,
+  createContentPreviewGrant,
+  getDefaultPublishedContent,
+  getPreviewContentByToken,
+  getPublishedContentBySlug,
+  getPublishedPageByKind,
+  listPublishedContent,
+  type ConsumedContentPreviewGrant,
+  type ContentPreviewGrant,
+  type PublishedDocument,
+  type PublicContentType,
+  type PublicLocaleCode,
+} from "./public-content";
 export { pingDatabase } from "./readiness";
 export { createDatabase } from "./client";
 export type { ShapewebsDatabase } from "./client";

@@ -70,8 +70,11 @@ const ids = {
   publishedRevisionB: randomUUID(),
   workflowDocument: randomUUID(),
   workflowRevision: randomUUID(),
+  previewGrant: randomUUID(),
   auditEvent: randomUUID(),
 };
+const previewTokenHash = randomBytes(32).toString("hex");
+const previewSessionTokenHash = randomBytes(32).toString("hex");
 
 async function expectDenied(operation, label) {
   await assert.rejects(operation, undefined, `${label} should be denied`);
@@ -320,6 +323,28 @@ async function seed() {
         (${ids.organizationA}, ${ids.publishedDocumentA}, 'page', 'en', 'published-a', 'Published A', 'Organization A', '{}'::jsonb, ${ids.publishedRevisionA}, now()),
         (${ids.organizationB}, ${ids.publishedDocumentB}, 'page', 'en', 'published-b', 'Published B', 'Organization B', '{}'::jsonb, ${ids.publishedRevisionB}, now()),
         (${ids.organizationA}, ${ids.workflowDocument}, 'method', 'da-DK', 'secure-method', 'Sikker metode', 'Workflow enum coverage', '{}'::jsonb, null, null)`,
+    fixtureAdmin`insert into app.content_preview_grants (
+        id,
+        organization_id,
+        document_id,
+        revision_id,
+        locale,
+        path,
+        token_hash,
+        expires_at,
+        created_by_user_id
+      )
+      values (
+        ${ids.previewGrant},
+        ${ids.organizationA},
+        ${ids.draftDocument},
+        ${ids.draftRevisionTwo},
+        'en',
+        '/draft',
+        ${previewTokenHash},
+        now() + interval '30 minutes',
+        ${ids.adminUser}
+      )`,
     fixtureAdmin`update app.content_documents
       set
         page_kind = case when kind = 'page' then 'standard' else null end
@@ -1304,11 +1329,7 @@ async function verifyPublicAndWebBoundaries() {
     new Set([ids.publishedRevisionA, ids.publishedRevisionB]),
   );
 
-  for (const [label, client] of [
-    ["public", publicReader],
-    ["web", web],
-  ]) {
-    const localizationPointers = await client`
+  const publicLocalizationPointers = await publicReader`
       select document_id, locale, published_revision_id
       from app.content_localizations
       where document_id in (
@@ -1318,20 +1339,45 @@ async function verifyPublicAndWebBoundaries() {
         ${ids.workflowDocument}
       )
       order by document_id
-    `;
-    assert.deepEqual(
-      new Set(
-        localizationPointers.map(
-          ({ document_id, locale, published_revision_id }) =>
-            `${document_id}:${locale}:${published_revision_id}`,
-        ),
+  `;
+  assert.deepEqual(
+    new Set(
+      publicLocalizationPointers.map(
+        ({ document_id, locale, published_revision_id }) =>
+          `${document_id}:${locale}:${published_revision_id}`,
       ),
-      new Set([
-        `${ids.publishedDocumentA}:en:${ids.publishedRevisionA}`,
-        `${ids.publishedDocumentB}:en:${ids.publishedRevisionB}`,
-      ]),
-      `${label} must see only exact published localization pointers`,
-    );
+    ),
+    new Set([
+      `${ids.publishedDocumentA}:en:${ids.publishedRevisionA}`,
+      `${ids.publishedDocumentB}:en:${ids.publishedRevisionB}`,
+    ]),
+    "public must see only exact published localization pointers",
+  );
+
+  const webLocalizationPointers = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select document_id, locale, published_revision_id
+      from app.content_localizations
+      where document_id in (
+        ${ids.draftDocument},
+        ${ids.publishedDocumentA},
+        ${ids.publishedDocumentB},
+        ${ids.workflowDocument}
+      )
+      order by document_id`,
+  ]);
+  assert.deepEqual(webLocalizationPointers[1], [
+    {
+      document_id: ids.publishedDocumentA,
+      locale: "en",
+      published_revision_id: ids.publishedRevisionA,
+    },
+  ]);
+
+  for (const [label, client] of [
+    ["public", publicReader],
+    ["web", web],
+  ]) {
     await expectDenied(
       client`select slug from app.content_localizations`,
       `${label} current CMS localization metadata read`,
@@ -1341,6 +1387,143 @@ async function verifyPublicAndWebBoundaries() {
       `${label} current CMS document metadata read`,
     );
   }
+
+  await expectDenied(
+    publicReader`select token_hash from app.content_preview_grants`,
+    "public preview-grant read",
+  );
+  await expectDenied(
+    web`insert into app.content_preview_grants (
+      organization_id,
+      document_id,
+      revision_id,
+      locale,
+      path,
+      token_hash,
+      expires_at,
+      created_by_user_id
+    ) values (
+      ${ids.organizationA},
+      ${ids.draftDocument},
+      ${ids.draftRevisionTwo},
+      'en',
+      '/draft',
+      ${randomBytes(32).toString("hex")},
+      now() + interval '30 minutes',
+      ${ids.adminUser}
+    )`,
+    "web preview-grant creation",
+  );
+
+  const wrongTenantPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationB}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`select document_id from app.content_preview_grants`,
+  ]);
+  assert.deepEqual(
+    wrongTenantPreview[2],
+    [],
+    "a preview token must not cross organization boundaries",
+  );
+
+  const wrongTokenPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${randomBytes(32).toString("hex")}, true)`,
+    web`select document_id from app.content_preview_grants`,
+  ]);
+  assert.deepEqual(wrongTokenPreview[2], []);
+
+  const consumedPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`update app.content_preview_grants
+      set
+        consumed_at = now(),
+        session_token_hash = ${previewSessionTokenHash}
+      where token_hash = ${previewTokenHash}
+        and consumed_at is null
+      returning document_id, revision_id`,
+  ]);
+  assert.deepEqual(consumedPreview[2], [
+    {
+      document_id: ids.draftDocument,
+      revision_id: ids.draftRevisionTwo,
+    },
+  ]);
+
+  const replayedPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`update app.content_preview_grants
+      set consumed_at = now()
+      where token_hash = ${previewTokenHash}
+        and consumed_at is null
+      returning document_id`,
+  ]);
+  assert.deepEqual(
+    replayedPreview[2],
+    [],
+    "a preview grant must be consumed at most once",
+  );
+
+  const exactPreviewRevision = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewSessionTokenHash}, true)`,
+    web`select revision.id, revision.title
+      from app.content_revisions as revision
+      where revision.id in (
+        ${ids.draftRevisionOne},
+        ${ids.draftRevisionTwo}
+      )
+      order by revision.id`,
+  ]);
+  assert.deepEqual(exactPreviewRevision[2], [
+    {
+      id: ids.draftRevisionTwo,
+      title: "Draft revision two",
+    },
+  ]);
+
+  const activationTokenAfterConsumption = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`select revision.id
+      from app.content_revisions as revision
+      where revision.id = ${ids.draftRevisionTwo}`,
+  ]);
+  assert.deepEqual(
+    activationTokenAfterConsumption[2],
+    [],
+    "a consumed URL activation token must not read preview content",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'owner', true)`,
+      admin`insert into app.content_preview_grants (
+          organization_id,
+          document_id,
+          revision_id,
+          locale,
+          path,
+          token_hash,
+          expires_at,
+          created_by_user_id
+        ) values (
+          ${ids.organizationB},
+          ${ids.publishedDocumentB},
+          ${ids.publishedRevisionB},
+          'en',
+          '/published-b',
+          ${randomBytes(32).toString("hex")},
+          now() + interval '30 minutes',
+          ${ids.adminUser}
+        )`,
+    ]),
+    "cross-tenant preview-grant creation",
+  );
 
   await expectDenied(
     publicReader`select id from auth.user`,
@@ -1801,7 +1984,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

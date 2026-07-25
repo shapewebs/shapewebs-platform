@@ -4,28 +4,27 @@
 
 - Date: 25 July 2026
 - Branch: protected `staging`; current stacked implementation branch
-  `codex/neon-cms-editor`
+  `codex/neon-public-content`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
   migration pull request `shapewebs/shapewebs-platform#17` merged into
   protected `staging` at `a56a771`; fail-closed admin-readiness pull request
-  `shapewebs/shapewebs-platform#18`, stacked Neon CMS editor pull request
-  `shapewebs/shapewebs-platform#19`, and foundation promotion pull request
-  `shapewebs/shapewebs-platform#7` remain draft
+  `shapewebs/shapewebs-platform#18` merged at `41d9556`; stacked Neon CMS
+  editor pull request `shapewebs/shapewebs-platform#19` merged at `732c563`;
+  foundation promotion pull request `shapewebs/shapewebs-platform#7` remains
+  draft
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
-Production remains on the known-good baseline. Pull requests `#16` and `#17`
-are merged into protected `staging`, and both fixed staging applications
-successfully deployed merge `a56a771`. The current
-`codex/staging-auth-readiness` branch contains an unmerged fail-closed
-readiness/API correction discovered by post-merge staging probes. The
-stacked `codex/neon-cms-editor` branch contains the isolated CMS authoring
-migration and repository slice. Neither branch has been connected to
-production data or promoted to the production domains.
+Production remains on the known-good baseline. Pull requests `#16` through
+`#19` are merged into protected `staging`. Migration `0011` is applied to the
+persistent synthetic staging database and its live security verification
+passes. The current `codex/neon-public-content` branch adds the Neon public
+read path and private preview lifecycle. No content slice has been connected
+to production data or promoted to the production domains.
 
 ## Implemented on this branch
 
@@ -129,7 +128,7 @@ production data or promoted to the production domains.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains twelve version-controlled Drizzle migrations,
+- `packages/database` contains thirteen version-controlled Drizzle migrations,
   forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
@@ -219,8 +218,23 @@ production data or promoted to the production domains.
   optimistic concurrency and append-only audit events. Locale-specific exact
   publication pointers preserve live English and Danish revisions
   independently when newer drafts exist. The last admin Supabase import and
-  its transitional boundary allowlist are removed; public content and preview
-  remain transitional.
+  its transitional boundary allowlist are removed.
+- The public app now reads exact locale-specific published revision pointers
+  through the tenant-scoped Neon web role. It no longer imports or depends on
+  the transitional Supabase repository. Detail lookups are single-record
+  queries and content lists are bounded at 200 records.
+- The public catch-all validates locale prefixes and resolves localized
+  collection routes explicitly, so Danish preview URLs cannot silently fall
+  back to English content. Ambiguous nested routes fail closed.
+- CMS preview grants store only SHA-256 token hashes, activate once within five
+  minutes, expire after 30 minutes, bind one tenant/document/revision/locale
+  and redirect only to a server-derived internal path. Activation exchanges the
+  URL token for a distinct session token, so URL history or access logs cannot
+  reopen or read the preview. The browser receives one HttpOnly host-only
+  cookie and can explicitly exit Draft Mode.
+- The revalidation endpoint uses constant-time secret comparison, exact JSON
+  content type, a streamed 2 KiB body limit, a strict DTO and normalized
+  internal paths.
 
 ## Verified evidence
 
@@ -244,8 +258,9 @@ Staging provisioning and runtime evidence is recorded in:
 - `docs/audits/staging-provisioning-2026-07-24.md`;
 - `docs/audits/staging-runtime-verification-2026-07-24.md`;
 - `docs/audits/checkly-monitoring-2026-07-24.md`;
-- `docs/audits/staging-outbox-scheduler-2026-07-24.md`; and
-- `docs/audits/workspace-mail-verification-2026-07-24.md`.
+- `docs/audits/staging-outbox-scheduler-2026-07-24.md`;
+- `docs/audits/workspace-mail-verification-2026-07-24.md`;
+- and `docs/audits/google-oauth-staging-provisioning-2026-07-25.md`.
 
 The organization-settings slice passed local formatting, zero-warning lint,
 TypeScript, its 77-test unit suite, application-boundary checks, Drizzle
@@ -295,8 +310,11 @@ admin readiness incorrectly returned `200`. The isolated
 `codex/staging-auth-readiness` correction makes required auth configuration a
 readiness dependency, returns explicit `503` API results, and omits undefined
 optional fields from structured logs. Its production-mode six-test security
-suite and both application builds pass locally; it is not yet merged or
-deployed. Evidence is recorded in:
+suite and both application builds passed before pull request `#18` was
+squash-merged into protected `staging` at `41d9556`. After a fixed-staging
+redeployment, `/api/health/ready` returned a sanitized `200
+{"status":"ready"}`, proving the complete auth environment and database
+dependency are usable. Evidence is recorded in:
 
 - `docs/audits/staging-auth-readiness-regression-2026-07-25.md`.
 
@@ -313,6 +331,27 @@ Both disposable branches were deleted. Evidence is recorded in:
 
 - `docs/audits/neon-cms-editor-verification-2026-07-25.md`.
 
+Pull request `#19` then passed all required checks, including its protected
+disposable Neon lifecycle, and was squash-merged into `staging` at `732c563`.
+An automatically expiring pre-migration branch preserves the staging state
+through 27 July 2026. The dedicated migrator applied migration `0011`; the live
+journal contains 12 migrations, the expected localization/version/command
+schema is present, and the complete persistent-staging RLS/security suite
+passed using every least-privilege runtime identity. Both Vercel deployments,
+the k6 smoke test and ZAP baseline are green.
+
+The stacked public-content slice has 103 passing unit tests and passed the
+canonical verification gate plus both public/admin Turbopack production
+builds. Its complete disposable Neon source/restore lifecycle applied
+migrations `0000` through `0012`, passed ten real repository scenarios and the
+expanded forced-RLS misuse suite, proved exact published reads, cross-tenant
+preview denial and one-time preview consumption, and produced byte-identical
+exports with fixture hash
+`5d6bb329a4109f8d6e5a03d851e6a4f7728c6f74f96c036ab9aa905a62f2973c`.
+Both disposable branches were deleted. Evidence is recorded in:
+
+- `docs/audits/neon-public-content-verification-2026-07-25.md`.
+
 The repository also remediates the newly published high-severity
 `brace-expansion` denial-of-service advisory with upstream 5.0.8, a tracked
 legacy CommonJS compatibility patch, and a canonical verifier. ESLint, Knip,
@@ -323,8 +362,11 @@ Checkly compilation, Lighthouse CLI loading, the compatibility probe, and
 
 These are intentionally not guessed or provisioned:
 
-- Google Cloud OAuth client ID/secret and completion of the Google-to-TOTP
-  staging journey;
+- completion of the deployed Google-to-TOTP staging journey. A restricted
+  staging client and secret now exist in personal project
+  `shapewebs-platform-2026` with exact fixed origins and are stored only in the
+  admin `staging` Preview scope; the Workspace-owned organization project is
+  pending Google's initial provisioning window;
 - Workspace mailbox MFA/recovery verification and controlled outbound evidence
   for the additional configured role aliases. External MX delivery, inbox
   filters and the `info@` identity are complete;
@@ -360,9 +402,11 @@ seven-event replacement before revocation. Neon CLI then echoed the staging
 migrator connection string despite a requested JSON format; that non-production
 role password was reset immediately and the replacement connection was
 verified. No temporary local Keychain copy remains. Google OAuth remains
-unconfigured because the new Workspace identity still receives an
-account-specific Google Cloud Console availability page while Google's public
-status is healthy. Checkly is authenticated locally, its Gmail alert channel
+configured for the fixed staging admin origin through a temporary
+personal-account project; the new Workspace identity still receives an
+account-specific Google Cloud Console availability page during Google's
+initial organization-provisioning window. Checkly is authenticated locally,
+its Gmail alert channel
 delivered the controlled failure and recovery, and the three protected staging
 schedules are active. One operator deploy briefly recreated those three check
 objects after their then-optional origin variables were absent; commit
@@ -383,23 +427,20 @@ An external Resend MX test also delivered to `admin@shapewebs.com`, all six
 role aliases and `lukasthomsen@shapewebs.com`; all eight arrived in the central
 Workspace inbox. Production database/auth/email variables remain
 intentionally unconfigured for the new path. Existing transitional Supabase
-production variables are not removed until the corresponding CMS and
-public-content paths have verified Neon parity.
+production variables are not removed until the new paths have passed
+persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Publish the isolated admin readiness/API correction through protected
-   staging, then re-run the exact readiness, step-up and session-revocation
-   probes to replace the observed `500` evidence with bounded `503` results.
-2. Configure the Workspace-owned Google OAuth client, then verify the deployed
-   owner/editor, Google-token and TOTP paths on the fixed staging domain.
+1. Verify the deployed owner/editor, Google-token and TOTP paths on the fixed
+   staging admin domain, including step-up expiry and session revocation.
+2. Exercise authenticated Neon authoring and revision creation on persistent
+   staging.
 3. Complete mailbox MFA, recovery-address verification and the remaining
    `security@shapewebs.com` send-as/outbound identity verification.
-4. Review and apply migration `0011` to persistent staging, then deploy and
-   exercise the Neon editor through the authenticated staging journey.
-5. Migrate public published reads and cryptographically safe preview to Neon;
-   then remove Supabase only after parity and rollback evidence.
-6. Add audited rollback and unpublish commands, followed by storage controls,
+4. Review and merge the public-content slice, apply migration `0012`, and test
+   publish, exact public read, preview replay denial and exit on fixed staging.
+5. Add audited rollback and unpublish commands, followed by storage controls,
    the final public studio design, and production recovery gates in the
    milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
