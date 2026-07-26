@@ -18,18 +18,19 @@ import {
 import {
   adminRuntimeRole,
   migratorRole,
+  portalRuntimeRole,
   publicReaderRole,
   webRuntimeRole,
 } from "./roles";
-import { user } from "./auth";
+import { user as adminUser } from "./auth";
+import { customerUser } from "./customer-auth";
 import type { OrganizationSettingsValue } from "@shapewebs/validation";
 
 export const appSchema = pgSchema("app");
 
-export const membershipRole = appSchema.enum("membership_role", [
+export const staffMembershipRole = appSchema.enum("staff_membership_role", [
   "owner",
   "editor",
-  "customer",
 ]);
 
 export const membershipStatus = appSchema.enum("membership_status", [
@@ -94,6 +95,7 @@ const projectBelongsToCurrentOrganization = (projectId: unknown) =>
   sql`app.project_belongs_to_current_organization(${projectId})`;
 const currentUserHasProjectAccess = (projectId: unknown) =>
   sql`app.current_user_has_project_access(${projectId})`;
+const currentCustomerHasActiveMembership = sql`app.current_customer_has_active_membership()`;
 
 const createdAt = () =>
   timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
@@ -120,6 +122,13 @@ export const organizations = appSchema.table(
       for: "select",
       to: adminRuntimeRole,
       using: sql`${table.id} = ${currentOrganizationId}`,
+    }),
+    pgPolicy("portal runtime reads current customer organization", {
+      for: "select",
+      to: portalRuntimeRole,
+      using: sql`${table.id} = ${currentOrganizationId}
+        and ${currentMembershipRole} = 'customer'
+        and ${currentCustomerHasActiveMembership}`,
     }),
     pgPolicy("owner updates current organization", {
       for: "update",
@@ -188,18 +197,18 @@ export const organizationSettings = appSchema.table(
   ],
 );
 
-export const memberships = appSchema.table(
-  "memberships",
+export const staffMemberships = appSchema.table(
+  "staff_memberships",
   {
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    role: membershipRole("role").notNull(),
+      .references(() => adminUser.id, { onDelete: "cascade" }),
+    role: staffMembershipRole("role").notNull(),
     status: membershipStatus("status").default("invited").notNull(),
-    invitedByUserId: text("invited_by_user_id").references(() => user.id, {
+    invitedByUserId: text("invited_by_user_id").references(() => adminUser.id, {
       onDelete: "set null",
     }),
     createdAt: createdAt(),
@@ -208,30 +217,79 @@ export const memberships = appSchema.table(
   (table) => [
     primaryKey({
       columns: [table.organizationId, table.userId],
-      name: "memberships_pkey",
+      name: "staff_memberships_pkey",
     }),
-    index("memberships_user_idx").on(table.userId),
-    pgPolicy("members read memberships in current organization", {
+    index("staff_memberships_user_idx").on(table.userId),
+    pgPolicy("staff read staff memberships in current organization", {
       for: "select",
       to: adminRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId}
         and (${isEditorOrOwner} or ${table.userId} = ${currentUserId})`,
     }),
-    pgPolicy("owner inserts memberships in current organization", {
+    pgPolicy("owner inserts staff memberships in current organization", {
       for: "insert",
       to: adminRuntimeRole,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
     }),
-    pgPolicy("owner updates memberships in current organization", {
+    pgPolicy("owner updates staff memberships in current organization", {
       for: "update",
       to: adminRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
     }),
-    pgPolicy("owner deletes memberships in current organization", {
+    pgPolicy("owner deletes staff memberships in current organization", {
       for: "delete",
       to: adminRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+    }),
+  ],
+);
+
+export const customerMemberships = appSchema.table(
+  "customer_memberships",
+  {
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => customerUser.id, { onDelete: "cascade" }),
+    status: membershipStatus("status").default("invited").notNull(),
+    invitedByUserId: text("invited_by_user_id").references(() => adminUser.id, {
+      onDelete: "set null",
+    }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.organizationId, table.userId],
+      name: "customer_memberships_pkey",
+    }),
+    index("customer_memberships_user_idx").on(table.userId),
+    pgPolicy("staff read customer memberships in current organization", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("owner manages customer memberships in current organization", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+    }),
+    pgPolicy("customers read their current organization membership", {
+      for: "select",
+      to: portalRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.userId} = ${currentUserId}
+        and ${currentMembershipRole} = 'customer'`,
+    }),
+    pgPolicy("migrator reads customer memberships for policy evaluation", {
+      for: "select",
+      to: migratorRole,
+      using: sql`true`,
     }),
   ],
 );
@@ -263,14 +321,14 @@ export const projects = appSchema.table(
     pgPolicy("authorized members read projects in current organization", {
       for: "select",
       to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("assigned customers read projects in current organization", {
+      for: "select",
+      to: portalRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId}
-        and (
-          ${isEditorOrOwner}
-          or (
-            ${currentMembershipRole} = 'customer'
-            and ${currentUserHasProjectAccess(table.id)}
-          )
-        )`,
+        and ${currentMembershipRole} = 'customer'
+        and ${currentUserHasProjectAccess(table.id)}`,
     }),
     pgPolicy("editors manage projects in current organization", {
       for: "all",
@@ -286,36 +344,30 @@ export const projects = appSchema.table(
   ],
 );
 
-export const projectMemberships = appSchema.table(
-  "project_memberships",
+export const customerProjectMemberships = appSchema.table(
+  "customer_project_memberships",
   {
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => customerUser.id, { onDelete: "cascade" }),
     createdAt: createdAt(),
   },
   (table) => [
     primaryKey({
       columns: [table.projectId, table.userId],
-      name: "project_memberships_pkey",
+      name: "customer_project_memberships_pkey",
     }),
-    index("project_memberships_user_idx").on(table.userId),
-    pgPolicy("authorized members read project assignments", {
+    index("customer_project_memberships_user_idx").on(table.userId),
+    pgPolicy("staff read customer project assignments", {
       for: "select",
       to: adminRuntimeRole,
-      using: sql`(
-        ${isEditorOrOwner}
-        and ${projectBelongsToCurrentOrganization(table.projectId)}
-      ) or (
-        ${currentMembershipRole} = 'customer'
-        and ${table.userId} = ${currentUserId}
-        and ${currentUserHasProjectAccess(table.projectId)}
-      )`,
+      using: sql`${isEditorOrOwner}
+        and ${projectBelongsToCurrentOrganization(table.projectId)}`,
     }),
-    pgPolicy("editors manage project assignments", {
+    pgPolicy("editors manage customer project assignments", {
       for: "all",
       to: adminRuntimeRole,
       using: sql`${isEditorOrOwner}
@@ -323,11 +375,21 @@ export const projectMemberships = appSchema.table(
       withCheck: sql`${isEditorOrOwner}
         and ${projectBelongsToCurrentOrganization(table.projectId)}`,
     }),
-    pgPolicy("migrator reads project assignments for policy evaluation", {
+    pgPolicy("customers read their project assignments", {
       for: "select",
-      to: migratorRole,
-      using: sql`true`,
+      to: portalRuntimeRole,
+      using: sql`${currentMembershipRole} = 'customer'
+        and ${table.userId} = ${currentUserId}
+        and ${currentUserHasProjectAccess(table.projectId)}`,
     }),
+    pgPolicy(
+      "migrator reads customer project assignments for policy evaluation",
+      {
+        for: "select",
+        to: migratorRole,
+        using: sql`true`,
+      },
+    ),
   ],
 );
 
@@ -343,7 +405,7 @@ export const projectUpdates = appSchema.table(
     visibleToCustomer: boolean("visible_to_customer").default(false).notNull(),
     createdByUserId: text("created_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => adminUser.id, { onDelete: "restrict" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -355,14 +417,15 @@ export const projectUpdates = appSchema.table(
     pgPolicy("authorized members read project updates", {
       for: "select",
       to: adminRuntimeRole,
-      using: sql`${projectBelongsToCurrentOrganization(table.projectId)} and (
-        ${isEditorOrOwner}
-        or (
-          ${currentMembershipRole} = 'customer'
-          and ${table.visibleToCustomer}
-          and ${currentUserHasProjectAccess(table.projectId)}
-        )
-      )`,
+      using: sql`${isEditorOrOwner}
+        and ${projectBelongsToCurrentOrganization(table.projectId)}`,
+    }),
+    pgPolicy("assigned customers read customer-visible project updates", {
+      for: "select",
+      to: portalRuntimeRole,
+      using: sql`${currentMembershipRole} = 'customer'
+        and ${table.visibleToCustomer}
+        and ${currentUserHasProjectAccess(table.projectId)}`,
     }),
     pgPolicy("editors manage updates for current organization", {
       for: "all",
@@ -390,7 +453,7 @@ export const contentDocuments = appSchema.table(
     version: integer("version").default(1).notNull(),
     createdByUserId: text("created_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => adminUser.id, { onDelete: "restrict" }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -604,7 +667,7 @@ export const contentRevisions = appSchema.table(
     changeNote: text("change_note"),
     createdByUserId: text("created_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => adminUser.id, { onDelete: "restrict" }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
@@ -741,7 +804,7 @@ export const contentPreviewGrants = appSchema.table(
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
     createdByUserId: text("created_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => adminUser.id, { onDelete: "restrict" }),
     createdAt: createdAt(),
   },
   (table) => [
@@ -1027,7 +1090,7 @@ export const files = appSchema.table(
     originalName: text("original_name").notNull(),
     uploadedByUserId: text("uploaded_by_user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => adminUser.id, { onDelete: "restrict" }),
     createdAt: createdAt(),
   },
   (table) => [

@@ -35,8 +35,11 @@ re-read from trusted server-side sources.
 
 ADR 0004 defines a third, separately deployed customer portal. Its fail-closed
 repository, CSP, environment, telemetry, health and CI boundaries are now
-implemented. Customer identity, schema, membership and tenant access are not
-implemented and are not counted as current ASVS evidence.
+implemented. The separate customer identity schema, membership foreign keys,
+portal SQL role, and forced-RLS tenant policies are implemented and verified
+on disposable Neon branches. Customer-facing authentication, invitation,
+credential, account-linking, and portal routes remain disabled and are not yet
+counted as live staging evidence.
 
 ```mermaid
 flowchart LR

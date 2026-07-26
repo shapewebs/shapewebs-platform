@@ -51,10 +51,12 @@ The preferred repository and provider topology is:
 
 The existing `auth` schema remains the administrative identity store until a
 reviewed migration gives it a clearer name. Customer Better Auth records live
-in a separate `customer_auth` schema. Staff and customer membership foreign
-keys must be separated before portal implementation because the transitional
-`app.memberships` table currently references the administrative Better Auth
-user table while also reserving a `customer` enum value.
+in a separate `customer_auth` schema. Migration `0013` implements the accepted
+split: `staff_memberships` references the administrative identity store, while
+`customer_memberships` and `customer_project_memberships` reference only
+`customer_auth.user`. The admin and portal SQL runtime roles have mutually
+exclusive identity-schema access, and portal data policies require an active
+customer membership plus an exact project assignment.
 
 ## Registration policy
 

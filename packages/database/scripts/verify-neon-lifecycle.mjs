@@ -12,6 +12,7 @@ const expectedProjectName =
 const expectedRegion = process.env.NEON_EXPECTED_REGION ?? "aws-eu-central-1";
 const expectedOrganizationId = process.env.NEON_EXPECTED_ORGANIZATION_ID;
 const neonctl = process.env.NEONCTL_BIN ?? "neonctl";
+const portalRuntimePassword = process.env.NEON_PORTAL_RUNTIME_PASSWORD;
 
 if (!projectId) {
   throw new Error("NEON_NONPRODUCTION_PROJECT_ID is required.");
@@ -19,6 +20,14 @@ if (!projectId) {
 
 if (!expectedOrganizationId) {
   throw new Error("NEON_EXPECTED_ORGANIZATION_ID is required.");
+}
+
+if (!portalRuntimePassword) {
+  throw new Error("NEON_PORTAL_RUNTIME_PASSWORD is required.");
+}
+
+if (!/^[A-Za-z0-9_-]{43}$/.test(portalRuntimePassword)) {
+  throw new Error("NEON_PORTAL_RUNTIME_PASSWORD has an invalid format.");
 }
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -214,14 +223,16 @@ function connectionString(branchId, roleName, pooled = false) {
 }
 
 function connectionsFor(branchId) {
+  const adminUrl = connectionString(branchId, "shapewebs_admin_runtime", true);
+  const portalUrl = new URL(adminUrl);
+  portalUrl.username = "shapewebs_portal_runtime";
+  portalUrl.password = portalRuntimePassword;
+
   return {
     DATABASE_OWNER_URL: connectionString(branchId, "shapewebs_owner"),
     DATABASE_MIGRATION_URL: connectionString(branchId, "shapewebs_migrator"),
-    DATABASE_ADMIN_URL: connectionString(
-      branchId,
-      "shapewebs_admin_runtime",
-      true,
-    ),
+    DATABASE_ADMIN_URL: adminUrl,
+    DATABASE_PORTAL_URL: portalUrl.toString(),
     DATABASE_WEB_URL: connectionString(branchId, "shapewebs_web_runtime", true),
     DATABASE_PUBLIC_URL: connectionString(
       branchId,
@@ -308,7 +319,7 @@ try {
   // Both files contain synthetic example.test data only.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const sourceExport = readFileSync(exportPath, "utf8");
-  const sourceHashMatch = sourceExport.match(/"version": 4/);
+  const sourceHashMatch = sourceExport.match(/"version": 5/);
   assert.ok(sourceHashMatch, "The logical export is invalid");
 
   restoreBranchId = createBranch(restoreBranchName);

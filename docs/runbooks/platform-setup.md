@@ -11,12 +11,14 @@ repository.
 
 ## Topology
 
-Keep one monorepo and the two existing Vercel projects:
+Keep one monorepo and three isolated Vercel projects. Provision the portal
+project only after its authentication and staging gates pass:
 
-| Vercel project    | Root         | Production domain     | Responsibility            |
-| ----------------- | ------------ | --------------------- | ------------------------- |
-| `shapewebs-web`   | `apps/web`   | `shapewebs.com`       | Static public studio site |
-| `shapewebs-admin` | `apps/admin` | `admin.shapewebs.com` | Auth, CMS, future portal  |
+| Vercel project     | Root          | Production domain      | Responsibility                  |
+| ------------------ | ------------- | ---------------------- | ------------------------------- |
+| `shapewebs-web`    | `apps/web`    | `shapewebs.com`        | Static public studio site       |
+| `shapewebs-admin`  | `apps/admin`  | `admin.shapewebs.com`  | Administrative auth, CMS        |
+| `shapewebs-portal` | `apps/portal` | `portal.shapewebs.com` | Invitation-only customer portal |
 
 Both projects deploy `main`. A pull request creates protected previews only for
 affected projects. Keep `www.shapewebs.com` as a permanent redirect to the
@@ -100,8 +102,10 @@ Create separate database capabilities:
 
 - `shapewebs_migrator`: owns schema changes and is used only by a protected
   migration job;
-- `shapewebs_admin_runtime`: non-owner runtime role for auth, CMS, and portal
-  queries;
+- `shapewebs_admin_runtime`: non-owner runtime role for administrative auth and
+  CMS queries;
+- `shapewebs_portal_runtime`: SQL-created non-owner runtime role for customer
+  auth and forced-RLS customer/project reads;
 - `shapewebs_web_runtime`: non-owner role limited to published-content reads
   and validated lead inserts;
 - `shapewebs_public_reader`: narrowly granted published-content reads where the

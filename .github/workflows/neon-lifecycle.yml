@@ -61,6 +61,7 @@ jobs:
     environment: neon-nonproduction
     env:
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PORTAL_RUNTIME_PASSWORD: ${{ secrets.NEON_PORTAL_RUNTIME_PASSWORD }}
       NEON_NONPRODUCTION_PROJECT_ID: ${{ vars.NEON_NONPRODUCTION_PROJECT_ID }}
       NEON_EXPECTED_ORGANIZATION_ID: org-purple-river-47865004
       NEON_EXPECTED_PROJECT_NAME: shapewebs-platform

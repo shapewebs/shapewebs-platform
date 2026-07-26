@@ -26,8 +26,8 @@ if (["export", "restore"].includes(command) && !exportPath) {
 const sql = neon(databaseUrl);
 
 const fixture = {
-  version: 4,
-  users: [
+  version: 5,
+  adminUsers: [
     {
       id: "lifecycle-owner",
       name: "Lifecycle Owner",
@@ -35,12 +35,13 @@ const fixture = {
       emailVerified: true,
       twoFactorEnabled: true,
     },
+  ],
+  customerUsers: [
     {
       id: "lifecycle-customer",
       name: "Lifecycle Customer",
       email: "lifecycle-customer@example.test",
       emailVerified: true,
-      twoFactorEnabled: false,
     },
   ],
   organizations: [
@@ -81,13 +82,15 @@ const fixture = {
       cookiePolicyVersions: ["v1-eea", "v1-global"],
     },
   ],
-  memberships: [
+  customerMemberships: [
     {
       organizationId: "10000000-0000-4000-8000-000000000001",
       userId: "lifecycle-customer",
-      role: "customer",
       status: "active",
+      acceptedAt: "2026-01-01T00:00:00.000Z",
     },
+  ],
+  staffMemberships: [
     {
       organizationId: "10000000-0000-4000-8000-000000000001",
       userId: "lifecycle-owner",
@@ -106,7 +109,7 @@ const fixture = {
       summary: "Synthetic recovery fixture",
     },
   ],
-  projectMemberships: [
+  customerProjectMemberships: [
     {
       projectId: "10000000-0000-4000-8000-000000000002",
       userId: "lifecycle-customer",
@@ -181,7 +184,7 @@ const fixture = {
       email: "lifecycle-lead@example.test",
       message: "Synthetic lead retained through recovery",
       payload: { source: "lifecycle-test" },
-      requestFingerprint: "lifecycle-fixture-v4",
+      requestFingerprint: "lifecycle-fixture-v5",
     },
   ],
   files: [
@@ -203,8 +206,8 @@ const fixture = {
       actorUserId: "lifecycle-owner",
       action: "lifecycle.fixture.created",
       targetType: "lifecycle_test",
-      targetId: "fixture-v4",
-      requestId: "lifecycle-request-v4",
+      targetId: "fixture-v5",
+      requestId: "lifecycle-request-v5",
       metadata: { synthetic: true },
       occurredAt: "2026-01-01T00:00:00.000Z",
     },
@@ -227,8 +230,10 @@ async function cleanupFixture() {
       where id = ${fixture.files[0].id}`,
     sql`delete from app.organizations
       where id = ${fixture.organizations[0].id}`,
+    sql`delete from customer_auth.user
+      where id = ${fixture.customerUsers[0].id}`,
     sql`delete from auth.user
-      where id in (${fixture.users[0].id}, ${fixture.users[1].id})`,
+      where id = ${fixture.adminUsers[0].id}`,
   ]);
 }
 
@@ -239,12 +244,14 @@ async function seedFixture(value) {
     "Only the reviewed synthetic fixture is valid",
   );
 
-  const [owner, customer] = value.users;
+  const [owner] = value.adminUsers;
+  const [customer] = value.customerUsers;
   const [organization] = value.organizations;
   const [organizationSetting] = value.organizationSettings;
-  const [customerMembership, ownerMembership] = value.memberships;
+  const [customerMembership] = value.customerMemberships;
+  const [ownerMembership] = value.staffMemberships;
   const [project] = value.projects;
-  const [projectMembership] = value.projectMemberships;
+  const [projectMembership] = value.customerProjectMemberships;
   const [projectUpdate] = value.projectUpdates;
   const [document] = value.contentDocuments;
   const [localization] = value.contentLocalizations;
@@ -264,8 +271,7 @@ async function seedFixture(value) {
         updated_at,
         two_factor_enabled
       )
-      values
-        (
+      values (
           ${owner.id},
           ${owner.name},
           ${owner.email},
@@ -273,15 +279,22 @@ async function seedFixture(value) {
           ${timestamp}::timestamp,
           ${timestamp}::timestamp,
           ${owner.twoFactorEnabled}
-        ),
-        (
+        )`,
+    sql`insert into customer_auth.user (
+        id,
+        name,
+        email,
+        email_verified,
+        created_at,
+        updated_at
+      )
+      values (
           ${customer.id},
           ${customer.name},
           ${customer.email},
           ${customer.emailVerified},
           ${timestamp}::timestamp,
-          ${timestamp}::timestamp,
-          ${customer.twoFactorEnabled}
+          ${timestamp}::timestamp
         )`,
     sql`insert into app.organizations (
         id,
@@ -317,7 +330,7 @@ async function seedFixture(value) {
         ${JSON.stringify(organizationSetting.cookiePolicyVersions)}::jsonb,
         ${timestamp}::timestamptz
       )`,
-    sql`insert into app.memberships (
+    sql`insert into app.staff_memberships (
         organization_id,
         user_id,
         role,
@@ -325,16 +338,7 @@ async function seedFixture(value) {
         created_at,
         updated_at
       )
-      values
-        (
-          ${customerMembership.organizationId},
-          ${customerMembership.userId},
-          ${customerMembership.role},
-          ${customerMembership.status},
-          ${timestamp}::timestamptz,
-          ${timestamp}::timestamptz
-        ),
-        (
+      values (
           ${ownerMembership.organizationId},
           ${ownerMembership.userId},
           ${ownerMembership.role},
@@ -342,6 +346,22 @@ async function seedFixture(value) {
           ${timestamp}::timestamptz,
           ${timestamp}::timestamptz
         )`,
+    sql`insert into app.customer_memberships (
+        organization_id,
+        user_id,
+        status,
+        accepted_at,
+        created_at,
+        updated_at
+      )
+      values (
+        ${customerMembership.organizationId},
+        ${customerMembership.userId},
+        ${customerMembership.status},
+        ${customerMembership.acceptedAt}::timestamptz,
+        ${timestamp}::timestamptz,
+        ${timestamp}::timestamptz
+      )`,
     sql`insert into app.projects (
         id,
         organization_id,
@@ -364,7 +384,7 @@ async function seedFixture(value) {
         ${timestamp}::timestamptz,
         ${timestamp}::timestamptz
       )`,
-    sql`insert into app.project_memberships (
+    sql`insert into app.customer_project_memberships (
         project_id,
         user_id,
         created_at
@@ -563,12 +583,14 @@ async function seedFixture(value) {
 
 async function readFixture() {
   const [
-    users,
+    adminUsers,
+    customerUsers,
     organizations,
     organizationSettings,
-    memberships,
+    staffMemberships,
+    customerMemberships,
     projects,
-    projectMemberships,
+    customerProjectMemberships,
     projectUpdates,
     contentDocuments,
     contentLocalizations,
@@ -584,8 +606,14 @@ async function readFixture() {
         email_verified,
         two_factor_enabled
       from auth.user
-      where id in (${fixture.users[0].id}, ${fixture.users[1].id})
-      order by id desc`,
+      where id = ${fixture.adminUsers[0].id}`,
+    sql`select
+        id,
+        name,
+        email,
+        email_verified
+      from customer_auth.user
+      where id = ${fixture.customerUsers[0].id}`,
     sql`select id, slug, name, active
       from app.organizations
       where id = ${fixture.organizations[0].id}`,
@@ -599,7 +627,11 @@ async function readFixture() {
       from app.organization_settings
       where organization_id = ${fixture.organizationSettings[0].organizationId}`,
     sql`select organization_id, user_id, role, status
-      from app.memberships
+      from app.staff_memberships
+      where organization_id = ${fixture.organizations[0].id}
+      order by user_id`,
+    sql`select organization_id, user_id, status, accepted_at
+      from app.customer_memberships
       where organization_id = ${fixture.organizations[0].id}
       order by user_id`,
     sql`select
@@ -613,7 +645,7 @@ async function readFixture() {
       from app.projects
       where id = ${fixture.projects[0].id}`,
     sql`select project_id, user_id
-      from app.project_memberships
+      from app.customer_project_memberships
       where project_id = ${fixture.projects[0].id}`,
     sql`select
         id,
@@ -708,13 +740,19 @@ async function readFixture() {
   ]);
 
   return {
-    version: 4,
-    users: users.map((row) => ({
+    version: 5,
+    adminUsers: adminUsers.map((row) => ({
       id: row.id,
       name: row.name,
       email: row.email,
       emailVerified: row.email_verified,
       twoFactorEnabled: row.two_factor_enabled,
+    })),
+    customerUsers: customerUsers.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      emailVerified: row.email_verified,
     })),
     organizations: organizations.map((row) => ({
       id: row.id,
@@ -730,7 +768,13 @@ async function readFixture() {
       consentRuleSets: row.consent_rule_sets,
       cookiePolicyVersions: row.cookie_policy_versions,
     })),
-    memberships: memberships.map((row) => ({
+    customerMemberships: customerMemberships.map((row) => ({
+      organizationId: row.organization_id,
+      userId: row.user_id,
+      status: row.status,
+      acceptedAt: new Date(row.accepted_at).toISOString(),
+    })),
+    staffMemberships: staffMemberships.map((row) => ({
       organizationId: row.organization_id,
       userId: row.user_id,
       role: row.role,
@@ -745,7 +789,7 @@ async function readFixture() {
       websiteUrl: row.website_url,
       summary: row.summary,
     })),
-    projectMemberships: projectMemberships.map((row) => ({
+    customerProjectMemberships: customerProjectMemberships.map((row) => ({
       projectId: row.project_id,
       userId: row.user_id,
     })),
