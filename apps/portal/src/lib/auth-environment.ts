@@ -73,21 +73,27 @@ export function isPortalRuntimeReady(
   return isPortalIdentityImplemented() && hasPortalAuthEnvironment(environment);
 }
 
-export function getPortalDatabaseUrl(): string | null {
-  return isPortalRuntimeReady()
-    ? (process.env.PORTAL_DATABASE_URL ?? null)
+export function getPortalDatabaseUrl(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.PORTAL_DATABASE_URL ?? null)
     : null;
 }
 
-export function getPortalOrganizationId(): string | null {
-  return isPortalRuntimeReady()
-    ? (process.env.SHAPEWEBS_ORGANIZATION_ID ?? null)
+export function getPortalOrganizationId(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.SHAPEWEBS_ORGANIZATION_ID ?? null)
     : null;
 }
 
-export function getPortalBaseUrl(): string | null {
-  return isPortalRuntimeReady()
-    ? (process.env.PORTAL_BETTER_AUTH_URL ?? null)
+export function getPortalBaseUrl(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.PORTAL_BETTER_AUTH_URL ?? null)
     : null;
 }
 
