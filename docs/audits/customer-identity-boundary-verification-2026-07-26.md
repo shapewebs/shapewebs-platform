@@ -2,7 +2,8 @@
 
 ## Scope
 
-This evidence covers migration `0013_customer-identity-boundary` and the
+This evidence covers migration `0013_customer-identity-boundary`, its protected
+pull-request lifecycle, persistent synthetic-staging application, and the
 non-production SQL role required by the isolated customer portal architecture.
 It does not enable customer registration, authentication routes, a portal
 deployment, production data, or a production credential.
@@ -69,11 +70,37 @@ The fixture SHA-256 was
 `b091129fc9c4110bda29e8b7d2bebeaf2e90bb0f4d5d502ebcdac41c16c0abb4`.
 Both lifecycle branches and the diagnostic branch were deleted after the run.
 
+## Protected and persistent staging evidence
+
+Pull request
+[`#33`](https://github.com/shapewebs/shapewebs-platform/pull/33) reproduced the
+complete disposable lifecycle in GitHub Actions run
+[`30206445840`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30206445840)
+through the protected `neon-nonproduction` environment. Quality, dependency
+review, OSV, CodeQL, both Vercel previews, the disposable lifecycle, and its
+required gate all passed before the pull request was squash-merged into
+protected `staging` at `b8f9750`.
+
+Before changing persistent synthetic staging, Neon branch
+`codex-staging-pre-0013-20260726` (`br-noisy-shape-as6lw1xi`) captured the exact
+pre-migration state and was given an automatic 28 July 2026 expiry. The
+dedicated direct migrator then applied migration `0013`. Read-only verification
+reported:
+
+- 14 entries in `drizzle.__shapewebs_migrations`;
+- `customer_auth.user`, `app.staff_memberships`,
+  `app.customer_memberships`, and `app.customer_project_memberships` present;
+- RLS enabled and forced on all three membership tables; and
+- the complete security suite passing through the distinct owner, migrator,
+  admin, portal, web, and public identities.
+
+Both fixed staging deployments reached `READY`. Post-merge staging reliability
+run
+[`30206702702`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30206702702)
+passed its k6 smoke thresholds and passive ZAP baseline.
+
 ## Remaining gates
 
-- Protected pull-request CI must reproduce this lifecycle.
-- Migration `0013` must then be applied to persistent synthetic staging by the
-  dedicated migrator and the live role/RLS suite repeated.
 - Customer-facing routes remain unavailable until invitation, verification,
   password, Google linking, durable auth email, abuse controls, and recovery
   tests pass.
