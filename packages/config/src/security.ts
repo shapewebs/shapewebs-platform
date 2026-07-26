@@ -168,11 +168,39 @@ export function buildAdminSecurityHeaders(options?: {
 }
 
 export function buildPortalContentSecurityPolicy(nonce: string): string {
-  return buildAdminContentSecurityPolicy(nonce);
+  if (!/^[A-Za-z0-9+/=_-]+$/.test(nonce)) {
+    throw new Error("The CSP nonce contains invalid characters.");
+  }
+
+  const scriptSrc = [
+    "'self'",
+    `'nonce-${nonce}'`,
+    "'strict-dynamic'",
+    "https://challenges.cloudflare.com",
+    ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
+  ].join(" ");
+
+  return [
+    "default-src 'self'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "object-src 'none'",
+    "connect-src 'self' https://challenges.cloudflare.com",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "frame-src 'self' https://challenges.cloudflare.com",
+  ].join("; ");
 }
 
 export function buildPortalSecurityHeaders(options?: {
   includeContentSecurityPolicy?: boolean;
 }): Header[] {
-  return buildAdminSecurityHeaders(options);
+  return buildAdminSecurityHeaders(options).map((header) =>
+    header.key === "Referrer-Policy"
+      ? { ...header, value: "no-referrer" }
+      : header,
+  );
 }

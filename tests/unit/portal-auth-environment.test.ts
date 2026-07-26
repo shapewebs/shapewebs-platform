@@ -72,8 +72,14 @@ describe("customer portal authentication environment", () => {
     ).toBe(false);
   });
 
-  it("cannot be enabled through provider values alone", () => {
-    expect(isPortalIdentityImplemented()).toBe(false);
-    expect(isPortalRuntimeReady(completeEnvironment)).toBe(false);
+  it("requires both implemented routes and the complete provider namespace", () => {
+    expect(isPortalIdentityImplemented()).toBe(true);
+    expect(isPortalRuntimeReady(completeEnvironment)).toBe(true);
+    expect(
+      isPortalRuntimeReady({
+        ...completeEnvironment,
+        PORTAL_TURNSTILE_SECRET_KEY: undefined,
+      }),
+    ).toBe(false);
   });
 });

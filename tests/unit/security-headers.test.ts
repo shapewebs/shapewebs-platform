@@ -63,7 +63,8 @@ describe("security headers", () => {
     expect(csp).toContain("'nonce-portalNonce123'");
     expect(csp).toContain("'strict-dynamic'");
     expect(csp.match(/script-src [^;]+/)?.[0]).not.toContain("'unsafe-inline'");
-    expect(csp).not.toContain("challenges.cloudflare.com");
+    expect(csp).toContain("https://challenges.cloudflare.com");
+    expect(headers.get("referrer-policy")).toBe("no-referrer");
     expect(apiCsp).toContain("default-src 'none'");
   });
 

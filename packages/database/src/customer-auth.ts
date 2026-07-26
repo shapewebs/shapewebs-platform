@@ -1,10 +1,11 @@
 import "server-only";
 
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lt, lte, or, sql } from "drizzle-orm";
 
 import type { AdminAuthorizationContext } from "./admin-auth";
 import { createDatabase } from "./client";
 import {
+  customerAccount,
   customerAuthEmailOutbox,
   customerSession,
   customerSessionSecurity,
@@ -23,6 +24,27 @@ export type CustomerRegistrationReceipt = {
   invitationId: string;
   organizationId: string;
   userId: string;
+};
+
+export type CustomerAuthorizationContext = {
+  actor: {
+    id: string;
+    type: "customer";
+  };
+  organizationId: string;
+  role: "customer";
+  session: {
+    id: string;
+  };
+};
+
+export type ClaimedCustomerAuthEmail = {
+  attempt: number;
+  encryptedToken: string;
+  eventId: string;
+  idempotencyKey: string;
+  kind: "email_verification" | "invitation" | "password_reset";
+  recipient: string;
 };
 
 function adminContextQueries(
@@ -230,6 +252,48 @@ export async function customerHasActiveMembership(
   return result.rows[0]?.active === true;
 }
 
+export async function getCustomerAuthenticationMethods(
+  databaseUrl: string,
+  userId: string,
+): Promise<{ google: boolean; password: boolean }> {
+  const database = createDatabase(databaseUrl);
+  const accounts = await database
+    .select({ providerId: customerAccount.providerId })
+    .from(customerAccount)
+    .where(
+      and(
+        eq(customerAccount.userId, userId),
+        sql`app.customer_has_active_membership(${userId})`,
+      ),
+    );
+  const providers = new Set(accounts.map((account) => account.providerId));
+
+  return {
+    google: providers.has("google"),
+    password: providers.has("credential"),
+  };
+}
+
+export async function getCustomerCredentialPasswordHash(
+  databaseUrl: string,
+  userId: string,
+): Promise<string | null> {
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .select({ password: customerAccount.password })
+    .from(customerAccount)
+    .where(
+      and(
+        eq(customerAccount.userId, userId),
+        eq(customerAccount.providerId, "credential"),
+        sql`app.customer_has_active_membership(${userId})`,
+      ),
+    )
+    .limit(1);
+
+  return result[0]?.password ?? null;
+}
+
 export async function provisionCustomerSessionSecurity(
   databaseUrl: string,
   input: { sessionId: string; userId: string },
@@ -246,31 +310,55 @@ export async function authorizeCustomerSession(
   databaseUrl: string,
   input: { sessionId: string; userId: string },
   now = new Date(),
-): Promise<boolean> {
+): Promise<CustomerAuthorizationContext | null> {
   const database = createDatabase(databaseUrl);
   const inactivityCutoff = new Date(now.getTime() - customerInactivityLimitMs);
-  const result = await database
-    .update(customerSessionSecurity)
-    .set({ lastSeenAt: now, updatedAt: now })
-    .where(
-      and(
-        eq(customerSessionSecurity.sessionId, input.sessionId),
-        eq(customerSessionSecurity.userId, input.userId),
-        isNull(customerSessionSecurity.revokedAt),
-        gt(customerSessionSecurity.lastSeenAt, inactivityCutoff),
-        sql`exists (
+  const result = await database.execute<{
+    organizationId: string;
+    sessionId: string;
+    userId: string;
+  }>(sql`
+    with authorized_session as (
+      update ${customerSessionSecurity}
+      set
+        last_seen_at = ${now},
+        updated_at = ${now}
+      where session_id = ${input.sessionId}
+        and user_id = ${input.userId}
+        and revoked_at is null
+        and last_seen_at > ${inactivityCutoff}
+        and exists (
           select 1
           from ${customerSession}
           where ${customerSession.id} = ${input.sessionId}
             and ${customerSession.userId} = ${input.userId}
             and ${customerSession.expiresAt} > ${now}
-        )`,
-        sql`app.customer_has_active_membership(${input.userId})`,
-      ),
+        )
+        and app.customer_has_active_membership(${input.userId})
+      returning session_id, user_id
     )
-    .returning({ sessionId: customerSessionSecurity.sessionId });
+    select
+      authorized_session.session_id as "sessionId",
+      authorized_session.user_id as "userId",
+      membership.organization_id::text as "organizationId"
+    from authorized_session
+    inner join app.customer_memberships as membership
+      on membership.user_id = authorized_session.user_id
+      and membership.status = 'active'
+    order by membership.organization_id
+    limit 2
+  `);
 
-  return result.length === 1;
+  if (result.rows.length !== 1 || !result.rows[0]) {
+    return null;
+  }
+
+  return {
+    actor: { id: result.rows[0].userId, type: "customer" },
+    organizationId: result.rows[0].organizationId,
+    role: "customer",
+    session: { id: result.rows[0].sessionId },
+  };
 }
 
 export async function enqueueCustomerAuthEmail(
@@ -292,4 +380,190 @@ export async function enqueueCustomerAuthEmail(
     .insert(customerAuthEmailOutbox)
     .values(input)
     .onConflictDoNothing({ target: customerAuthEmailOutbox.idempotencyKey });
+}
+
+export async function claimCustomerAuthEmail(
+  databaseUrl: string,
+  input: { organizationId: string; workerId: string },
+  now = new Date(),
+): Promise<ClaimedCustomerAuthEmail | null> {
+  const database = createDatabase(databaseUrl);
+  const staleLockCutoff = new Date(now.getTime() - 5 * 60 * 1_000);
+  const uncertainDeliveryCutoff = new Date(
+    now.getTime() - 23 * 60 * 60 * 1_000,
+  );
+  const eligible = or(
+    and(
+      eq(customerAuthEmailOutbox.status, "pending"),
+      lte(customerAuthEmailOutbox.nextAttemptAt, now),
+    ),
+    and(
+      eq(customerAuthEmailOutbox.status, "processing"),
+      lt(customerAuthEmailOutbox.lockedAt, staleLockCutoff),
+      gt(customerAuthEmailOutbox.lockedAt, uncertainDeliveryCutoff),
+    ),
+  );
+
+  await database
+    .update(customerAuthEmailOutbox)
+    .set({
+      lastErrorCode: sql`case
+        when ${customerAuthEmailOutbox.expiresAt} <= ${now}
+          then 'auth_token_expired'
+        when ${customerAuthEmailOutbox.attempts} >= 10
+          then 'retry_attempts_exhausted'
+        else 'provider_idempotency_window_expired'
+      end`,
+      lockedAt: null,
+      lockedBy: null,
+      processedAt: now,
+      status: "permanent_failure",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(customerAuthEmailOutbox.organizationId, input.organizationId),
+        or(
+          lte(customerAuthEmailOutbox.expiresAt, now),
+          gte(customerAuthEmailOutbox.attempts, 10),
+          and(
+            eq(customerAuthEmailOutbox.status, "processing"),
+            lte(customerAuthEmailOutbox.lockedAt, uncertainDeliveryCutoff),
+          ),
+        ),
+        or(
+          eq(customerAuthEmailOutbox.status, "pending"),
+          eq(customerAuthEmailOutbox.status, "processing"),
+        ),
+      ),
+    );
+
+  const candidates = await database
+    .select({
+      attempts: customerAuthEmailOutbox.attempts,
+      encryptedToken: customerAuthEmailOutbox.encryptedToken,
+      eventId: customerAuthEmailOutbox.id,
+      idempotencyKey: customerAuthEmailOutbox.idempotencyKey,
+      kind: customerAuthEmailOutbox.kind,
+      recipient: customerAuthEmailOutbox.recipient,
+    })
+    .from(customerAuthEmailOutbox)
+    .where(
+      and(
+        eq(customerAuthEmailOutbox.organizationId, input.organizationId),
+        gt(customerAuthEmailOutbox.expiresAt, now),
+        lt(customerAuthEmailOutbox.attempts, 10),
+        eligible,
+      ),
+    )
+    .orderBy(asc(customerAuthEmailOutbox.createdAt))
+    .limit(1);
+  const candidate = candidates[0];
+
+  if (!candidate) {
+    return null;
+  }
+
+  const claimed = await database
+    .update(customerAuthEmailOutbox)
+    .set({
+      attempts: sql`${customerAuthEmailOutbox.attempts} + 1`,
+      lockedAt: now,
+      lockedBy: input.workerId,
+      status: "processing",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(customerAuthEmailOutbox.id, candidate.eventId),
+        eq(customerAuthEmailOutbox.organizationId, input.organizationId),
+        gt(customerAuthEmailOutbox.expiresAt, now),
+        lt(customerAuthEmailOutbox.attempts, 10),
+        eligible,
+      ),
+    )
+    .returning({ id: customerAuthEmailOutbox.id });
+
+  return claimed.length === 1
+    ? {
+        attempt: candidate.attempts + 1,
+        encryptedToken: candidate.encryptedToken,
+        eventId: candidate.eventId,
+        idempotencyKey: candidate.idempotencyKey,
+        kind: candidate.kind,
+        recipient: candidate.recipient,
+      }
+    : null;
+}
+
+export async function completeCustomerAuthEmail(
+  databaseUrl: string,
+  input: {
+    eventId: string;
+    organizationId: string;
+    providerMessageId: string;
+    workerId: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .update(customerAuthEmailOutbox)
+    .set({
+      lastErrorCode: null,
+      lockedAt: null,
+      lockedBy: null,
+      processedAt: now,
+      providerMessageId: input.providerMessageId,
+      status: "sent",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(customerAuthEmailOutbox.id, input.eventId),
+        eq(customerAuthEmailOutbox.organizationId, input.organizationId),
+        eq(customerAuthEmailOutbox.status, "processing"),
+        eq(customerAuthEmailOutbox.lockedBy, input.workerId),
+      ),
+    )
+    .returning({ id: customerAuthEmailOutbox.id });
+
+  return result.length === 1;
+}
+
+export async function failCustomerAuthEmail(
+  databaseUrl: string,
+  input: {
+    errorCode: string;
+    eventId: string;
+    nextAttemptAt: Date;
+    organizationId: string;
+    permanent: boolean;
+    workerId: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .update(customerAuthEmailOutbox)
+    .set({
+      lastErrorCode: input.errorCode.slice(0, 80),
+      lockedAt: null,
+      lockedBy: null,
+      nextAttemptAt: input.nextAttemptAt,
+      processedAt: input.permanent ? now : null,
+      status: input.permanent ? "permanent_failure" : "pending",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(customerAuthEmailOutbox.id, input.eventId),
+        eq(customerAuthEmailOutbox.organizationId, input.organizationId),
+        eq(customerAuthEmailOutbox.status, "processing"),
+        eq(customerAuthEmailOutbox.lockedBy, input.workerId),
+      ),
+    )
+    .returning({ id: customerAuthEmailOutbox.id });
+
+  return result.length === 1;
 }

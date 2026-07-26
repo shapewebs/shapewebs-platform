@@ -79,7 +79,7 @@ test("admin routes fail closed when authentication is unconfigured", async ({
   expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
 });
 
-test("customer portal routes remain unavailable before identity is implemented", async ({
+test("customer portal routes fail closed when authentication is unconfigured", async ({
   request,
 }) => {
   const response = await request.get(portalOrigin);

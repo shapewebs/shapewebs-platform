@@ -8,6 +8,10 @@ export {
 export { createShapewebsAuth } from "./create-auth";
 export { createShapewebsCustomerAuth } from "./create-customer-auth";
 export {
+  createCustomerMethodAuthorization,
+  verifyCustomerMethodAuthorization,
+} from "./customer-method-authorization";
+export {
   activateCustomerInvitation,
   beginCustomerPasswordRegistration,
   confirmCustomerPasswordRegistration,
@@ -19,15 +23,24 @@ export {
   customerPasswordPolicy,
   CustomerPasswordError,
   hashCustomerPassword,
+  verifyCustomerPasswordHash,
   type CustomerPasswordFailureCode,
 } from "./customer-password";
 export {
+  clearCustomerRegistrationContext,
   clearCustomerRegistrationGrant,
   getCustomerCookiePolicy,
+  getCustomerRegistrationContextCookieName,
   getCustomerRegistrationCookieName,
   readCustomerRegistrationGrant,
+  serializeCustomerRegistrationContext,
   serializeCustomerRegistrationGrant,
 } from "./customer-cookie";
+export {
+  decryptCustomerRegistrationContext,
+  encryptCustomerRegistrationContext,
+  type CustomerRegistrationContext,
+} from "./customer-registration-context";
 export {
   decryptCustomerEmailToken,
   encryptCustomerEmailToken,

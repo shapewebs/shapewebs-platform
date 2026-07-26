@@ -137,7 +137,12 @@ describe.sequential("customer Better Auth runtime", () => {
         sessionId,
         userId: customerId,
       }),
-    ).resolves.toBe(true);
+    ).resolves.toMatchObject({
+      actor: { id: customerId, type: "customer" },
+      organizationId,
+      role: "customer",
+      session: { id: sessionId },
+    });
   });
 
   it("fails closed after the 24-hour inactivity boundary", async () => {
@@ -158,6 +163,6 @@ describe.sequential("customer Better Auth runtime", () => {
         sessionId,
         userId: customerId,
       }),
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
   });
 });

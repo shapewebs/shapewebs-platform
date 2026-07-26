@@ -1,4 +1,4 @@
-import { hashPassword } from "better-auth/crypto";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 
 const minimumCustomerPasswordLength = 15;
 const maximumCustomerPasswordLength = 128;
@@ -33,6 +33,21 @@ export function assertCustomerPasswordPolicy(password: string): void {
 export async function hashCustomerPassword(password: string): Promise<string> {
   assertCustomerPasswordPolicy(password);
   return hashPassword(password);
+}
+
+export async function verifyCustomerPasswordHash(
+  password: string,
+  hash: string,
+): Promise<boolean> {
+  if (!password || password.length > maximumCustomerPasswordLength) {
+    return false;
+  }
+
+  try {
+    return await verifyPassword({ hash, password });
+  } catch {
+    return false;
+  }
 }
 
 async function sha1Hex(value: string): Promise<string> {

@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `8e7a437`; current evidence branch
-  `codex/customer-credential-staging-evidence`
+- Branch: protected `staging` at `8e7a437`; current implementation branch
+  `codex/customer-portal-auth-routes`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -81,9 +81,9 @@ production domains.
   to persistent synthetic staging and remains unreachable from customer-facing
   routes.
 - Portal provider values use a distinct `PORTAL_*` namespace. A code-owned
-  implementation gate keeps every portal UI route unavailable with HTTP `503`
-  even if provider values are supplied prematurely. Liveness remains
-  observable while readiness fails closed.
+  implementation gate and complete environment validator keep every portal UI
+  route unavailable with HTTP `503` unless the isolated provider namespace is
+  complete. Liveness remains observable while readiness fails closed.
 - Portal responses use nonce CSP, private/no-store and noindex controls. Its
   APIs deny browser rendering contexts, and both Next.js build engines plus
   Playwright cover the third application in the canonical root workflow.
@@ -173,13 +173,13 @@ production domains.
   client, Neon schema, and runtime role. It supports invitation-gated Google
   and verified email/password onboarding with explicit same-email account
   linking, without weakening or sharing administrative authentication.
-- Protected staging now contains the disabled customer credential
-  foundation: owner-created project-bound invitations, one-time registration
-  grants, inactive provisional credentials, mailbox-owned final-password
-  activation, invitation-gated Google activation, seven-day customer sessions,
-  a 24-hour inactivity boundary, database throttles, compromised-password
-  checks, explicit same-email linking policy, and a durable encrypted auth-email
-  outbox. No portal route or provider credential is enabled by this branch.
+- The current implementation branch adds fail-closed customer routes over the
+  protected credential foundation: project-bound invitation acceptance,
+  Google-first or password-first onboarding, login/logout, generic recovery,
+  explicit same-account Google linking, verified-email password addition,
+  authorization-backed dashboard/security pages, Turnstile, and a durable
+  encrypted Resend worker. Dedicated portal provider resources are still
+  absent, so no customer route is live on staging or production.
 
 ### Neon lead, retention and email path
 

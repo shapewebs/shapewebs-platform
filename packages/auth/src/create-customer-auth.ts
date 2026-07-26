@@ -10,7 +10,7 @@ import * as customerAuthSchema from "@shapewebs/database/customer-auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { emailAddressSchema } from "@shapewebs/validation";
 import type { GenericEndpointContext } from "better-auth";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { haveIBeenPwned } from "better-auth/plugins";
 
@@ -26,6 +26,7 @@ import {
   hashCustomerOpaqueToken,
   isCustomerBearerToken,
 } from "./customer-tokens";
+import { verifyCustomerMethodAuthorization } from "./customer-method-authorization";
 
 const customerSessionLifetimeSeconds = 7 * 24 * 60 * 60;
 const passwordResetLifetimeSeconds = 60 * 60;
@@ -42,7 +43,6 @@ const disabledCustomerAuthPaths = [
   "/change-email",
   "/delete-user",
   "/get-access-token",
-  "/link-social",
   "/list-accounts",
   "/list-sessions",
   "/refresh-token",
@@ -315,6 +315,23 @@ export function createShapewebsCustomerAuth(
           userId: user.id,
         });
       },
+    },
+    hooks: {
+      before: createAuthMiddleware(async (context) => {
+        if (context.path !== "/link-social") {
+          return;
+        }
+
+        const authorization =
+          context.request?.headers.get("x-shapewebs-method-authorization") ??
+          context.headers?.get("x-shapewebs-method-authorization");
+
+        if (!verifyCustomerMethodAuthorization(authorization, options.secret)) {
+          throw new APIError("FORBIDDEN", {
+            message: "Recent customer reauthentication is required.",
+          });
+        }
+      }),
     },
     onAPIError: {
       errorURL: "/login?error=authentication",

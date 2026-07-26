@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 export default async function PortalFoundationPage() {
@@ -5,10 +6,5 @@ export default async function PortalFoundationPage() {
   // must never regress to shared static output when identity is enabled.
   await connection();
 
-  return (
-    <main>
-      <h1>Shapewebs customer portal</h1>
-      <p>Customer identity is not available yet.</p>
-    </main>
-  );
+  redirect("/dashboard");
 }

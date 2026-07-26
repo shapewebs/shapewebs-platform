@@ -129,9 +129,18 @@ importers:
 
   apps/portal:
     dependencies:
+      '@shapewebs/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@shapewebs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@shapewebs/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@shapewebs/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@shapewebs/observability':
         specifier: workspace:*
         version: link:../../packages/observability
