@@ -17,6 +17,7 @@ export function SecurityMethods({
   const [methods, setMethods] = useState(initialMethods);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [passwordLinkQueued, setPasswordLinkQueued] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function requireFreshStepUp(status: number, error: unknown) {
@@ -31,28 +32,49 @@ export function SecurityMethods({
 
   function addPassword() {
     startTransition(async () => {
-      setMessage(null);
-      const response = await fetch("/api/admin/methods/add-password", {
-        body: "{}",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: unknown;
-        status?: unknown;
-      };
-      if (requireFreshStepUp(response.status, payload.error)) return;
-      if (!response.ok) {
+      setMessage("Requesting a secure password link…");
+
+      try {
+        const response = await fetch("/api/admin/methods/add-password", {
+          body: "{}",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: unknown;
+          status?: unknown;
+        };
+        if (requireFreshStepUp(response.status, payload.error)) return;
+        if (!response.ok) {
+          setMessage("The password link could not be requested securely.");
+          return;
+        }
+        if (payload.status === "password_exists") {
+          setMethods((current) => ({ ...current, password: true }));
+          setMessage("A password is already connected.");
+          return;
+        }
+        if (payload.status === "password_email_pending") {
+          setPasswordLinkQueued(true);
+          setMessage(
+            "A secure link is already queued. Delivery can take up to five minutes. Search your verified mailbox for “Set your Shapewebs Admin password”.",
+          );
+          return;
+        }
+        if (payload.status === "password_email_queued") {
+          setPasswordLinkQueued(true);
+          setMessage(
+            "Secure link queued. Delivery can take up to five minutes. Search your verified mailbox for “Set your Shapewebs Admin password”.",
+          );
+          return;
+        }
         setMessage("The password link could not be requested securely.");
-        return;
+      } catch {
+        setMessage(
+          "The password-link request did not reach Shapewebs. Check your connection and try again.",
+        );
       }
-      if (payload.status === "password_exists") {
-        setMethods((current) => ({ ...current, password: true }));
-        setMessage("A password is already connected.");
-        return;
-      }
-      setMessage("Check your verified email for a single-use password link.");
     });
   }
 
@@ -100,7 +122,11 @@ export function SecurityMethods({
         this same employee account; TOTP remains mandatory afterward.
       </p>
       {message ? (
-        <p className={styles["sw-security-message-p3n8v2"]} role="status">
+        <p
+          aria-live="polite"
+          className={styles["sw-security-message-p3n8v2"]}
+          role="status"
+        >
           {message}
         </p>
       ) : null}
@@ -120,13 +146,18 @@ export function SecurityMethods({
       </dl>
       {!methods.password ? (
         <Buttons.Button
-          disabled={isPending}
+          aria-busy={isPending}
+          disabled={isPending || passwordLinkQueued}
           kind="primary"
           onClick={addPassword}
           size="medium"
           type="button"
         >
-          Email me a secure password link
+          {isPending
+            ? "Queuing secure link…"
+            : passwordLinkQueued
+              ? "Secure link queued"
+              : "Email me a secure password link"}
         </Buttons.Button>
       ) : null}
       {!methods.google && methods.password ? (

@@ -5,6 +5,7 @@ import {
   eq,
   gt,
   gte,
+  inArray,
   isNull,
   lt,
   lte,
@@ -28,6 +29,7 @@ import {
 import { defaultOrganizationSettingsValue } from "./settings-defaults";
 
 const inactivityLimitMs = 30 * 60 * 1_000;
+const authEmailRequestCooldownMs = 5 * 60 * 1_000;
 
 type StaffMembershipRole = (typeof staffMembershipRole.enumValues)[number];
 
@@ -63,6 +65,10 @@ export type ClaimedAdminAuthEmail = {
   idempotencyKey: string;
   kind: "email_verification" | "password_reset";
   recipient: string;
+};
+
+export type AdminAuthEmailRequestCooldown = {
+  retryAfterSeconds: number;
 };
 
 type AdminSessionIdentity = {
@@ -233,6 +239,62 @@ export async function enqueueAdminAuthEmail(
       .values(input)
       .onConflictDoNothing({ target: adminAuthEmailOutbox.idempotencyKey }),
   ]);
+}
+
+export async function getAdminAuthEmailRequestCooldown(
+  databaseUrl: string,
+  authorization: AdminAuthorizationContext,
+  kind: "email_verification" | "password_reset",
+  now = new Date(),
+): Promise<AdminAuthEmailRequestCooldown | null> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    {
+      organizationId: authorization.organizationId,
+      userId: authorization.actor.id,
+    },
+    authorization.role,
+  );
+  const cutoff = new Date(now.getTime() - authEmailRequestCooldownMs);
+  const results = await database.batch([
+    ...context,
+    database
+      .select({ createdAt: adminAuthEmailOutbox.createdAt })
+      .from(adminAuthEmailOutbox)
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.organizationId, authorization.organizationId),
+          eq(adminAuthEmailOutbox.userId, authorization.actor.id),
+          eq(adminAuthEmailOutbox.kind, kind),
+          gt(adminAuthEmailOutbox.createdAt, cutoff),
+          inArray(adminAuthEmailOutbox.status, [
+            "pending",
+            "processing",
+            "sent",
+          ]),
+        ),
+      )
+      .orderBy(desc(adminAuthEmailOutbox.createdAt))
+      .limit(1),
+  ]);
+  const recentRequest = results[3][0];
+
+  if (!recentRequest) {
+    return null;
+  }
+
+  return {
+    retryAfterSeconds: Math.max(
+      1,
+      Math.ceil(
+        (recentRequest.createdAt.getTime() +
+          authEmailRequestCooldownMs -
+          now.getTime()) /
+          1_000,
+      ),
+    ),
+  };
 }
 
 export async function claimAdminAuthEmail(

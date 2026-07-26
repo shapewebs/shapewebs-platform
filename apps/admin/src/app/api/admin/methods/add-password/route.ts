@@ -1,4 +1,7 @@
-import { getAdminAuthenticationMethods } from "@shapewebs/database/server";
+import {
+  getAdminAuthenticationMethods,
+  getAdminAuthEmailRequestCooldown,
+} from "@shapewebs/database/server";
 import { readBoundedText } from "@shapewebs/validation";
 
 import { authorizeAdminApiSession } from "@/lib/auth";
@@ -12,7 +15,7 @@ import {
 const maximumBodyBytes = 256;
 
 function jsonNoStore(
-  body: { error: string } | { status: string },
+  body: { error: string } | { retryAfterSeconds?: number; status: string },
   status = 200,
 ) {
   return Response.json(body, {
@@ -57,10 +60,23 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "authentication_unavailable" }, 503);
   }
 
-  const user = authorization.runtime.primarySession.user;
+  const runtime = authorization.runtime;
+  const user = runtime.primarySession.user;
   const methods = await getAdminAuthenticationMethods(databaseUrl, user.id);
   if (methods.password) {
     return jsonNoStore({ status: "password_exists" });
+  }
+
+  const cooldown = await getAdminAuthEmailRequestCooldown(
+    databaseUrl,
+    runtime.authorization,
+    "password_reset",
+  );
+  if (cooldown) {
+    return jsonNoStore({
+      retryAfterSeconds: cooldown.retryAfterSeconds,
+      status: "password_email_pending",
+    });
   }
 
   try {
@@ -74,7 +90,10 @@ export async function POST(request: Request) {
     });
 
     return response.ok
-      ? jsonNoStore({ status: "password_email_sent" })
+      ? jsonNoStore({
+          retryAfterSeconds: 5 * 60,
+          status: "password_email_queued",
+        })
       : jsonNoStore({ error: "method_update_failed" }, 400);
   } catch {
     return jsonNoStore({ error: "method_update_failed" }, 400);
