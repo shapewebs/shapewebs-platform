@@ -11,8 +11,8 @@ import {
 const adminDirectory = dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = resolve(adminDirectory, "../..");
 const sharpLinuxRuntimeFiles = [
-  "../../packages/media/node_modules/@img/sharp-linux-x64/**/*",
-  "../../packages/media/node_modules/@img/sharp-libvips-linux-x64/**/*",
+  "../../node_modules/.pnpm/@img+sharp-linux-x64@0.35.3/node_modules/@img/sharp-linux-x64/**/*",
+  "../../node_modules/.pnpm/@img+sharp-linux-x64@0.35.3/node_modules/@img/sharp-libvips-linux-x64/**/*",
 ] as const;
 
 const nextConfig: NextConfig = {
