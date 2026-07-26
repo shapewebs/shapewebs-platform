@@ -1,5 +1,6 @@
 const fallbackAdminPath = "/dashboard";
 const allowedAdminPrefixes = [
+  "/account",
   "/audit",
   "/content",
   "/dashboard",

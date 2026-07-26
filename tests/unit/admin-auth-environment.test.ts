@@ -8,6 +8,8 @@ import {
 } from "../../apps/admin/src/lib/auth-environment";
 
 const completeEnvironment = {
+  ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET:
+    "a-separate-admin-email-encryption-secret-with-32-characters",
   ADMIN_OWNER_EMAILS: "owner@shapewebs.com",
   BETTER_AUTH_SECRET: "a-secure-test-secret-with-more-than-32-characters",
   BETTER_AUTH_URL: "https://admin.shapewebs.com",

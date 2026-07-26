@@ -9,6 +9,7 @@ import {
 import { hasAdminAuthConfig, splitEnvironmentList } from "./auth-environment";
 
 export {
+  getAdminBaseUrl,
   getAdminDatabaseUrl,
   getAdminOrganizationId,
   hasAdminAuthConfig,
@@ -44,6 +45,9 @@ export function getAdminAuth(): AdminAuth | null {
   cachedAuth = createShapewebsAuth({
     baseUrl,
     databaseUrl: process.env.DATABASE_URL as string,
+    editorEmails: splitEnvironmentList(process.env.ADMIN_EDITOR_EMAILS),
+    emailEncryptionSecret: process.env
+      .ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET as string,
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,

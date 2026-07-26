@@ -5,6 +5,17 @@ import { escapeEmailHtml } from "./lead-template";
 
 export { escapeEmailHtml };
 export {
+  getAdminAuthActionUrl,
+  getAdminAuthEmailSubject,
+  renderAdminAuthEmailHtml,
+  renderAdminAuthEmailText,
+  type AdminAuthEmailInput,
+} from "./admin-auth-template";
+export {
+  sendAdminAuthNotification,
+  type AdminAuthNotification,
+} from "./admin-auth-delivery";
+export {
   getCustomerAuthActionUrl,
   getCustomerAuthEmailSubject,
   renderCustomerAuthEmailHtml,

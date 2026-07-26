@@ -1,5 +1,6 @@
 export type OutboxEnvironment = {
   adminBaseUrl: string;
+  authEmailEncryptionSecret: string;
   databaseUrl: string;
   from: string;
   organizationId: string;
@@ -11,6 +12,8 @@ export function getOutboxEnvironment(
   environment: NodeJS.ProcessEnv = process.env,
 ): OutboxEnvironment | null {
   const adminBaseUrl = environment.BETTER_AUTH_URL;
+  const authEmailEncryptionSecret =
+    environment.ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET;
   const databaseUrl = environment.DATABASE_URL;
   const from = environment.LEAD_NOTIFICATION_FROM_EMAIL;
   const organizationId = environment.SHAPEWEBS_ORGANIZATION_ID;
@@ -19,6 +22,8 @@ export function getOutboxEnvironment(
 
   if (
     !adminBaseUrl ||
+    !authEmailEncryptionSecret ||
+    authEmailEncryptionSecret.length < 32 ||
     !databaseUrl ||
     !from ||
     !organizationId ||
@@ -46,6 +51,7 @@ export function getOutboxEnvironment(
 
   return {
     adminBaseUrl,
+    authEmailEncryptionSecret,
     databaseUrl,
     from,
     organizationId,

@@ -160,7 +160,7 @@ function toAdminSessionContext(
   };
 }
 
-async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
+export async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
   const requestHeaders = await headers();
   const setupMode = isLocalAdminSetupMode();
 
@@ -350,27 +350,6 @@ export async function requireAdminSession(options?: {
       await recordAuthorizationDenial(runtime, "role_forbidden");
       redirect("/dashboard?error=forbidden");
     }
-  }
-
-  return runtime;
-}
-
-export async function requirePrimaryAdminSession(redirectTo = "/dashboard") {
-  const runtime = await getAdminRuntimeState();
-
-  if (runtime.setupMode) {
-    return runtime;
-  }
-
-  if (!runtime.authenticationAvailable) {
-    return runtime;
-  }
-
-  if (!runtime.primarySession || !runtime.authorization) {
-    await recordAuthorizationDenial(runtime, "primary_session_unavailable");
-    redirect(
-      `/login?redirectTo=${encodeURIComponent(getSafeAdminRedirectTarget(redirectTo))}`,
-    );
   }
 
   return runtime;

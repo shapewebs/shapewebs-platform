@@ -81,6 +81,7 @@ const ids = {
   workflowRevision: randomUUID(),
   previewGrant: randomUUID(),
   auditEvent: randomUUID(),
+  adminAuthEmail: randomUUID(),
 };
 const previewTokenHash = randomBytes(32).toString("hex");
 const previewSessionTokenHash = randomBytes(32).toString("hex");
@@ -567,7 +568,13 @@ async function verifyRlsCoverage() {
     from pg_class as relation
     inner join pg_namespace as namespace
       on namespace.oid = relation.relnamespace
-    where namespace.nspname in ('app', 'audit')
+    where (
+        namespace.nspname in ('app', 'audit')
+        or (
+          namespace.nspname = 'auth'
+          and relation.relname = 'auth_email_outbox'
+        )
+      )
       and relation.relkind = 'r'
       and (not relation.relrowsecurity or not relation.relforcerowsecurity)
   `;
@@ -1868,6 +1875,81 @@ async function verifyAdminTotpAssurance() {
   }
 }
 
+async function verifyAdminAuthEmailIsolation() {
+  const tokenHash = randomBytes(32).toString("hex");
+  const inserted = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`insert into auth.auth_email_outbox (
+      id,
+      organization_id,
+      user_id,
+      kind,
+      recipient,
+      token_hash,
+      encrypted_token,
+      idempotency_key,
+      expires_at
+    ) values (
+      ${ids.adminAuthEmail},
+      ${ids.organizationA},
+      ${ids.adminUser},
+      'password_reset',
+      ${`security-admin-${runId}@example.test`},
+      ${tokenHash},
+      ${"e".repeat(64)},
+      ${`admin.password_reset/${tokenHash}`},
+      now() + interval '1 hour'
+    ) returning id`,
+  });
+  assert.deepEqual(inserted, [{ id: ids.adminAuthEmail }]);
+
+  const visible = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select id from auth.auth_email_outbox
+      where id = ${ids.adminAuthEmail}`,
+  });
+  assert.deepEqual(visible, [{ id: ids.adminAuthEmail }]);
+
+  const crossTenant = await withAdminContext({
+    organizationId: ids.organizationB,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select id from auth.auth_email_outbox
+      where id = ${ids.adminAuthEmail}`,
+  });
+  assert.deepEqual(
+    crossTenant,
+    [],
+    "admin authentication email state must be tenant isolated",
+  );
+
+  await expectDenied(
+    withAdminContext({
+      organizationId: ids.organizationA,
+      userId: ids.adminUser,
+      membershipRole: "owner",
+      query: admin`delete from auth.auth_email_outbox
+        where id = ${ids.adminAuthEmail}`,
+    }),
+    "admin runtime auth-email deletion",
+  );
+
+  for (const [label, client] of [
+    ["portal", portal],
+    ["public", publicReader],
+    ["web", web],
+  ]) {
+    await expectDenied(
+      client`select encrypted_token from auth.auth_email_outbox`,
+      `${label} administrative auth-email read`,
+    );
+  }
+}
+
 async function verifyPublicAndWebBoundaries() {
   const publicDocuments = await publicReader`
     select id
@@ -2551,6 +2633,7 @@ try {
   await verifyRlsCoverage();
   await verifyAdminSessionAssurance();
   await verifyAdminTotpAssurance();
+  await verifyAdminAuthEmailIsolation();
   await verifyAdminSessionManagement();
   await verifyAdminIsolation();
   await verifyPortalIsolation();
@@ -2560,7 +2643,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

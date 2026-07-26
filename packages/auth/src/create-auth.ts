@@ -2,7 +2,8 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import {
   appendAdminAuditEvent,
   appendSystemAuditEvent,
-  provisionOwnerAdminSession,
+  enqueueAdminAuthEmail,
+  provisionAdminSession,
 } from "@shapewebs/database/admin-auth";
 import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
@@ -14,8 +15,13 @@ import {
   getSessionFromCtx,
 } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
-import { twoFactor } from "better-auth/plugins";
+import { haveIBeenPwned, twoFactor } from "better-auth/plugins";
 
+import {
+  encryptAdminEmailToken,
+  hashAdminEmailToken,
+} from "./admin-email-token";
+import { verifyAdminMethodAuthorization } from "./admin-method-authorization";
 import { createVerifiedGoogleUserInfo } from "./google-user-info";
 import { getAdminCookiePolicy } from "./cookie-policy";
 import { generateAdminSessionToken } from "./session-cookie";
@@ -25,10 +31,10 @@ const disabledAuthPaths = [
   "/get-access-token",
   "/refresh-token",
   "/list-sessions",
+  "/request-password-reset",
   "/revoke-other-sessions",
   "/revoke-session",
   "/revoke-sessions",
-  "/sign-in/email",
   "/sign-up/email",
   "/two-factor/disable",
   "/two-factor/generate-backup-codes",
@@ -47,6 +53,8 @@ export type GoogleOAuthCredentials = {
 export type ShapewebsAuthOptions = {
   baseUrl: string;
   databaseUrl: string;
+  editorEmails?: string[];
+  emailEncryptionSecret: string;
   google?: GoogleOAuthCredentials;
   organizationId: string;
   onApiError?: () => Promise<void> | void;
@@ -80,6 +88,12 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     throw new Error("BETTER_AUTH_SECRET must contain at least 32 characters.");
   }
 
+  if (options.emailEncryptionSecret.length < 32) {
+    throw new Error(
+      "ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET must contain at least 32 characters.",
+    );
+  }
+
   assertOrigin(options.baseUrl, "BETTER_AUTH_URL", options.production);
   options.trustedOrigins.forEach((origin) =>
     assertOrigin(origin, "Better Auth trusted origin", options.production),
@@ -106,6 +120,9 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
   const ownerEmails = new Set(
     options.ownerEmails.map((email) => email.trim().toLowerCase()),
   );
+  const editorEmails = new Set(
+    (options.editorEmails ?? []).map((email) => email.trim().toLowerCase()),
+  );
 
   if (ownerEmails.size === 0 || ownerEmails.has("")) {
     throw new Error("ADMIN_OWNER_EMAILS must contain at least one email.");
@@ -117,21 +134,39 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     }
   }
 
+  for (const email of editorEmails) {
+    if (
+      !email ||
+      ownerEmails.has(email) ||
+      !emailAddressSchema.safeParse(email).success
+    ) {
+      throw new Error(
+        "ADMIN_EDITOR_EMAILS must contain unique valid emails that are not owners.",
+      );
+    }
+  }
+
   const database = createDatabase(options.databaseUrl);
   const cookiePolicy = getAdminCookiePolicy(options.production);
-  const assertAllowedEmail = (email: string) => {
-    if (!ownerEmails.has(email.trim().toLowerCase())) {
+  const assertAllowedEmail = (email: string): "editor" | "owner" => {
+    const normalized = email.trim().toLowerCase();
+    if (!ownerEmails.has(normalized) && !editorEmails.has(normalized)) {
       throw new APIError("FORBIDDEN", {
         message: "This account is not authorized for Shapewebs Admin.",
       });
     }
+
+    return ownerEmails.has(normalized) ? "owner" : "editor";
   };
 
   return betterAuth({
     account: {
       accountLinking: {
         allowDifferentEmails: false,
+        allowUnlinkingAll: false,
+        disableImplicitLinking: true,
         trustedProviders: ["google"],
+        updateUserInfoOnLink: false,
       },
       encryptOAuthTokens: true,
     },
@@ -144,7 +179,55 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     }),
     disabledPaths: [...disabledAuthPaths],
     emailAndPassword: {
-      enabled: false,
+      autoSignIn: false,
+      disableSignUp: false,
+      enabled: true,
+      maxPasswordLength: 128,
+      minPasswordLength: 15,
+      requireEmailVerification: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ token, user }) => {
+        assertAllowedEmail(user.email);
+        const tokenHash = await hashAdminEmailToken(token);
+        await enqueueAdminAuthEmail(options.databaseUrl, {
+          encryptedToken: await encryptAdminEmailToken(
+            token,
+            options.emailEncryptionSecret,
+            60 * 60,
+          ),
+          expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+          idempotencyKey: `admin.password_reset/${tokenHash}`,
+          kind: "password_reset",
+          organizationId: options.organizationId,
+          recipient: user.email.trim().toLowerCase(),
+          tokenHash,
+          userId: user.id,
+        });
+      },
+    },
+    emailVerification: {
+      autoSignInAfterVerification: false,
+      expiresIn: 60 * 60,
+      sendOnSignUp: true,
+      sendVerificationEmail: async ({ token, user }) => {
+        assertAllowedEmail(user.email);
+        const tokenHash = await hashAdminEmailToken(token);
+        await enqueueAdminAuthEmail(options.databaseUrl, {
+          encryptedToken: await encryptAdminEmailToken(
+            token,
+            options.emailEncryptionSecret,
+            60 * 60,
+          ),
+          expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+          idempotencyKey: `admin.email_verification/${tokenHash}`,
+          kind: "email_verification",
+          organizationId: options.organizationId,
+          recipient: user.email.trim().toLowerCase(),
+          tokenHash,
+          userId: user.id,
+        });
+      },
     },
     onAPIError: {
       errorURL: "/login?error=authentication",
@@ -162,6 +245,31 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     },
     hooks: {
       before: createAuthMiddleware(async (context) => {
+        if (context.path === "/link-social") {
+          const activeSession = await getSessionFromCtx(context);
+          const authorization =
+            context.request?.headers.get("x-shapewebs-method-authorization") ??
+            context.headers?.get("x-shapewebs-method-authorization");
+
+          if (
+            !activeSession ||
+            !verifyAdminMethodAuthorization(
+              authorization,
+              options.secret,
+              Date.now(),
+              {
+                sessionId: activeSession.session.id,
+                userId: activeSession.user.id,
+              },
+            )
+          ) {
+            throw new APIError("FORBIDDEN", {
+              message: "Recent administrative reauthentication is required.",
+            });
+          }
+          return;
+        }
+
         if (context.path !== "/two-factor/enable") {
           return;
         }
@@ -213,14 +321,21 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
               },
             };
           },
-          after: async (newSession, context) => {
-            await provisionOwnerAdminSession(options.databaseUrl, {
+          after: async (newSession) => {
+            const [sessionUser] = await database
+              .select({ email: authSchema.user.email })
+              .from(authSchema.user)
+              .where(eq(authSchema.user.id, newSession.userId))
+              .limit(1);
+
+            if (!sessionUser) {
+              throw new APIError("UNAUTHORIZED");
+            }
+
+            await provisionAdminSession(options.databaseUrl, {
               organizationId: options.organizationId,
+              role: assertAllowedEmail(sessionUser.email),
               sessionId: newSession.id,
-              stepUpVerifiedAt:
-                context?.path === "/two-factor/verify-totp"
-                  ? new Date()
-                  : undefined,
               userId: newSession.userId,
             });
           },
@@ -247,8 +362,24 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       storage: "database",
       window: 60,
       customRules: {
+        "/request-password-reset": {
+          max: 3,
+          window: 60,
+        },
+        "/reset-password": {
+          max: 5,
+          window: 60,
+        },
+        "/sign-in/email": {
+          max: 5,
+          window: 60,
+        },
         "/sign-in/social": {
           max: 10,
+          window: 60,
+        },
+        "/sign-up/email": {
+          max: 3,
           window: 60,
         },
       },
@@ -278,6 +409,9 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       useSecureCookies: false,
     },
     plugins: [
+      haveIBeenPwned({
+        paths: ["/reset-password", "/sign-up/email"],
+      }),
       twoFactor({
         allowPasswordless: true,
         backupCodeOptions: {

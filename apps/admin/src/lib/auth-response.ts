@@ -1,5 +1,19 @@
 const clearAuthenticatedSiteData = '"cache", "cookies", "storage"';
 
+export function readAuthSetCookies(headers: Headers): string[] {
+  const headersWithCookies = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const setCookies = headersWithCookies.getSetCookie?.();
+
+  if (setCookies) {
+    return setCookies;
+  }
+
+  const combinedCookie = headers.get("set-cookie");
+  return combinedCookie ? [combinedCookie] : [];
+}
+
 export function hardenAuthResponse(
   request: Request,
   response: Response,

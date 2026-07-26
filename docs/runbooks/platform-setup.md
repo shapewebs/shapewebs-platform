@@ -157,12 +157,21 @@ Self-host Better Auth inside `apps/admin` and mount its handler at
 Required configuration:
 
 - a generated high-entropy `BETTER_AUTH_SECRET`;
+- an independent high-entropy `ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET`;
 - exact `BETTER_AUTH_URL` and trusted origins;
 - a Google OAuth client with exact callback URLs;
+- exact owner/editor email allowlists;
 - secure host-only cookies in production;
 - database-backed sessions with rotation and revocation;
 - rate limits on authentication-adjacent endpoints;
 - append-only audit events for privileged changes.
+
+Each allowlisted employee owns one administrative account. Google and a
+verified password are attachable methods on that account, not separate user
+types. An employee may begin with either method and deliberately add the other
+from the authenticated security page. Do not silently merge matching signed-out
+emails, allow different-email linking or expose raw signup/set-password routes.
+Either first factor must still complete the local TOTP gate.
 
 Use fixed callback hosts:
 
@@ -180,16 +189,21 @@ flows are complete.
 
 ### Admin step-up requirement
 
-Google sign-in alone is not sufficient for CMS access. Better Auth's normal 2FA
-gate does not automatically cover social sign-in, so owner/editor sessions must
-pass a custom server-enforced TOTP step-up before entering or mutating admin
-routes.
+Google or password sign-in alone is not sufficient for CMS access. Better
+Auth's normal 2FA gate does not automatically cover social sign-in, so both
+first-factor paths must converge on the custom server-enforced TOTP step-up
+before entering or mutating admin routes.
 
 Test at minimum:
 
 - anonymous access is denied;
 - an unassigned Google user cannot self-assign a role;
-- a valid Google owner without TOTP step-up is denied;
+- an unassigned email cannot activate a credential;
+- a valid Google or password owner without TOTP step-up is denied;
+- Google-first and password-first accounts can deliberately attach the other
+  method and thereafter reach the same user/role through either method;
+- signed-out matching emails, mismatched provider emails and grants copied
+  between sessions cannot link accounts;
 - step-up expires and is revoked with the session;
 - an editor cannot change owner/security settings;
 - one customer cannot read another organization's records.
@@ -214,8 +228,9 @@ team-wide variables.
 - `NEXT_PUBLIC_ADMIN_URL` and `NEXT_PUBLIC_SITE_URL`;
 - `DATABASE_URL` for the non-owner admin runtime role;
 - `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`;
-- `BETTER_AUTH_TRUSTED_ORIGINS`, `ADMIN_OWNER_EMAILS`, and
-  `SHAPEWEBS_ORGANIZATION_ID`;
+- `ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET`;
+- `BETTER_AUTH_TRUSTED_ORIGINS`, `ADMIN_OWNER_EMAILS`, optional
+  `ADMIN_EDITOR_EMAILS`, and `SHAPEWEBS_ORGANIZATION_ID`;
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`;
 - `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`,
   `LEAD_NOTIFICATION_FROM_EMAIL`, `LEAD_NOTIFICATION_TO_EMAIL`, and

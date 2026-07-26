@@ -49,8 +49,8 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
           <p className={styles.eyebrowK1m9q4}>Security check</p>
           <h1 className={styles.titleQ2m8v6}>Authenticator verification</h1>
           <p className={styles.copyT6m4p2}>
-            Shapewebs Admin requires a fresh six-digit TOTP code after Google
-            sign-in and again before sensitive operations.
+            Shapewebs Admin requires a fresh six-digit TOTP code after Google or
+            password sign-in and again before sensitive operations.
           </p>
         </div>
 
