@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -33,6 +33,7 @@ if (!databaseUrl || !fixtureDatabaseUrl) {
 }
 
 const database = createDatabase(fixtureDatabaseUrl);
+const runtimeDatabase = createDatabase(databaseUrl);
 const sessionId = "lifecycle-admin-auth-integration-session";
 const sessionToken = "lifecycle-admin-auth-integration-token";
 const userId = "lifecycle-owner";
@@ -224,6 +225,57 @@ describe.sequential("Neon administrative TOTP repository", () => {
 
   it("transfers an exact TOTP step-up to a valid replacement session", async () => {
     const verifiedAt = new Date();
+    const [candidate] = await database
+      .select({
+        expiresAt: session.expiresAt,
+        revokedAt: adminSessionSecurity.revokedAt,
+        securitySessionId: adminSessionSecurity.sessionId,
+        sessionId: session.id,
+        userId: adminSessionSecurity.userId,
+      })
+      .from(adminSessionSecurity)
+      .innerJoin(session, eq(session.id, adminSessionSecurity.sessionId))
+      .where(eq(adminSessionSecurity.sessionId, sessionId))
+      .limit(1);
+
+    expect(candidate).toMatchObject({
+      revokedAt: null,
+      securitySessionId: sessionId,
+      sessionId,
+      userId,
+    });
+    expect(candidate?.expiresAt.getTime()).toBeGreaterThan(
+      verifiedAt.getTime(),
+    );
+    const runtimeCandidate = await runtimeDatabase.execute<{
+      active: boolean;
+      revokedAt: Date | null;
+      securitySessionId: string;
+      sessionId: string;
+      userId: string;
+    }>(sql`
+      select
+        security.${sql.identifier("session_id")} as "securitySessionId",
+        security.${sql.identifier("user_id")} as "userId",
+        security.${sql.identifier("revoked_at")} as "revokedAt",
+        session.${sql.identifier("id")} as "sessionId",
+        session.${sql.identifier("expires_at")} > now() as "active"
+      from ${adminSessionSecurity} as security
+      inner join ${session} as session
+        on session.${sql.identifier("id")} =
+          security.${sql.identifier("session_id")}
+      where security.${sql.identifier("session_id")} = ${sessionId}
+    `);
+
+    expect(runtimeCandidate.rows).toEqual([
+      {
+        active: true,
+        revokedAt: null,
+        securitySessionId: sessionId,
+        sessionId,
+        userId,
+      },
+    ]);
 
     await expect(
       setAdminSessionStepUp(databaseUrl, { sessionId, userId }, verifiedAt),

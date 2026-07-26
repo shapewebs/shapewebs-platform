@@ -82,6 +82,9 @@ const ids = {
   previewGrant: randomUUID(),
   auditEvent: randomUUID(),
   adminAuthEmail: randomUUID(),
+  privateMediaA: randomUUID(),
+  publicMediaA: randomUUID(),
+  publicMediaB: randomUUID(),
 };
 const previewTokenHash = randomBytes(32).toString("hex");
 const previewSessionTokenHash = randomBytes(32).toString("hex");
@@ -317,6 +320,94 @@ async function seed() {
       values
         (${ids.visibleUpdate}, ${ids.assignedProject}, 'Visible update', 'Visible', true, ${ids.adminUser}),
         (${ids.hiddenUpdate}, ${ids.assignedProject}, 'Hidden update', 'Hidden', false, ${ids.adminUser})`,
+    fixtureAdmin`insert into app.files (
+        id,
+        organization_id,
+        storage_key,
+        visibility,
+        status,
+        storage_provider,
+        store_id,
+        storage_url,
+        storage_etag,
+        mime_type,
+        byte_size,
+        original_byte_size,
+        sha256,
+        width,
+        height,
+        original_name,
+        uploaded_by_user_id
+      )
+      values
+        (
+          ${ids.privateMediaA},
+          ${ids.organizationA},
+          ${`organizations/${ids.organizationA}/drafts/${ids.privateMediaA}.webp`},
+          'private',
+          'ready',
+          'vercel_blob',
+          'store_private_security',
+          ${`https://security.private.blob.vercel-storage.com/${ids.privateMediaA}.webp`},
+          ${`etag-${ids.privateMediaA}`},
+          'image/webp',
+          128,
+          256,
+          ${"a".repeat(64)},
+          20,
+          20,
+          'private.png',
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.publicMediaA},
+          ${ids.organizationA},
+          ${`organizations/${ids.organizationA}/public/${ids.publicMediaA}.webp`},
+          'public',
+          'ready',
+          'vercel_blob',
+          'store_public_security',
+          ${`https://security.public.blob.vercel-storage.com/${ids.publicMediaA}.webp`},
+          ${`etag-${ids.publicMediaA}`},
+          'image/webp',
+          96,
+          192,
+          ${"b".repeat(64)},
+          16,
+          16,
+          'public.png',
+          ${ids.adminUser}
+        ),
+        (
+          ${ids.publicMediaB},
+          ${ids.organizationB},
+          ${`organizations/${ids.organizationB}/public/${ids.publicMediaB}.webp`},
+          'public',
+          'ready',
+          'vercel_blob',
+          'store_public_security',
+          ${`https://security.public.blob.vercel-storage.com/${ids.publicMediaB}.webp`},
+          ${`etag-${ids.publicMediaB}`},
+          'image/webp',
+          96,
+          192,
+          ${"c".repeat(64)},
+          16,
+          16,
+          'other-public.png',
+          ${ids.adminUser}
+        )`,
+    fixtureAdmin`insert into app.file_localizations (
+        organization_id,
+        file_id,
+        locale,
+        alt_text,
+        caption
+      )
+      values
+        (${ids.organizationA}, ${ids.privateMediaA}, 'en', 'Private organization A image', null),
+        (${ids.organizationA}, ${ids.publicMediaA}, 'en', 'Public organization A image', 'Published caption'),
+        (${ids.organizationB}, ${ids.publicMediaB}, 'en', 'Public organization B image', null)`,
     fixtureAdmin`insert into app.content_documents (
         id,
         organization_id,
@@ -1041,6 +1132,131 @@ async function verifyPortalIsolation() {
       where organization_id = ${ids.organizationA}
         and user_id = ${ids.customerUser}`,
   });
+}
+
+async function verifyMediaIsolation() {
+  const adminMedia = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select id, visibility, status
+      from app.files
+      where id in (
+        ${ids.privateMediaA},
+        ${ids.publicMediaA},
+        ${ids.publicMediaB}
+      )
+      order by id`,
+  });
+  assert.deepEqual(
+    new Set(adminMedia.map(({ id }) => id)),
+    new Set([ids.privateMediaA, ids.publicMediaA]),
+    "editors must see only media in their current organization",
+  );
+
+  const adminLocalizations = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`select file_id, alt_text
+      from app.file_localizations
+      order by file_id`,
+  });
+  assert.deepEqual(
+    new Set(adminLocalizations.map(({ file_id }) => file_id)),
+    new Set([ids.privateMediaA, ids.publicMediaA]),
+  );
+
+  const crossTenantUpdate = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "editor",
+    query: admin`update app.files
+      set status = status
+      where id = ${ids.publicMediaB}
+      returning id`,
+  });
+  assert.deepEqual(
+    crossTenantUpdate,
+    [],
+    "editors must not update another organization's media",
+  );
+
+  const webMedia = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select id, mime_type, byte_size, width, height
+      from app.files
+      where id in (
+        ${ids.privateMediaA},
+        ${ids.publicMediaA},
+        ${ids.publicMediaB}
+      )
+      order by id`,
+  ]);
+  assert.deepEqual(webMedia[1], [
+    {
+      byte_size: 96,
+      height: 16,
+      id: ids.publicMediaA,
+      mime_type: "image/webp",
+      width: 16,
+    },
+  ]);
+
+  const webLocalization = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select file_id, locale, alt_text, caption
+      from app.file_localizations
+      where file_id in (${ids.privateMediaA}, ${ids.publicMediaA})`,
+  ]);
+  assert.deepEqual(webLocalization[1], [
+    {
+      alt_text: "Public organization A image",
+      caption: "Published caption",
+      file_id: ids.publicMediaA,
+      locale: "en",
+    },
+  ]);
+
+  await expectDenied(
+    web`select store_id from app.files`,
+    "web private media store identifier read",
+  );
+  await expectDenied(
+    web`select organization_id from app.file_localizations`,
+    "web media localization tenant metadata read",
+  );
+  await expectDenied(
+    web`insert into app.files (
+      organization_id,
+      storage_key,
+      visibility,
+      mime_type,
+      byte_size,
+      original_name,
+      uploaded_by_user_id
+    ) values (
+      ${ids.organizationA},
+      'forged.webp',
+      'public',
+      'image/webp',
+      10,
+      'forged.webp',
+      ${ids.adminUser}
+    )`,
+    "web media insertion",
+  );
+
+  for (const [label, client] of [
+    ["portal", portal],
+    ["public", publicReader],
+  ]) {
+    await expectDenied(client`select id from app.files`, `${label} media read`);
+    await expectDenied(
+      client`select file_id from app.file_localizations`,
+      `${label} media localization read`,
+    );
+  }
 }
 
 async function verifyCustomerCredentialOnboarding() {
@@ -2637,13 +2853,14 @@ try {
   await verifyAdminSessionManagement();
   await verifyAdminIsolation();
   await verifyPortalIsolation();
+  await verifyMediaIsolation();
   await verifyCustomerCredentialOnboarding();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, private-media isolation, public-ready media projection, restricted media metadata, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

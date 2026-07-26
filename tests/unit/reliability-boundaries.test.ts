@@ -18,7 +18,10 @@ import {
   contactFormSchema,
   parseAdminEnv,
 } from "../../packages/validation/src/index";
-import { readBoundedText } from "../../packages/validation/src/http";
+import {
+  readBoundedBytes,
+  readBoundedText,
+} from "../../packages/validation/src/http";
 
 describe("reliability and provider boundaries", () => {
   it("trusts only the Vercel-owned forwarding header in production", () => {
@@ -273,6 +276,32 @@ describe("reliability and provider boundaries", () => {
       status: "ok",
       value: "",
     });
+  });
+
+  it("returns exact bounded binary request bytes", async () => {
+    const bytes = new Uint8Array([0, 1, 2, 127, 128, 255]);
+
+    await expect(
+      readBoundedBytes(
+        new Request("https://example.com/upload", {
+          body: bytes,
+          method: "POST",
+        }),
+        bytes.byteLength,
+      ),
+    ).resolves.toEqual({
+      status: "ok",
+      value: bytes,
+    });
+    await expect(
+      readBoundedBytes(
+        new Request("https://example.com/upload", {
+          body: bytes,
+          method: "POST",
+        }),
+        bytes.byteLength - 1,
+      ),
+    ).resolves.toEqual({ status: "too_large" });
   });
 
   it("escapes all editor-controlled fields in lead notifications", () => {

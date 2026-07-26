@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { supportedLocales } from "@shapewebs/i18n";
 
-export { readBoundedText } from "./http";
+export { readBoundedBytes, readBoundedText } from "./http";
 
 const localeCodes = supportedLocales.map((locale) => locale.code);
 const localeCodeEnum = z.enum(localeCodes as [string, ...string[]]);
@@ -184,6 +184,13 @@ const sharedEnvSchema = z.object({
   LEAD_IP_HASH_SECRET: z.string().min(32).optional(),
   LEAD_NOTIFICATION_FROM_EMAIL: notificationMailboxSchema.optional(),
   LEAD_NOTIFICATION_TO_EMAIL: emailAddressSchema.optional(),
+  MEDIA_PRIVATE_BLOB_STORE_ID: z
+    .string()
+    .trim()
+    .min(8)
+    .max(128)
+    .regex(/^[^\s\u0000-\u001f\u007f]+$/u)
+    .optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
@@ -245,6 +252,7 @@ export const adminEnvSchema = sharedEnvSchema.pick({
   GOOGLE_CLIENT_SECRET: true,
   LEAD_NOTIFICATION_FROM_EMAIL: true,
   LEAD_NOTIFICATION_TO_EMAIL: true,
+  MEDIA_PRIVATE_BLOB_STORE_ID: true,
   NEXT_PUBLIC_ADMIN_URL: true,
   NEXT_PUBLIC_SITE_URL: true,
   NEXT_PUBLIC_SUPABASE_URL: true,
@@ -531,7 +539,7 @@ export const mediaUploadSchema = z
   .object({
     altText: z.string().trim().min(1).max(180),
     caption: z.string().trim().max(280).optional(),
-    localeCode: localeCodeEnum.default("en"),
+    localeCode: z.enum(["en", "da-DK"]).default("en"),
   })
   .strict();
 

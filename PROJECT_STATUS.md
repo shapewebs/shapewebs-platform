@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `ee46f64`; current implementation branch
-  `codex/admin-multimethod-auth` in draft pull request `#38`
+- Branch: protected `staging` at `6854b08`; current implementation branch
+  `codex/cms-media-foundation` is locally verified and not yet published
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -28,14 +28,16 @@
   customer credential foundation `#35` merged at `8e7a437`; customer
   authentication evidence `#36` merged at `8a1ff8e`; multi-method customer
   routes `#37` passed the complete disposable lifecycle and merged at
-  `ee46f64`
+  `ee46f64`; secure administrative Google/password authentication `#38`,
+  password-link feedback `#39`, and post-step-up request resumption `#40`
+  merged at `159d8b9`, `26b44a0`, and `6854b08`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#37` are merged into protected `staging`. Migrations `0000` through `0014` are
+`#40` are merged into protected `staging`. Migrations `0000` through `0015` are
 applied to the persistent synthetic staging database and its live six-identity
 security verification passes. Google OAuth, local TOTP enrollment, successful
 step-up and protected CMS navigation have passed on the fixed staging origin. The
@@ -190,16 +192,18 @@ production domains.
   authorization-backed dashboard/security pages, Turnstile, and a durable
   encrypted Resend worker. Dedicated portal provider resources are still
   absent, so no customer route is live on staging or production.
-- The stacked administrative slice adds allowlisted password activation,
+- The protected administrative slice adds allowlisted password activation,
   generic recovery, durable encrypted auth-email delivery, method discovery,
-  explicit Google linking, password addition and a shared security page. Its
-  migration `0015` and fixed-staging first-factor journeys remain unproven and
-  therefore are not yet launch evidence.
+  explicit Google linking, password addition and a shared security page.
+  Migration `0015` is applied to synthetic staging. The owner account has
+  passed Google-first and password-form first-factor journeys, the shared TOTP
+  step-up, protected navigation, and the final security-page proof that Google
+  and password are both connected to one identity.
 
 ### Neon lead, retention and email path
 
-- The current branch contains sixteen version-controlled Drizzle migrations;
-  protected staging has applied the first fifteen (`0000`–`0014`). Forced RLS,
+- The current branch contains seventeen version-controlled Drizzle migrations;
+  protected staging has applied the first sixteen (`0000`–`0015`). Forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -245,6 +249,41 @@ production domains.
   wrong-tenant session authorization, the complete forced-RLS suite, rollback,
   byte-identical restore and disposable-branch cleanup before the pull request
   merged at `ee46f64`.
+
+### Secure media foundation
+
+- Migration `0016_secure-media-foundation` adds an explicit media lifecycle,
+  normalized image metadata, provider state, localized alt text/captions, and
+  forced tenant-aware RLS. Draft/private files remain invisible to the web,
+  portal, and public-reader roles. The web role can read only same-tenant,
+  public-ready rows and a reviewed column projection.
+- The admin upload route authorizes owner/editor sessions before reading the
+  body, enforces an exact-origin multipart request, bounds the complete request
+  and source file, rejects unknown or duplicate fields, and accepts only
+  matching JPEG, PNG, or WebP extension/MIME/decoded formats.
+- Sharp decodes within a 32-megapixel and 8192-pixel source boundary,
+  auto-orients, resizes within 3840 pixels, converts to sRGB metadata-free WebP,
+  and records a SHA-256 digest plus source/normalized sizes.
+- Private Vercel Blob access uses an explicit opaque store ID and Vercel OIDC.
+  Provider URLs and storage identifiers are never returned to the browser.
+  Publishing remains a separate future copy/sanitization operation into a
+  distinct public store.
+- Lead-style transaction semantics are extended to uploads: database
+  reservation precedes storage, success is returned only after the ready-state
+  commit, and ambiguous provider/database outcomes remain pending or
+  cleanup-required for bounded reconciliation. The worker never deletes an
+  object when the database commit result is uncertain.
+- The complete disposable Neon source/restore lifecycle applied migrations
+  `0000`–`0016`, passed 21 integration tests twice, passed the expanded
+  six-identity forced-RLS suite, verified rollback, and restored the exact
+  fixture SHA-256
+  `b091129fc9c4110bda29e8b7d2bebeaf2e90bb0f4d5d502ebcdac41c16c0abb4`.
+  Both temporary branches were deleted.
+- The lifecycle also exposed and corrected an administrative step-up
+  reliability defect: session validity now uses PostgreSQL's trusted clock,
+  while the application timestamp is used only as the recorded verification
+  time. This matches the earlier symptom where a completed TOTP step appeared
+  stalled until reload.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
@@ -610,21 +649,23 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Complete and review the employee multi-method slice in pull request `#38`,
-   including
-   migration `0015`, forced-RLS auth-email evidence and both build engines.
-2. Provision the exact branch-scoped admin auth-email encryption secret, apply
-   `0015` through the dedicated migrator after a rollback branch, and prove
-   password-first, Google-first, dual-method and mandatory-TOTP journeys on the
-   fixed admin staging origin.
-3. Provision the dedicated customer Google OAuth client and separate portal
+1. Publish the secure media slice as a protected staging pull request and let
+   Quality, CodeQL, OSV, dependency review, Vercel previews, and the path-gated
+   Neon lifecycle reproduce the local evidence.
+2. After the reviewed merge, create a rollback branch, apply migration `0016`
+   with the dedicated migrator, provision one staging-only private Blob store
+   with OIDC, and set only the exact staging Preview store ID.
+3. Prove a real private upload, metadata listing, malformed/oversized denial,
+   authorization denial, cleanup reconciliation, and absence of provider
+   identifiers from browser responses on the fixed admin staging origin.
+4. Provision the dedicated customer Google OAuth client and separate portal
    staging providers only when the route PR and database lifecycle are green.
-4. Implement the bounded private/public Vercel Blob repository and malicious
-   upload controls needed by the minimum CMS.
-5. Rehearse the accepted-risk expiry checks and production provider launch
+5. Implement the reviewed private-to-public publishing copy and deletion
+   lifecycle only after the private upload slice passes staging evidence.
+6. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-6. Begin the final public studio design after the fixed-staging foundation
+7. Begin the final public studio design after the fixed-staging foundation
    gate, while preserving the separately accepted invitation-only customer
    identity architecture for Google and verified email/password access.
-7. Add production recovery gates in the milestone order documented in
+8. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
