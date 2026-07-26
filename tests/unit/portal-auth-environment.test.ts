@@ -8,11 +8,19 @@ import {
 
 const completeEnvironment = {
   NEXT_PUBLIC_PORTAL_URL: "https://portal-staging.shapewebs.com",
+  NEXT_PUBLIC_PORTAL_TURNSTILE_SITE_KEY: "portal-site-key",
+  PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET:
+    "a-separate-portal-email-secret-with-32-characters",
   PORTAL_BETTER_AUTH_SECRET:
     "a-separate-portal-secret-with-more-than-32-characters",
   PORTAL_BETTER_AUTH_TRUSTED_ORIGINS: "https://portal-staging.shapewebs.com",
   PORTAL_BETTER_AUTH_URL: "https://portal-staging.shapewebs.com",
   PORTAL_DATABASE_URL: "postgresql://test:test@example.test/portal",
+  PORTAL_GOOGLE_CLIENT_ID: "portal-google-client",
+  PORTAL_GOOGLE_CLIENT_SECRET: "portal-google-secret",
+  PORTAL_TURNSTILE_EXPECTED_HOSTNAME: "portal-staging.shapewebs.com",
+  PORTAL_TURNSTILE_SECRET_KEY: "portal-turnstile-secret",
+  SHAPEWEBS_ORGANIZATION_ID: "f6214344-7525-42d0-83ac-210881b1b7b6",
 } as const;
 
 describe("customer portal authentication environment", () => {

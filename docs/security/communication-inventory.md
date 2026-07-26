@@ -30,6 +30,21 @@ No deployed Shapewebs runtime executes operating-system commands, follows an
 untrusted redirect, accepts a caller-supplied outbound origin, or uses a
 default provider credential.
 
+## Implemented but disabled customer paths
+
+Migration `0014` and server-only libraries define the following customer
+communications, but no portal route or deployment exposes them yet. They enter
+the approved deployed-path table only after fixed-staging provider and browser
+evidence passes.
+
+| Caller             | Receiver             | Purpose and minimized data                                            | Required authentication and destination control                                          |
+| ------------------ | -------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Customer browser   | `shapewebs-portal`   | Invitation exchange, Google or credential login, protected project UI | Exact portal HTTPS origin; distinct host-only customer cookies; Turnstile where required |
+| `shapewebs-portal` | Neon                 | Customer identity, invitation, session and assigned-project reads     | Separate pooled portal runtime role with forced RLS                                      |
+| `shapewebs-portal` | Google               | Customer-only OAuth code flow and verified identity claims            | Separate exact OAuth client/callback; state, PKCE and server-held secret                 |
+| `shapewebs-portal` | HIBP Pwned Passwords | Five-character SHA-1 range prefix only                                | Fixed HTTPS range endpoint, three-second timeout and bounded padded response             |
+| Auth-email worker  | Resend               | Minimal invitation, verification, reset and security notices          | Separate restricted environment key, durable idempotency and exact provider endpoint     |
+
 ## Service-identity rules
 
 - Database identities are separated into owner/migrator, admin runtime, web

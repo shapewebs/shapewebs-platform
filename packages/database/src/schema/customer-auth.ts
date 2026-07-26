@@ -1,15 +1,28 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   index,
   integer,
   pgSchema,
   text,
   timestamp,
+  uniqueIndex,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 export const customerAuthSchema = pgSchema("customer_auth");
+
+export const customerAuthEmailKind = customerAuthSchema.enum(
+  "auth_email_kind",
+  ["invitation", "email_verification", "password_reset"],
+);
+
+export const customerAuthEmailStatus = customerAuthSchema.enum(
+  "auth_email_status",
+  ["pending", "processing", "sent", "permanent_failure"],
+);
 
 export const customerUser = customerAuthSchema.table("user", {
   id: text("id").primaryKey(),
@@ -92,9 +105,99 @@ export const customerRateLimit = customerAuthSchema.table("rate_limit", {
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
 
+export const customerSessionSecurity = customerAuthSchema.table(
+  "session_security",
+  {
+    sessionId: text("session_id")
+      .primaryKey()
+      .references(() => customerSession.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => customerUser.id, { onDelete: "cascade" }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("customer_session_security_user_idx").on(table.userId)],
+);
+
+export const customerAuthEmailOutbox = customerAuthSchema.table(
+  "auth_email_outbox",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    invitationId: uuid("invitation_id"),
+    userId: text("user_id").references(() => customerUser.id, {
+      onDelete: "cascade",
+    }),
+    kind: customerAuthEmailKind("kind").notNull(),
+    recipient: text("recipient").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    encryptedToken: text("encrypted_token").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    status: customerAuthEmailStatus("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    lockedBy: text("locked_by"),
+    providerMessageId: text("provider_message_id"),
+    lastErrorCode: text("last_error_code"),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("customer_auth_email_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("customer_auth_email_idempotency_unique").on(
+      table.idempotencyKey,
+    ),
+    index("customer_auth_email_delivery_idx").on(
+      table.organizationId,
+      table.status,
+      table.nextAttemptAt,
+    ),
+    index("customer_auth_email_recipient_idx").on(
+      table.organizationId,
+      table.recipient,
+      table.createdAt,
+    ),
+    check(
+      "customer_auth_email_attempts_nonnegative",
+      sql`${table.attempts} >= 0`,
+    ),
+    check(
+      "customer_auth_email_recipient_normalized",
+      sql`${table.recipient} = lower(btrim(${table.recipient}))`,
+    ),
+    check(
+      "customer_auth_email_token_hash_format",
+      sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+  ],
+);
+
 export const customerUserRelations = relations(customerUser, ({ many }) => ({
   sessions: many(customerSession),
   accounts: many(customerAccount),
+  authEmailOutbox: many(customerAuthEmailOutbox),
+  sessionSecurity: many(customerSessionSecurity),
 }));
 
 export const customerSessionRelations = relations(

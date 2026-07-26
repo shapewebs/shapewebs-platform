@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `b8f9750`; current evidence branch
-  `codex/customer-auth-staging-evidence`
+- Branch: protected `staging` at `b943a196`; current implementation branch
+  `codex/customer-credential-auth`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -23,14 +23,15 @@
   transfer correction `#29` merged at `7b5098e`; protected revalidation
   correction `#30` merged at `ea97ea4`; protected runtime evidence `#31`
   merged at `bc0abc5`; isolated portal foundation `#32` merged at `a509f69`;
-  customer identity boundary `#33` merged at `b8f9750`
+  customer identity boundary `#33` merged at `b8f9750`; persistent customer
+  identity staging evidence `#34` merged at `b943a196`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#33` are merged into protected `staging`. Migrations `0000` through `0013` are
+`#34` are merged into protected `staging`. Migrations `0000` through `0013` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. The
@@ -171,10 +172,17 @@ production domains.
   client, Neon schema, and runtime role. It supports invitation-gated Google
   and verified email/password onboarding with explicit same-email account
   linking, without weakening or sharing administrative authentication.
+- The current implementation branch adds the disabled customer credential
+  foundation: owner-created project-bound invitations, one-time registration
+  grants, inactive provisional credentials, mailbox-owned final-password
+  activation, invitation-gated Google activation, seven-day customer sessions,
+  a 24-hour inactivity boundary, database throttles, compromised-password
+  checks, explicit same-email linking policy, and a durable encrypted auth-email
+  outbox. No portal route or provider credential is enabled by this branch.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains fourteen version-controlled Drizzle migrations,
+- `packages/database` contains fifteen version-controlled Drizzle migrations,
   forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
@@ -200,6 +208,14 @@ production domains.
   membership tables have forced RLS, and the complete six-identity security
   suite passed. Both fixed Vercel staging deployments and post-merge k6/ZAP
   run `30206702702` are green.
+- Migration `0014` adds customer invitations, exact invitation-project
+  assignments, session-inactivity state, and durable authentication-email
+  state. A complete disposable source/restore run applies `0000` through
+  `0014`, passes 18 repository and real Better Auth runtime scenarios, verifies
+  rollback, and restores the byte-identical fixture SHA-256
+  `b091129fc9c4110bda29e8b7d2bebeaf2e90bb0f4d5d502ebcdac41c16c0abb4`.
+  Both branches were deleted. Migration `0014` is not applied to persistent
+  staging until its protected pull request passes.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
