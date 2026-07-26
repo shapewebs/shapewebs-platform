@@ -6,6 +6,7 @@ import {
   completeAdminAuthEmail,
   consumeAdminTotpCounter,
   enqueueAdminAuthEmail,
+  getAdminAuthEmailRequestCooldown,
   getAdminAuthenticationMethods,
   getAdminCredentialPasswordHash,
   recordAdminTotpFailure,
@@ -318,6 +319,32 @@ describe.sequential("Neon administrative TOTP repository", () => {
         organizationId,
         workerId: "second-lifecycle-worker",
       }),
+    ).resolves.toBeNull();
+
+    const requestedAt = new Date();
+    const authorization = {
+      actor: { id: userId },
+      latestStepUpAt: requestedAt,
+      organizationId,
+      role: "owner" as const,
+      session: { id: sessionId },
+    };
+
+    const cooldown = await getAdminAuthEmailRequestCooldown(
+      databaseUrl,
+      authorization,
+      "password_reset",
+      requestedAt,
+    );
+    expect(cooldown?.retryAfterSeconds).toBeGreaterThan(0);
+    expect(cooldown?.retryAfterSeconds).toBeLessThanOrEqual(300);
+    await expect(
+      getAdminAuthEmailRequestCooldown(
+        databaseUrl,
+        authorization,
+        "password_reset",
+        new Date(requestedAt.getTime() + 5 * 60 * 1_000 + 1),
+      ),
     ).resolves.toBeNull();
   });
 });

@@ -48,6 +48,7 @@ export {
   failAdminAuthEmail,
   findAdminSessionByToken,
   getAdminAuthenticationMethods,
+  getAdminAuthEmailRequestCooldown,
   getAdminCredentialPasswordHash,
   isAdminTotpLocked,
   listOrganizationAdminSessions,
@@ -58,6 +59,7 @@ export {
   rotateAdminSessionToken,
   setAdminSessionStepUp,
   type AdminAuthorizationContext,
+  type AdminAuthEmailRequestCooldown,
   type AdminSessionSummary,
   type ClaimedAdminAuthEmail,
 } from "./admin-auth";
