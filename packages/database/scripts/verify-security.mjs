@@ -65,6 +65,10 @@ const ids = {
   otherAdminSession: `security-session-other-${runId}`,
   revocableAdminSession: `security-session-revocable-${runId}`,
   customerSession: `security-session-customer-${runId}`,
+  credentialAccount: `security-credential-account-${runId}`,
+  credentialUser: `security-credential-user-${runId}`,
+  googleAccount: `security-google-account-${runId}`,
+  googleUser: `security-google-user-${runId}`,
   draftDocument: randomUUID(),
   draftRevisionOne: randomUUID(),
   draftRevisionTwo: randomUUID(),
@@ -80,6 +84,15 @@ const ids = {
 };
 const previewTokenHash = randomBytes(32).toString("hex");
 const previewSessionTokenHash = randomBytes(32).toString("hex");
+const onboarding = {
+  credentialFinalPasswordHash: `final-password-hash-${randomBytes(32).toString("hex")}`,
+  credentialInitialPasswordHash: `initial-password-hash-${randomBytes(32).toString("hex")}`,
+  credentialInvitationTokenHash: randomBytes(32).toString("hex"),
+  credentialRegistrationGrantHash: randomBytes(32).toString("hex"),
+  credentialVerificationTokenHash: randomBytes(32).toString("hex"),
+  googleInvitationTokenHash: randomBytes(32).toString("hex"),
+  googleRegistrationGrantHash: randomBytes(32).toString("hex"),
+};
 
 async function expectDenied(operation, label) {
   await assert.rejects(operation, undefined, `${label} should be denied`);
@@ -458,10 +471,14 @@ async function cleanup() {
     fixtureAdmin`delete from audit.events
       where target_id in (
         ${ids.activeAdminSession},
-        ${ids.revocableAdminSession}
+        ${ids.revocableAdminSession},
+        ${ids.credentialUser},
+        ${ids.googleUser}
       )`,
     fixtureAdmin`delete from audit.events
       where id = ${ids.auditEvent}`,
+    fixtureAdmin`delete from audit.events
+      where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.provider_webhook_events
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.outbox_events
@@ -471,7 +488,12 @@ async function cleanup() {
     fixtureAdmin`delete from app.organizations
       where id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from customer_auth.user
-      where id in (${ids.customerUser}, ${ids.otherCustomerUser})`,
+      where id in (
+        ${ids.customerUser},
+        ${ids.otherCustomerUser},
+        ${ids.credentialUser},
+        ${ids.googleUser}
+      )`,
     fixtureAdmin`delete from auth.user
       where id in (${ids.adminUser}, ${ids.customerShadowAdminUser}, ${ids.otherUser})`,
   ]);
@@ -1012,6 +1034,340 @@ async function verifyPortalIsolation() {
       where organization_id = ${ids.organizationA}
         and user_id = ${ids.customerUser}`,
   });
+}
+
+async function verifyCustomerCredentialOnboarding() {
+  const credentialEmail = `credential-${runId}@example.test`;
+  const googleEmail = `google-${runId}@example.test`;
+  const credentialEncryptedToken = `encrypted-credential-invitation-${runId}`;
+  const googleEncryptedToken = `encrypted-google-invitation-${runId}`;
+
+  await expectDenied(
+    web`select * from app.exchange_customer_invitation_token(
+      ${onboarding.credentialInvitationTokenHash},
+      ${onboarding.credentialRegistrationGrantHash},
+      now() + interval '30 minutes'
+    )`,
+    "web invitation-token exchange",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'editor', true)`,
+      admin`select app.create_customer_invitation(
+        ${ids.organizationA}::uuid,
+        ${ids.adminUser},
+        ${`editor-denied-${runId}@example.test`},
+        'Denied Editor Invitation',
+        ${randomBytes(32).toString("hex")},
+        ${`encrypted-editor-denied-${runId}`},
+        ${`customer.invitation/editor-denied-${runId}`},
+        now() + interval '7 days',
+        ARRAY[${ids.assignedProject}::uuid]
+      )`,
+    ]),
+    "editor customer invitation creation",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'owner', true)`,
+      admin`select app.create_customer_invitation(
+        ${ids.organizationA}::uuid,
+        ${ids.adminUser},
+        ${`unassigned-denied-${runId}@example.test`},
+        'Unassigned Customer',
+        ${randomBytes(32).toString("hex")},
+        ${`encrypted-unassigned-denied-${runId}`},
+        ${`customer.invitation/unassigned-denied-${runId}`},
+        now() + interval '7 days',
+        ARRAY[]::uuid[]
+      )`,
+    ]),
+    "customer invitation without a project assignment",
+  );
+
+  const credentialInvitation = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`select app.create_customer_invitation(
+      ${ids.organizationA}::uuid,
+      ${ids.adminUser},
+      ${credentialEmail},
+      'Credential Customer',
+      ${onboarding.credentialInvitationTokenHash},
+      ${credentialEncryptedToken},
+      ${`customer.invitation/${onboarding.credentialInvitationTokenHash}`},
+      now() + interval '7 days',
+      ARRAY[${ids.unassignedProject}::uuid]
+    ) as invitation_id`,
+  ]);
+  const credentialInvitationId = credentialInvitation[3][0]?.invitation_id;
+  assert.ok(credentialInvitationId);
+
+  const adminInvitation = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select id, email from app.customer_invitations
+      where id = ${credentialInvitationId}`,
+  });
+  assert.deepEqual(adminInvitation, [
+    { email: credentialEmail, id: credentialInvitationId },
+  ]);
+
+  await expectDenied(
+    portal`select email from app.customer_invitations`,
+    "portal direct invitation read",
+  );
+  await expectDenied(
+    admin`select encrypted_token from customer_auth.auth_email_outbox`,
+    "admin customer auth-email outbox read",
+  );
+  await expectDenied(
+    web`select encrypted_token from customer_auth.auth_email_outbox`,
+    "web customer auth-email outbox read",
+  );
+
+  const credentialExchange = await portal`
+    select invitation_id, organization_id, email
+    from app.exchange_customer_invitation_token(
+      ${onboarding.credentialInvitationTokenHash},
+      ${onboarding.credentialRegistrationGrantHash},
+      now() + interval '30 minutes'
+    )
+  `;
+  assert.deepEqual(credentialExchange, [
+    {
+      email: credentialEmail,
+      invitation_id: credentialInvitationId,
+      organization_id: ids.organizationA,
+    },
+  ]);
+
+  const invitationReplay = await portal`
+    select invitation_id
+    from app.exchange_customer_invitation_token(
+      ${onboarding.credentialInvitationTokenHash},
+      ${randomBytes(32).toString("hex")},
+      now() + interval '30 minutes'
+    )
+  `;
+  assert.deepEqual(invitationReplay, [], "invitation URLs must be one-time");
+
+  const grantMatches = await portal`
+    select app.customer_registration_grant_matches(
+      ${credentialEmail},
+      ${onboarding.credentialRegistrationGrantHash}
+    ) as matches
+  `;
+  assert.deepEqual(grantMatches, [{ matches: true }]);
+
+  await expectDenied(
+    portal`select * from app.register_customer_with_password(
+      ${`wrong-${credentialEmail}`},
+      'Credential Customer',
+      ${onboarding.credentialRegistrationGrantHash},
+      ${ids.credentialUser},
+      ${ids.credentialAccount},
+      ${onboarding.credentialInitialPasswordHash},
+      ${onboarding.credentialVerificationTokenHash},
+      ${`encrypted-verification-${runId}`},
+      ${`customer.email_verification/${onboarding.credentialVerificationTokenHash}`},
+      now() + interval '1 hour'
+    )`,
+    "mismatched invited email registration",
+  );
+
+  const credentialRegistration = await portal`
+    select user_id, invitation_id, organization_id
+    from app.register_customer_with_password(
+      ${credentialEmail},
+      'Credential Customer',
+      ${onboarding.credentialRegistrationGrantHash},
+      ${ids.credentialUser},
+      ${ids.credentialAccount},
+      ${onboarding.credentialInitialPasswordHash},
+      ${onboarding.credentialVerificationTokenHash},
+      ${`encrypted-verification-${runId}`},
+      ${`customer.email_verification/${onboarding.credentialVerificationTokenHash}`},
+      now() + interval '1 hour'
+    )
+  `;
+  assert.deepEqual(credentialRegistration, [
+    {
+      invitation_id: credentialInvitationId,
+      organization_id: ids.organizationA,
+      user_id: ids.credentialUser,
+    },
+  ]);
+
+  const provisionalIdentity = await portal`
+    select customer.email_verified, account.password
+    from customer_auth.user as customer
+    inner join customer_auth.account as account
+      on account.user_id = customer.id
+      and account.provider_id = 'credential'
+    where customer.id = ${ids.credentialUser}
+  `;
+  assert.deepEqual(provisionalIdentity, [
+    {
+      email_verified: false,
+      password: onboarding.credentialInitialPasswordHash,
+    },
+  ]);
+  const inactiveBeforeMailboxProof = await portal`
+    select app.customer_has_active_membership(${ids.credentialUser}) as active
+  `;
+  assert.deepEqual(inactiveBeforeMailboxProof, [{ active: false }]);
+
+  const completed = await portal`
+    select user_id, organization_id
+    from app.complete_customer_password_registration(
+      ${onboarding.credentialVerificationTokenHash},
+      ${onboarding.credentialFinalPasswordHash}
+    )
+  `;
+  assert.deepEqual(completed, [
+    { organization_id: ids.organizationA, user_id: ids.credentialUser },
+  ]);
+
+  const activatedCredential = await portal`
+    select customer.email_verified, account.password
+    from customer_auth.user as customer
+    inner join customer_auth.account as account
+      on account.user_id = customer.id
+      and account.provider_id = 'credential'
+    where customer.id = ${ids.credentialUser}
+  `;
+  assert.deepEqual(activatedCredential, [
+    {
+      email_verified: true,
+      password: onboarding.credentialFinalPasswordHash,
+    },
+  ]);
+  assert.notEqual(
+    activatedCredential[0]?.password,
+    onboarding.credentialInitialPasswordHash,
+    "mailbox verification must replace the provisional password",
+  );
+
+  const credentialProjects = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.credentialUser,
+    query: portal`select id from app.projects order by id`,
+  });
+  assert.deepEqual(credentialProjects, [{ id: ids.unassignedProject }]);
+
+  const completionReplay = await portal`
+    select user_id
+    from app.complete_customer_password_registration(
+      ${onboarding.credentialVerificationTokenHash},
+      ${onboarding.credentialInitialPasswordHash}
+    )
+  `;
+  assert.deepEqual(
+    completionReplay,
+    [],
+    "verification tokens must be consumed exactly once",
+  );
+
+  const googleInvitation = await admin.transaction([
+    admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+    admin`select set_config('app.membership_role', 'owner', true)`,
+    admin`select app.create_customer_invitation(
+      ${ids.organizationA}::uuid,
+      ${ids.adminUser},
+      ${googleEmail},
+      'Google Customer',
+      ${onboarding.googleInvitationTokenHash},
+      ${googleEncryptedToken},
+      ${`customer.invitation/${onboarding.googleInvitationTokenHash}`},
+      now() + interval '7 days',
+      ARRAY[${ids.assignedProject}::uuid]
+    ) as invitation_id`,
+  ]);
+  const googleInvitationId = googleInvitation[3][0]?.invitation_id;
+  assert.ok(googleInvitationId);
+
+  const googleExchange = await portal`
+    select invitation_id
+    from app.exchange_customer_invitation_token(
+      ${onboarding.googleInvitationTokenHash},
+      ${onboarding.googleRegistrationGrantHash},
+      now() + interval '30 minutes'
+    )
+  `;
+  assert.deepEqual(googleExchange, [{ invitation_id: googleInvitationId }]);
+
+  await fixtureAdmin.transaction([
+    fixtureAdmin`insert into customer_auth.user (
+      id, name, email, email_verified, created_at, updated_at
+    ) values (
+      ${ids.googleUser}, 'Google Customer', ${googleEmail}, true, now(), now()
+    )`,
+    fixtureAdmin`insert into customer_auth.account (
+      id, account_id, provider_id, user_id, created_at, updated_at
+    ) values (
+      ${ids.googleAccount}, ${`google-subject-${runId}`}, 'google',
+      ${ids.googleUser}, now(), now()
+    )`,
+  ]);
+
+  const googleAccepted = await portal`
+    select user_id, organization_id
+    from app.accept_customer_google_invitation(
+      ${ids.googleUser},
+      ${onboarding.googleRegistrationGrantHash}
+    )
+  `;
+  assert.deepEqual(googleAccepted, [
+    { organization_id: ids.organizationA, user_id: ids.googleUser },
+  ]);
+
+  const googleProjects = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.googleUser,
+    query: portal`select id from app.projects`,
+  });
+  assert.deepEqual(googleProjects, [{ id: ids.assignedProject }]);
+
+  const googleReplay = await portal`
+    select user_id
+    from app.accept_customer_google_invitation(
+      ${ids.googleUser},
+      ${onboarding.googleRegistrationGrantHash}
+    )
+  `;
+  assert.deepEqual(
+    googleReplay,
+    [],
+    "Google invitation grants must be one-time",
+  );
+
+  const encryptedOutbox = await portal`
+    select kind, encrypted_token
+    from customer_auth.auth_email_outbox
+    where organization_id = ${ids.organizationA}
+      and invitation_id in (${credentialInvitationId}, ${googleInvitationId})
+    order by kind, encrypted_token
+  `;
+  assert.equal(encryptedOutbox.length, 3);
+  assert.ok(
+    encryptedOutbox.every(
+      ({ encrypted_token }) =>
+        encrypted_token !== onboarding.credentialInvitationTokenHash &&
+        encrypted_token !== onboarding.credentialVerificationTokenHash &&
+        encrypted_token !== onboarding.googleInvitationTokenHash,
+    ),
+    "auth-email outbox rows must not store plaintext bearer tokens",
+  );
 }
 
 async function authorizeSyntheticAdminSession({
@@ -2198,12 +2554,13 @@ try {
   await verifyAdminSessionManagement();
   await verifyAdminIsolation();
   await verifyPortalIsolation();
+  await verifyCustomerCredentialOnboarding();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

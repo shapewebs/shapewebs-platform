@@ -24,10 +24,17 @@ export function hasPortalAuthEnvironment(
 
     if (
       !parsed.NEXT_PUBLIC_PORTAL_URL ||
+      !parsed.NEXT_PUBLIC_PORTAL_TURNSTILE_SITE_KEY ||
+      !parsed.PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET ||
       !parsed.PORTAL_BETTER_AUTH_SECRET ||
       !parsed.PORTAL_BETTER_AUTH_TRUSTED_ORIGINS ||
       !parsed.PORTAL_BETTER_AUTH_URL ||
-      !parsed.PORTAL_DATABASE_URL
+      !parsed.PORTAL_DATABASE_URL ||
+      !parsed.PORTAL_GOOGLE_CLIENT_ID ||
+      !parsed.PORTAL_GOOGLE_CLIENT_SECRET ||
+      !parsed.PORTAL_TURNSTILE_EXPECTED_HOSTNAME ||
+      !parsed.PORTAL_TURNSTILE_SECRET_KEY ||
+      !parsed.SHAPEWEBS_ORGANIZATION_ID
     ) {
       return false;
     }

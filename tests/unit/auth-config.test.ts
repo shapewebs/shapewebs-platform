@@ -102,6 +102,9 @@ describe("Better Auth security configuration", () => {
     });
     expect(auth.options.disabledPaths).toEqual(
       expect.arrayContaining([
+        "/account-info",
+        "/get-access-token",
+        "/refresh-token",
         "/list-sessions",
         "/revoke-other-sessions",
         "/revoke-session",
@@ -124,6 +127,9 @@ describe("Better Auth security configuration", () => {
     const auth = createShapewebsAuth(validOptions);
 
     for (const path of [
+      "/account-info",
+      "/get-access-token",
+      "/refresh-token",
       "/list-sessions",
       "/revoke-other-sessions",
       "/revoke-session",

@@ -21,6 +21,9 @@ import { getAdminCookiePolicy } from "./cookie-policy";
 import { generateAdminSessionToken } from "./session-cookie";
 
 const disabledAuthPaths = [
+  "/account-info",
+  "/get-access-token",
+  "/refresh-token",
   "/list-sessions",
   "/revoke-other-sessions",
   "/revoke-session",

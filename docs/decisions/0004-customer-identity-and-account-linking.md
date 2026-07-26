@@ -69,6 +69,21 @@ Start with invitation-gated registration:
 4. the authenticated customer explicitly accepts the matching invitation; and
 5. only then does an active membership grant access.
 
+The implemented credential foundation deliberately does not call Better
+Auth's general email signup endpoint. That endpoint would persist the password
+chosen by anyone holding a forwarded invitation before the mailbox owner had
+verified control. Instead, Shapewebs creates an inactive provisional account
+and queues a durable verification message. The mailbox owner must choose the
+final password from that single-use message; one database transaction replaces
+the provisional password, verifies the user, accepts the invitation, assigns
+the projects, and activates membership. No session is issued before that
+transaction succeeds.
+
+Google onboarding exchanges the invitation URL once for a short-lived
+HttpOnly registration grant. The Google callback must return the exact invited
+verified email before the invitation can be accepted. Core open signup and
+verification endpoints remain disabled for both methods.
+
 The signup interface is therefore complete but not open to arbitrary account
 creation. Public visitors continue through the lead journey. Open registration
 may be added behind a feature flag only after its abuse, retention, support,
@@ -248,6 +263,12 @@ Before customer launch, automated and manual evidence must cover:
    and staging provider journeys.
 8. Create paid production resources and promote only through the separately
    approved launch procedure.
+
+Repository delivery through the first half of step 4 is now implemented by
+migration `0014` and the customer Better Auth/onboarding libraries. The portal
+route/UI, auth-email worker, Turnstile journey, explicit linking interface,
+recovery and persistent-staging application remain disabled until their own
+verification gates pass.
 
 ## Consequences
 

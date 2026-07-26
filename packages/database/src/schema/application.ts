@@ -294,6 +294,87 @@ export const customerMemberships = appSchema.table(
   ],
 );
 
+export const customerInvitations = appSchema.table(
+  "customer_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    name: text("name").notNull(),
+    invitationTokenHash: text("invitation_token_hash").notNull(),
+    invitationTokenConsumedAt: timestamp("invitation_token_consumed_at", {
+      withTimezone: true,
+    }),
+    registrationGrantHash: text("registration_grant_hash"),
+    registrationGrantExpiresAt: timestamp("registration_grant_expires_at", {
+      withTimezone: true,
+    }),
+    claimedUserId: text("claimed_user_id").references(() => customerUser.id, {
+      onDelete: "set null",
+    }),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    invitedByUserId: text("invited_by_user_id")
+      .notNull()
+      .references(() => adminUser.id, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("customer_invitations_token_hash_unique").on(
+      table.invitationTokenHash,
+    ),
+    uniqueIndex("customer_invitations_registration_grant_unique").on(
+      table.registrationGrantHash,
+    ),
+    index("customer_invitations_organization_email_idx").on(
+      table.organizationId,
+      table.email,
+    ),
+    check(
+      "customer_invitations_email_normalized",
+      sql`${table.email} = lower(btrim(${table.email}))`,
+    ),
+    check(
+      "customer_invitations_email_bounded",
+      sql`char_length(${table.email}) between 3 and 320`,
+    ),
+    check(
+      "customer_invitations_name_bounded",
+      sql`char_length(btrim(${table.name})) between 1 and 120`,
+    ),
+    check(
+      "customer_invitations_token_hash_format",
+      sql`${table.invitationTokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "customer_invitations_registration_grant_complete",
+      sql`(${table.registrationGrantHash} is null and ${table.registrationGrantExpiresAt} is null)
+        or (${table.registrationGrantHash} ~ '^[0-9a-f]{64}$' and ${table.registrationGrantExpiresAt} is not null)`,
+    ),
+    check(
+      "customer_invitations_claim_complete",
+      sql`(${table.claimedUserId} is null and ${table.claimedAt} is null)
+        or (${table.claimedUserId} is not null and ${table.claimedAt} is not null)`,
+    ),
+    pgPolicy("staff read customer invitations in current organization", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("owner manages customer invitations in current organization", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isOwner}`,
+    }),
+  ],
+);
+
 export const projects = appSchema.table(
   "projects",
   {
@@ -390,6 +471,40 @@ export const customerProjectMemberships = appSchema.table(
         using: sql`true`,
       },
     ),
+  ],
+);
+
+export const customerInvitationProjects = appSchema.table(
+  "customer_invitation_projects",
+  {
+    invitationId: uuid("invitation_id")
+      .notNull()
+      .references(() => customerInvitations.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.invitationId, table.projectId],
+      name: "customer_invitation_projects_pkey",
+    }),
+    index("customer_invitation_projects_project_idx").on(table.projectId),
+    pgPolicy("staff read customer invitation projects", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${isEditorOrOwner}
+        and ${projectBelongsToCurrentOrganization(table.projectId)}`,
+    }),
+    pgPolicy("owner manages customer invitation projects", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${isOwner}
+        and ${projectBelongsToCurrentOrganization(table.projectId)}`,
+      withCheck: sql`${isOwner}
+        and ${projectBelongsToCurrentOrganization(table.projectId)}`,
+    }),
   ],
 );
 

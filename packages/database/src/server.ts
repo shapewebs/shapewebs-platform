@@ -70,3 +70,17 @@ export {
   getOrganizationSettingsSnapshot,
   type OrganizationSettingsSnapshot,
 } from "./organization-settings";
+export {
+  acceptCustomerGoogleInvitation,
+  authorizeCustomerSession,
+  completeCustomerPasswordRegistration,
+  createCustomerInvitation,
+  customerHasActiveMembership,
+  customerRegistrationGrantMatches,
+  enqueueCustomerAuthEmail,
+  exchangeCustomerInvitationToken,
+  provisionCustomerSessionSecurity,
+  registerCustomerWithPassword,
+  type CustomerInvitationReceipt,
+  type CustomerRegistrationReceipt,
+} from "./customer-auth";
