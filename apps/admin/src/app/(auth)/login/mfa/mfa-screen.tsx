@@ -41,6 +41,7 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
   const enrollmentSecret = enrollment
     ? getEnrollmentSecret(enrollment.totpUri)
     : "";
+  const stepUpReason = searchParams.get("reason");
 
   return (
     <div className={styles.stackM3q7d5}>
@@ -61,7 +62,12 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
           </p>
         ) : null}
 
-        {searchParams.get("reason") === "step-up" ? (
+        {stepUpReason === "password-link" ? (
+          <p className={styles.noticeStateW5m1d9}>
+            Verify your authenticator code to request the password link. The
+            email request will resume automatically afterward.
+          </p>
+        ) : stepUpReason === "step-up" ? (
           <p className={styles.noticeStateW5m1d9}>
             This operation requires a recently verified authenticator code.
           </p>

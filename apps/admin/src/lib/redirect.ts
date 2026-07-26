@@ -36,3 +36,15 @@ export function getSafeAdminRedirectTarget(redirectTo?: string | null): string {
     ? `${target.pathname}${target.search}${target.hash}`
     : fallbackAdminPath;
 }
+
+export function getAdminStepUpUrl(
+  redirectTo: string,
+  reason: "password-link" | "step-up" = "step-up",
+): string {
+  const parameters = new URLSearchParams({
+    reason,
+    redirectTo: getSafeAdminRedirectTarget(redirectTo),
+  });
+
+  return `/login/mfa?${parameters.toString()}`;
+}

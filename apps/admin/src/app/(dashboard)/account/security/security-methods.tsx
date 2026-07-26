@@ -1,37 +1,46 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Buttons } from "@shapewebs/ui";
+
+import { getAdminStepUpUrl } from "@/lib/redirect";
 
 import styles from "./page.module.css";
 
 type MethodState = { google: boolean; password: boolean };
+type PasswordLinkResult = "complete" | "redirecting";
+
+const passwordLinkResumeTarget =
+  "/account/security?resume=password-link" as const;
 
 export function SecurityMethods({
   email,
   initialMethods,
+  resumePasswordLink = false,
 }: {
   email: string;
   initialMethods: MethodState;
+  resumePasswordLink?: boolean;
 }) {
   const [methods, setMethods] = useState(initialMethods);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [passwordLinkQueued, setPasswordLinkQueued] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const resumedPasswordLink = useRef(false);
 
-  function requireFreshStepUp(status: number, error: unknown) {
+  const requireFreshStepUp = useCallback((status: number, error: unknown) => {
     if (status === 403 && error === "step_up_required") {
       window.location.assign(
-        "/login/mfa?reason=step-up&redirectTo=%2Faccount%2Fsecurity",
+        getAdminStepUpUrl(passwordLinkResumeTarget, "password-link"),
       );
       return true;
     }
     return false;
-  }
+  }, []);
 
-  function addPassword() {
-    startTransition(async () => {
+  const requestPasswordLink =
+    useCallback(async (): Promise<PasswordLinkResult> => {
       setMessage("Requesting a secure password link…");
 
       try {
@@ -45,29 +54,31 @@ export function SecurityMethods({
           error?: unknown;
           status?: unknown;
         };
-        if (requireFreshStepUp(response.status, payload.error)) return;
+        if (requireFreshStepUp(response.status, payload.error)) {
+          return "redirecting";
+        }
         if (!response.ok) {
           setMessage("The password link could not be requested securely.");
-          return;
+          return "complete";
         }
         if (payload.status === "password_exists") {
           setMethods((current) => ({ ...current, password: true }));
           setMessage("A password is already connected.");
-          return;
+          return "complete";
         }
         if (payload.status === "password_email_pending") {
           setPasswordLinkQueued(true);
           setMessage(
             "A secure link is already queued. Delivery can take up to five minutes. Search your verified mailbox for “Set your Shapewebs Admin password”.",
           );
-          return;
+          return "complete";
         }
         if (payload.status === "password_email_queued") {
           setPasswordLinkQueued(true);
           setMessage(
             "Secure link queued. Delivery can take up to five minutes. Search your verified mailbox for “Set your Shapewebs Admin password”.",
           );
-          return;
+          return "complete";
         }
         setMessage("The password link could not be requested securely.");
       } catch {
@@ -75,8 +86,37 @@ export function SecurityMethods({
           "The password-link request did not reach Shapewebs. Check your connection and try again.",
         );
       }
+
+      return "complete";
+    }, [requireFreshStepUp]);
+
+  function addPassword() {
+    startTransition(async () => {
+      await requestPasswordLink();
     });
   }
+
+  useEffect(() => {
+    if (
+      !resumePasswordLink ||
+      resumedPasswordLink.current ||
+      methods.password
+    ) {
+      return;
+    }
+
+    resumedPasswordLink.current = true;
+    startTransition(async () => {
+      const result = await requestPasswordLink();
+      if (result === "complete") {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          "/account/security",
+        );
+      }
+    });
+  }, [methods.password, requestPasswordLink, resumePasswordLink]);
 
   function connectGoogle() {
     startTransition(async () => {
