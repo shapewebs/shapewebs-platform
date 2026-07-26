@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `b943a196`; current implementation branch
-  `codex/customer-credential-auth`
+- Branch: protected `staging` at `8e7a437`; current evidence branch
+  `codex/customer-credential-staging-evidence`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -24,17 +24,18 @@
   correction `#30` merged at `ea97ea4`; protected runtime evidence `#31`
   merged at `bc0abc5`; isolated portal foundation `#32` merged at `a509f69`;
   customer identity boundary `#33` merged at `b8f9750`; persistent customer
-  identity staging evidence `#34` merged at `b943a196`
+  identity staging evidence `#34` merged at `b943a196`; invitation-gated
+  customer credential foundation `#35` merged at `8e7a437`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#34` are merged into protected `staging`. Migrations `0000` through `0013` are
-applied to the persistent synthetic staging database and its live security
-verification passes. Google OAuth, local TOTP enrollment, successful step-up
-and protected CMS navigation have passed on the fixed staging origin. The
+`#35` are merged into protected `staging`. Migrations `0000` through `0014` are
+applied to the persistent synthetic staging database and its live six-identity
+security verification passes. Google OAuth, local TOTP enrollment, successful
+step-up and protected CMS navigation have passed on the fixed staging origin. The
 complete authenticated draft, one-time preview, publish, exact public read,
 unpublish, immutable rollback and final cleanup journey has passed on fixed
 staging. Protected cross-project cache revalidation then passed an additional
@@ -116,7 +117,7 @@ production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0013`, including marker-restricted synthetic lead retention,
+  through `0014`, including marker-restricted synthetic lead retention,
   owner-only organization settings, complete content/workflow enums,
   administrative TOTP replay/lockout, and the separate customer identity and
   membership boundary. The runtime roles passed the complete RLS and
@@ -172,7 +173,7 @@ production domains.
   client, Neon schema, and runtime role. It supports invitation-gated Google
   and verified email/password onboarding with explicit same-email account
   linking, without weakening or sharing administrative authentication.
-- The current implementation branch adds the disabled customer credential
+- Protected staging now contains the disabled customer credential
   foundation: owner-created project-bound invitations, one-time registration
   grants, inactive provisional credentials, mailbox-owned final-password
   activation, invitation-gated Google activation, seven-day customer sessions,
@@ -214,8 +215,13 @@ production domains.
   `0014`, passes 18 repository and real Better Auth runtime scenarios, verifies
   rollback, and restores the byte-identical fixture SHA-256
   `b091129fc9c4110bda29e8b7d2bebeaf2e90bb0f4d5d502ebcdac41c16c0abb4`.
-  Both branches were deleted. Migration `0014` is not applied to persistent
-  staging until its protected pull request passes.
+  Both branches were deleted. Pull request `#35` passed all protected checks
+  and merged at `8e7a437`. An expiring rollback branch captured the exact
+  pre-migration state before the direct migrator applied `0014`; the persistent
+  journal now contains 15 migrations. The complete live six-identity security
+  suite passed, both branch-scoped runtime credentials were rotated and stored
+  only in Vercel Sensitive scope plus macOS Keychain, and both fixed staging
+  deployments returned to `READY` without changing development or production.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
@@ -581,17 +587,19 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Implement invitation-gated verified email/password customer authentication
-   with uniform responses, durable verification/reset email, recent
-   reauthentication, and fail-closed portal session authorization.
-2. Add the dedicated customer Google OAuth client and explicit signed-in
-   account-linking journeys without implicit same-email linking.
-3. Implement the bounded private/public Vercel Blob repository and malicious
+1. Mount only the fail-closed portal invitation, mailbox-verification,
+   email/password login, logout and session-authorization routes over the
+   verified customer credential foundation.
+2. Add uniform reset/recovery responses, recent reauthentication and explicit
+   signed-in same-email Google linking without implicit account merging.
+3. Provision the dedicated customer Google OAuth client and separate portal
+   staging providers only when the routes are ready for fixed-origin evidence.
+4. Implement the bounded private/public Vercel Blob repository and malicious
    upload controls needed by the minimum CMS.
-4. Rehearse the accepted-risk expiry checks and production provider launch
+5. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-5. Begin the final public studio design after the fixed-staging foundation
+6. Begin the final public studio design after the fixed-staging foundation
    gate, while preserving the separately accepted invitation-only customer
    identity architecture for Google and verified email/password access.
-6. Add production recovery gates in the milestone order documented in
+7. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

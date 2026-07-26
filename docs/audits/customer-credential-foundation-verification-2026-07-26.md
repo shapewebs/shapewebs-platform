@@ -2,11 +2,11 @@
 
 ## Scope
 
-This evidence covers the repository and disposable-database foundation for
-invitation-only customer Google and email/password authentication. It does not
-enable a portal route, deploy a portal Vercel project, configure a customer
-Google OAuth client, apply migration `0014` to persistent staging, or change
-production.
+This evidence covers the repository, disposable-database, protected
+pull-request, and persistent synthetic-staging foundation for invitation-only
+customer Google and email/password authentication. It does not enable a portal
+route, deploy a portal Vercel project, configure a customer Google OAuth
+client, or change production.
 
 ## Implemented controls
 
@@ -75,15 +75,50 @@ the complete lifecycle then passed.
 
 - zero-warning ESLint and strict TypeScript passed;
 - deterministic Better Auth schema and Drizzle migration checks passed;
-- 153 unit/coverage tests passed with 96% or higher statement, branch, function,
+- 154 unit/coverage tests passed with 96% or higher statement, branch, function,
   and line coverage in the coverage-gated modules;
 - application-boundary and ASVS structural gates passed; and
 - unused dependency/export and production cycle checks passed after removing
   one unused helper export.
 
-The protected pull-request and clean-runner evidence will be recorded after
-the branch is pushed. Persistent staging migration and provider/browser flows
-remain separate, rollback-protected follow-up work.
+## Protected pull request and persistent staging
+
+Pull request
+[`#35`](https://github.com/shapewebs/shapewebs-platform/pull/35) passed Quality,
+OSV, dependency review, CodeQL, both Vercel previews, the complete disposable
+Neon source/restore lifecycle, and its required gate before being squash-merged
+into protected `staging` at `8e7a437`. The disposable lifecycle evidence is in
+GitHub Actions run
+[`30210049064`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30210049064).
+
+Before persistent staging changed, Neon branch
+`codex-staging-pre-0014-20260726` (`br-raspy-night-as6ypuey`) captured the exact
+pre-migration state at LSN `0/264AD98`. It expires automatically on 28 July
+2026 and has no compute. The dedicated direct migrator then applied migration
+`0014`; the persistent journal now contains 15 migrations.
+
+The complete live security verifier passed through six distinct database
+identities: provider owner, migrator, admin runtime, portal runtime, web
+runtime, and public reader. It repeated forced-RLS, identity isolation,
+invitation, mailbox-proof, Google activation, replay, project assignment,
+session/MFA, CMS, public-content, lead/outbox, retention, webhook, and audit
+checks and removed its uniquely identified synthetic fixtures afterward.
+
+Vercel Sensitive values cannot be downloaded after creation. The two staging
+runtime passwords were therefore rotated at Neon, stored as operator-only
+copies in macOS Keychain, and atomically replaced only in the exact `staging`
+Preview scope. The development branch, production environments, and all
+owner/migrator application boundaries remained unchanged. Redeployments
+`dpl_9NseZWvcgjFhRdu4JeeQxrL6KZMo` and
+`dpl_G7ExYwKpMqB7VRkRJWS34j2k8jYV` reached `READY` and retained the fixed
+`admin-staging.shapewebs.com` and `staging.shapewebs.com` aliases.
+
+The automatic post-merge staging reliability/security run
+[`30210492683`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30210492683)
+passed. After credential rotation and redeployment, separate run
+[`30211522783`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30211522783)
+again passed the k6 smoke thresholds and passive ZAP baseline with only
+redacted reports retained.
 
 ## Remaining gates
 
@@ -97,7 +132,5 @@ remain separate, rollback-protected follow-up work.
 - Complete enumeration/timing, CSRF, Turnstile, linking, session revocation,
   email-provider failure, browser, ZAP, k6, accessibility, and Lighthouse
   evidence before enabling customer access.
-- Apply `0014` to persistent synthetic staging only after the protected pull
-  request passes and an expiring pre-migration rollback branch exists.
 - Production remains untouched and requires a separate explicit launch
   decision.
