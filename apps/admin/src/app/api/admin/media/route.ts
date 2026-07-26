@@ -1,5 +1,9 @@
 import { createHmac, randomUUID } from "node:crypto";
 
+// The deployable app owns the native runtime so Vercel traces it from the
+// function root instead of relying on an indirect workspace dependency.
+import "sharp";
+
 import {
   completePrivateMediaUpload,
   failPrivateMediaUpload,
