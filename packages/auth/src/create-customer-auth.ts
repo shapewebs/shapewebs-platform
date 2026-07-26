@@ -10,7 +10,11 @@ import * as customerAuthSchema from "@shapewebs/database/customer-auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { emailAddressSchema } from "@shapewebs/validation";
 import type { GenericEndpointContext } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { haveIBeenPwned } from "better-auth/plugins";
 
@@ -326,7 +330,20 @@ export function createShapewebsCustomerAuth(
           context.request?.headers.get("x-shapewebs-method-authorization") ??
           context.headers?.get("x-shapewebs-method-authorization");
 
-        if (!verifyCustomerMethodAuthorization(authorization, options.secret)) {
+        const activeSession = await getSessionFromCtx(context);
+
+        if (
+          !activeSession ||
+          !verifyCustomerMethodAuthorization(
+            authorization,
+            options.secret,
+            Date.now(),
+            {
+              sessionId: activeSession.session.id,
+              userId: activeSession.user.id,
+            },
+          )
+        ) {
           throw new APIError("FORBIDDEN", {
             message: "Recent customer reauthentication is required.",
           });

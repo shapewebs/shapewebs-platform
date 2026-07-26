@@ -124,8 +124,23 @@ describe("customer registration tokens and cookies", () => {
     );
 
     expect(
-      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000),
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "customer-session-123",
+        userId: "customer-user-123",
+      }),
     ).toBe(true);
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "different-customer-session",
+        userId: "customer-user-123",
+      }),
+    ).toBe(false);
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "customer-session-123",
+        userId: "different-customer-user",
+      }),
+    ).toBe(false);
     expect(
       verifyCustomerMethodAuthorization(grant, secret, issuedAt + 61_000),
     ).toBe(false);

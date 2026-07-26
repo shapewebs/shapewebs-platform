@@ -43,6 +43,7 @@ export function verifyCustomerMethodAuthorization(
   token: string | null | undefined,
   secret: string,
   now = Date.now(),
+  binding?: { sessionId: string; userId: string },
 ): boolean {
   if (!token || token.length > 2_048 || secret.length < 32) {
     return false;
@@ -80,7 +81,10 @@ export function verifyCustomerMethodAuthorization(
       payload.sessionId.length <= 128 &&
       typeof payload.userId === "string" &&
       payload.userId.length >= 8 &&
-      payload.userId.length <= 128
+      payload.userId.length <= 128 &&
+      (!binding ||
+        (payload.sessionId === binding.sessionId &&
+          payload.userId === binding.userId))
     );
   } catch {
     return false;

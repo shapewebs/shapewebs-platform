@@ -23,12 +23,13 @@ const database = createDatabase(databaseUrl);
 const baseUrl = "http://localhost:3002";
 const customerId = "lifecycle-customer";
 const credentialAccountId = "lifecycle-customer-credential-account";
+const organizationId = "10000000-0000-4000-8000-000000000001";
 const password = "lifecycle customer passphrase 2026";
 const auth = createShapewebsCustomerAuth({
   baseUrl,
   databaseUrl,
   emailEncryptionSecret: "lifecycle-customer-email-encryption-secret-value",
-  organizationId: "10000000-0000-4000-8000-000000000001",
+  organizationId,
   production: false,
   secret: "lifecycle-customer-better-auth-secret-value",
   trustedOrigins: [baseUrl],
