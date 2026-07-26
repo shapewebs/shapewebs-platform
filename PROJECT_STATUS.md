@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `7b5098e`; current correction branch
-  `codex/fix-revalidation-oidc`
+- Branch: protected `staging` at `ea97ea4`; current evidence branch
+  `codex/record-revalidation-proof`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -20,24 +20,25 @@
   `52680c4`; deployment-sequencing pull request
   `shapewebs/shapewebs-platform#27` merged at `d22ca30`; administrative
   recovery correction `#28` merged at `3115c3c`; exact-origin private-preview
-  transfer correction `#29` merged at `7b5098e`
+  transfer correction `#29` merged at `7b5098e`; protected revalidation
+  correction `#30` merged at `ea97ea4`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#29` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#30` are merged into protected `staging`. Migrations `0000` through `0012` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. The
 complete authenticated draft, one-time preview, publish, exact public read,
 unpublish, immutable rollback and final cleanup journey has passed on fixed
-staging. Its remaining operational finding is protected cross-project cache
-revalidation; the preview-only workload trust and branch-scoped application
-secret are configured and the code correction is under review. No content
-slice has been connected to production data or promoted to the production
-domains.
+staging. Protected cross-project cache revalidation then passed an additional
+publish, exact public read, unpublish and exact public `404` cleanup cycle using
+the preview-only workload trust and branch-scoped application secret. No
+content slice has been connected to production data or promoted to the
+production domains.
 
 ## Implemented on this branch
 
@@ -444,6 +445,15 @@ preview exit and replay denial, publication, exact public reads, real public
 archival cleanup. The exact evidence and the cache-revalidation finding are
 recorded in `docs/audits/admin-mfa-cms-recovery-2026-07-26.md`.
 
+Pull request `#30` passed every required Quality, Security, CodeQL, Vercel and
+path-gated Neon check before merging at `ea97ea4`. Post-merge staging run
+[`30203830963`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30203830963)
+waited for both fixed deployments, then passed k6 and ZAP. A fresh owner TOTP
+step-up published revision 6 with exact `published` status, rendered the exact
+public slug, unpublished it as revision 7 with exact `unpublished` status and
+returned that public slug to a real `404`. The final synthetic document is
+archived, and neither mutation produced a revalidation-pending warning.
+
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
@@ -519,17 +529,15 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Merge the Preview-to-Preview OIDC revalidation correction, then prove a
-   fixed-staging publish and cleanup complete without an operational warning.
-2. Verify step-up expiry, session revocation, audit evidence, and the remaining
+1. Verify step-up expiry, session revocation, audit evidence, and the remaining
    anonymous/expired/revoked/wrong-role fail-closed browser cases on fixed
    staging.
-3. Implement the bounded private/public Vercel Blob repository and malicious
+2. Implement the bounded private/public Vercel Blob repository and malicious
    upload controls needed by the minimum CMS.
-4. Rehearse the accepted-risk expiry checks and production provider launch
+3. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-5. Begin the final public studio design after the fixed-staging foundation
+4. Begin the final public studio design after the fixed-staging foundation
    gate, while preserving the separately accepted invitation-only customer
    identity architecture for Google and verified email/password access.
-6. Add production recovery gates in the milestone order documented in
+5. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
