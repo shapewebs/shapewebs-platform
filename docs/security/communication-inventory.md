@@ -15,6 +15,7 @@
 | Admin browser           | `shapewebs-admin`    | Google sign-in, TOTP, CMS reads and mutations                                        | Secure host-only Better Auth reference cookie; fresh TOTP for sensitive actions | HTTPS on the fixed admin origin; exact trusted origins and nonce CSP                      |
 | `shapewebs-web`         | Neon                 | Published-content reads, preview activation and atomic lead/outbox writes            | Least-privilege web runtime role                                                | Provider TLS endpoint; pooled runtime connection; no redirect-capable HTTP hop            |
 | `shapewebs-admin`       | Neon                 | Authentication, authorization, CMS, audit, settings and outbox work                  | Separate least-privilege admin runtime role                                     | Provider TLS endpoint; pooled runtime connection; transaction-local authorization context |
+| `shapewebs-admin`       | `shapewebs-web`      | CMS publish, unpublish and rollback cache revalidation                               | Short-lived Vercel workload OIDC plus an independent application secret         | Exact configured public origin; POST; redirects rejected; five-second timeout             |
 | GitHub Actions/migrator | Neon                 | Disposable migrations, security verification, export and restore                     | Dedicated owner/migrator credential in protected stores                         | Direct provider TLS endpoint; no production credential in previews                        |
 | Admin browser/server    | Google               | Authorization-code OAuth and verified ID-token claims                                | Exact OAuth client, state/PKCE/nonce handling and server-held client secret     | Exact Google endpoints and callback origin over publicly trusted TLS                      |
 | `shapewebs-web`         | Cloudflare Turnstile | Single-use challenge token, expected action/hostname and pseudonymous client address | Widget secret scoped to the approved hostname                                   | Exact Siteverify HTTPS endpoint; five-second timeout; redirects rejected                  |
@@ -36,6 +37,9 @@ default provider credential.
   provide the second authorization boundary.
 - Provider keys are distinct by provider, purpose and environment. Staging
   credentials cannot authorize production resources.
+- The public staging project trusts only admin Preview workload tokens for
+  Preview access. It does not trust admin Preview tokens for production, and
+  the receiving route independently verifies its application secret.
 - External destinations are constants or validated exact origins. User input
   may select a bounded internal path but never an outbound host.
 - Long-lived scheduler route credentials are a temporary accepted risk.
