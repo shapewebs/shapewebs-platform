@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `ea97ea4`; current evidence branch
-  `codex/record-revalidation-proof`
+- Branch: protected `staging` at `bc0abc5`; current implementation branch
+  `codex/portal-foundation`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -21,14 +21,15 @@
   `shapewebs/shapewebs-platform#27` merged at `d22ca30`; administrative
   recovery correction `#28` merged at `3115c3c`; exact-origin private-preview
   transfer correction `#29` merged at `7b5098e`; protected revalidation
-  correction `#30` merged at `ea97ea4`
+  correction `#30` merged at `ea97ea4`; protected runtime evidence `#31`
+  merged at `bc0abc5`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#30` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#31` are merged into protected `staging`. Migrations `0000` through `0012` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. The
@@ -71,7 +72,18 @@ production domains.
 ### Applications and runtime controls
 
 - `apps/web` and `apps/admin` remain independently deployable Next.js
-  applications.
+  applications. The additive `apps/portal` foundation is now a third isolated
+  build target but has no Vercel project, fixed staging domain, authentication
+  endpoint, customer schema, or production deployment yet.
+- Portal provider values use a distinct `PORTAL_*` namespace. A code-owned
+  implementation gate keeps every portal UI route unavailable with HTTP `503`
+  even if provider values are supplied prematurely. Liveness remains
+  observable while readiness fails closed.
+- Portal responses use nonce CSP, private/no-store and noindex controls. Its
+  APIs deny browser rendering contexts, and both Next.js build engines plus
+  Playwright cover the third application in the canonical root workflow.
+- The boundary gate now rejects direct source imports between applications and
+  rejects any authentication-library import in the public application.
 - The public site remains static-first and within its Lighthouse and transfer
   budgets. Speed Insights is loaded only on Vercel. Turnstile is loaded only
   with the contact interface.

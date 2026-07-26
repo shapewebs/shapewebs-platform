@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const webOrigin = "http://127.0.0.1:3100";
 const adminOrigin = "http://127.0.0.1:3101";
+const portalOrigin = "http://127.0.0.1:3102";
 const missingAuthEnvironment = {
   ADMIN_OWNER_EMAILS: "admin@shapewebs.test",
   BETTER_AUTH_SECRET: "shapewebs-test-secret-with-at-least-32-characters",
@@ -72,6 +73,19 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       url: `${adminOrigin}/api/health`,
+    },
+    {
+      command:
+        "corepack pnpm --filter @shapewebs/portal exec next start --port 3102",
+      env: missingAuthEnvironment,
+      gracefulShutdown: {
+        signal: "SIGTERM",
+        timeout: 1_000,
+      },
+      name: "portal",
+      reuseExistingServer: false,
+      timeout: 120_000,
+      url: `${portalOrigin}/api/health`,
     },
   ],
   workers: process.env.CI ? 1 : undefined,

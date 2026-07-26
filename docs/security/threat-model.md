@@ -33,8 +33,10 @@ re-read from trusted server-side sources.
 
 ## Accepted future customer identity boundary
 
-ADR 0004 defines a third, separately deployed customer portal. It is not yet
-implemented and is not counted as current ASVS evidence.
+ADR 0004 defines a third, separately deployed customer portal. Its fail-closed
+repository, CSP, environment, telemetry, health and CI boundaries are now
+implemented. Customer identity, schema, membership and tenant access are not
+implemented and are not counted as current ASVS evidence.
 
 ```mermaid
 flowchart LR
