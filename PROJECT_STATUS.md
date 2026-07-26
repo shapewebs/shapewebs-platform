@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `8a1ff8e`; current stacked implementation
-  branch `codex/admin-multimethod-auth`
+- Branch: protected `staging` at `ee46f64`; current implementation branch
+  `codex/admin-multimethod-auth` in draft pull request `#38`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -27,15 +27,15 @@
   identity staging evidence `#34` merged at `b943a196`; invitation-gated
   customer credential foundation `#35` merged at `8e7a437`; customer
   authentication evidence `#36` merged at `8a1ff8e`; multi-method customer
-  routes `#37` remain a draft pull request while their repaired disposable
-  lifecycle reruns
+  routes `#37` passed the complete disposable lifecycle and merged at
+  `ee46f64`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#36` are merged into protected `staging`. Migrations `0000` through `0014` are
+`#37` are merged into protected `staging`. Migrations `0000` through `0014` are
 applied to the persistent synthetic staging database and its live six-identity
 security verification passes. Google OAuth, local TOTP enrollment, successful
 step-up and protected CMS navigation have passed on the fixed staging origin. The
@@ -183,7 +183,7 @@ production domains.
   client, Neon schema, and runtime role. It supports invitation-gated Google
   and verified email/password onboarding with explicit same-email account
   linking, without weakening or sharing administrative authentication.
-- The current implementation branch adds fail-closed customer routes over the
+- Protected staging now contains fail-closed customer routes over the
   protected credential foundation: project-bound invitation acceptance,
   Google-first or password-first onboarding, login/logout, generic recovery,
   explicit same-account Google linking, verified-email password addition,
@@ -237,6 +237,14 @@ production domains.
   suite passed, both branch-scoped runtime credentials were rotated and stored
   only in Vercel Sensitive scope plus macOS Keychain, and both fixed staging
   deployments returned to `READY` without changing development or production.
+- Pull request `#37` then added the customer-facing invitation, activation,
+  login, recovery and security routes without provisioning provider resources.
+  Protected run
+  [`30218909081`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30218909081)
+  passed fresh migrations, the real Better Auth runtime, exact-tenant and
+  wrong-tenant session authorization, the complete forced-RLS suite, rollback,
+  byte-identical restore and disposable-branch cleanup before the pull request
+  merged at `ee46f64`.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
@@ -602,22 +610,21 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Complete pull request `#37` with a green disposable Neon lifecycle, then
-   merge the customer multi-method route slice into protected staging.
-2. Complete and review the stacked employee multi-method slice, including
+1. Complete and review the employee multi-method slice in pull request `#38`,
+   including
    migration `0015`, forced-RLS auth-email evidence and both build engines.
-3. Provision the exact branch-scoped admin auth-email encryption secret, apply
+2. Provision the exact branch-scoped admin auth-email encryption secret, apply
    `0015` through the dedicated migrator after a rollback branch, and prove
    password-first, Google-first, dual-method and mandatory-TOTP journeys on the
    fixed admin staging origin.
-4. Provision the dedicated customer Google OAuth client and separate portal
+3. Provision the dedicated customer Google OAuth client and separate portal
    staging providers only when the route PR and database lifecycle are green.
-5. Implement the bounded private/public Vercel Blob repository and malicious
+4. Implement the bounded private/public Vercel Blob repository and malicious
    upload controls needed by the minimum CMS.
-6. Rehearse the accepted-risk expiry checks and production provider launch
+5. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-7. Begin the final public studio design after the fixed-staging foundation
+6. Begin the final public studio design after the fixed-staging foundation
    gate, while preserving the separately accepted invitation-only customer
    identity architecture for Google and verified email/password access.
-8. Add production recovery gates in the milestone order documented in
+7. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
