@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { buildPortalContentSecurityPolicy } from "@shapewebs/config";
 
-import { isPortalIdentityImplemented } from "@/lib/auth-environment";
+import { isPortalRuntimeReady } from "@/lib/auth-environment";
 
 function withPrivateHeaders(response: NextResponse, csp: string) {
   response.headers.set("Cache-Control", "no-store");
@@ -19,7 +19,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("Content-Security-Policy", csp);
   requestHeaders.set("x-nonce", nonce);
 
-  if (!isPortalIdentityImplemented()) {
+  if (!isPortalRuntimeReady()) {
     return withPrivateHeaders(
       new NextResponse("Customer portal identity is not available.", {
         status: 503,

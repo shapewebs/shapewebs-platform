@@ -37,12 +37,13 @@ ADR 0004 defines a third, separately deployed customer portal. Its fail-closed
 repository, CSP, environment, telemetry, health and CI boundaries are now
 implemented. The separate customer identity schema, membership foreign keys,
 portal SQL role, and forced-RLS tenant policies are implemented and verified
-on disposable Neon branches. Migration `0014` and the server-only libraries now
-implement one-time invitation exchange, provisional credential registration,
-mailbox-owned final-password activation, Google invitation acceptance, durable
-auth-email state, customer-only cookies and session inactivity. Customer-facing
-routes, explicit account-linking UI, provider delivery and persistent-staging
-application remain disabled and are not yet counted as live staging evidence.
+on disposable Neon branches. Migration `0014`, the server-only libraries and
+fail-closed portal routes now implement one-time invitation exchange,
+provisional credential registration, mailbox-owned final-password activation,
+Google invitation acceptance, durable auth-email delivery, customer-only
+cookies, session inactivity, explicit same-account method linking and password
+recovery. The complete provider namespace and persistent-staging application
+are not yet provisioned, so this code is not counted as live staging evidence.
 
 ```mermaid
 flowchart LR

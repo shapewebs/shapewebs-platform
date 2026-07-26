@@ -5,6 +5,17 @@ import { escapeEmailHtml } from "./lead-template";
 
 export { escapeEmailHtml };
 export {
+  getCustomerAuthActionUrl,
+  getCustomerAuthEmailSubject,
+  renderCustomerAuthEmailHtml,
+  renderCustomerAuthEmailText,
+  type CustomerAuthEmailInput,
+} from "./customer-auth-template";
+export {
+  sendCustomerAuthNotification,
+  type CustomerAuthNotification,
+} from "./customer-auth-delivery";
+export {
   sendLeadNotification,
   type EmailDeliveryResult,
   type LeadNotification,

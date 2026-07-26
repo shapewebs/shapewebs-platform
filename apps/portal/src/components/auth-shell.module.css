@@ -1,0 +1,118 @@
+.sw-portal-main-m2q8v4 {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.sw-portal-card-p7k3n9 {
+  background: rgba(var(--color-bg-secondary), 1);
+  border: 1px solid rgba(var(--color-border), 1);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 10%);
+  display: grid;
+  gap: 1.5rem;
+  margin: 0 auto;
+  max-width: 34rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  width: 100%;
+}
+
+.sw-portal-brand-r4m9x2 {
+  color: rgba(var(--color-text-primary), 1);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sw-portal-header-t8v2q5 {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sw-portal-header-t8v2q5 h1,
+.sw-portal-header-t8v2q5 p {
+  margin: 0;
+}
+
+.sw-portal-eyebrow-a3k7m1 {
+  color: rgba(var(--color-text-secondary), 1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sw-portal-form-c5n8p2 {
+  display: grid;
+  gap: 1rem;
+}
+
+.sw-portal-field-f9q2m6 {
+  display: grid;
+  font-weight: 600;
+  gap: 0.4rem;
+}
+
+.sw-portal-field-f9q2m6 input {
+  background: rgba(var(--color-bg-primary), 1);
+  border: 1px solid rgba(var(--color-border), 1);
+  border-radius: 0.65rem;
+  color: rgba(var(--color-text-primary), 1);
+  font: inherit;
+  min-height: 3rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.sw-portal-actions-b4v7k1 {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sw-portal-button-h3m8q5 {
+  background: rgba(var(--color-text-primary), 1);
+  border: 1px solid rgba(var(--color-text-primary), 1);
+  border-radius: 999px;
+  color: rgba(var(--color-bg-primary), 1);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 3rem;
+  padding: 0.7rem 1.1rem;
+}
+
+.sw-portal-button-alt-z8p1c6 {
+  background: transparent;
+  border: 1px solid rgba(var(--color-border), 1);
+  border-radius: 999px;
+  color: rgba(var(--color-text-primary), 1);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 3rem;
+  padding: 0.7rem 1.1rem;
+}
+
+.sw-portal-message-e2q9n4 {
+  background: rgba(var(--color-bg-primary), 1);
+  border-left: 0.2rem solid currentColor;
+  margin: 0;
+  padding: 0.8rem 1rem;
+}
+
+.sw-portal-copy-j6m3v8 {
+  color: rgba(var(--color-text-secondary), 1);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sw-portal-divider-w5k2r7 {
+  border: 0;
+  border-top: 1px solid rgba(var(--color-border), 1);
+  margin: 0;
+}
+
+.sw-portal-link-d7q4m2 {
+  color: inherit;
+  font-weight: 700;
+}

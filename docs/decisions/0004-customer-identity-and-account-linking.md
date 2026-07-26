@@ -264,11 +264,13 @@ Before customer launch, automated and manual evidence must cover:
 8. Create paid production resources and promote only through the separately
    approved launch procedure.
 
-Repository delivery through the first half of step 4 is now implemented by
-migration `0014` and the customer Better Auth/onboarding libraries. The portal
-route/UI, auth-email worker, Turnstile journey, explicit linking interface,
-recovery and persistent-staging application remain disabled until their own
-verification gates pass.
+Repository delivery through step 6 is now implemented by migration `0014`,
+the customer Better Auth/onboarding libraries, fail-closed portal routes,
+Turnstile-backed forms, explicit same-account linking, recovery, and the
+durable auth-email worker. The implementation stays unavailable unless its
+complete isolated `PORTAL_*` runtime namespace is present. Dedicated provider
+resources, persistent-staging application, browser abuse/recovery evidence and
+production provisioning remain gated.
 
 ## Consequences
 

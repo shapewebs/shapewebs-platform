@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getPortalBaseUrl,
+  getPortalDatabaseUrl,
+  getPortalOrganizationId,
   hasPortalAuthEnvironment,
   isPortalIdentityImplemented,
   isPortalRuntimeReady,
@@ -72,8 +75,34 @@ describe("customer portal authentication environment", () => {
     ).toBe(false);
   });
 
-  it("cannot be enabled through provider values alone", () => {
-    expect(isPortalIdentityImplemented()).toBe(false);
-    expect(isPortalRuntimeReady(completeEnvironment)).toBe(false);
+  it("requires both implemented routes and the complete provider namespace", () => {
+    expect(isPortalIdentityImplemented()).toBe(true);
+    expect(isPortalRuntimeReady(completeEnvironment)).toBe(true);
+    expect(
+      isPortalRuntimeReady({
+        ...completeEnvironment,
+        PORTAL_TURNSTILE_SECRET_KEY: undefined,
+      }),
+    ).toBe(false);
+  });
+
+  it("exposes only the validated runtime database, origin, and organization", () => {
+    expect(getPortalBaseUrl(completeEnvironment)).toBe(
+      completeEnvironment.PORTAL_BETTER_AUTH_URL,
+    );
+    expect(getPortalDatabaseUrl(completeEnvironment)).toBe(
+      completeEnvironment.PORTAL_DATABASE_URL,
+    );
+    expect(getPortalOrganizationId(completeEnvironment)).toBe(
+      completeEnvironment.SHAPEWEBS_ORGANIZATION_ID,
+    );
+
+    const incomplete = {
+      ...completeEnvironment,
+      PORTAL_GOOGLE_CLIENT_SECRET: undefined,
+    };
+    expect(getPortalBaseUrl(incomplete)).toBeNull();
+    expect(getPortalDatabaseUrl(incomplete)).toBeNull();
+    expect(getPortalOrganizationId(incomplete)).toBeNull();
   });
 });

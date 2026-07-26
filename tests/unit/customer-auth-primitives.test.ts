@@ -1,17 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  clearCustomerRegistrationContext,
   clearCustomerRegistrationGrant,
   getCustomerCookiePolicy,
   readCustomerRegistrationGrant,
+  serializeCustomerRegistrationContext,
   serializeCustomerRegistrationGrant,
 } from "../../packages/auth/src/customer-cookie";
+import {
+  createCustomerMethodAuthorization,
+  verifyCustomerMethodAuthorization,
+} from "../../packages/auth/src/customer-method-authorization";
 import { createCustomerInvitation } from "../../packages/auth/src/customer-onboarding";
 import {
   assertCustomerPasswordNotCompromised,
   assertCustomerPasswordPolicy,
   CustomerPasswordError,
+  hashCustomerPassword,
+  verifyCustomerPasswordHash,
 } from "../../packages/auth/src/customer-password";
+import {
+  decryptCustomerRegistrationContext,
+  encryptCustomerRegistrationContext,
+} from "../../packages/auth/src/customer-registration-context";
 import {
   decryptCustomerEmailToken,
   encryptCustomerEmailToken,
@@ -73,6 +85,68 @@ describe("customer registration tokens and cookies", () => {
     expect(getCustomerCookiePolicy(true).prefix).toBe(
       "__Host-shapewebs-customer",
     );
+  });
+
+  it("keeps invitation identity server-owned in a separate encrypted cookie", async () => {
+    const encrypted = await encryptCustomerRegistrationContext(
+      { email: " Customer@Example.test ", name: " Lifecycle Customer " },
+      encryptionSecret,
+    );
+    const serialized = serializeCustomerRegistrationContext(encrypted, true);
+
+    expect(encrypted).not.toContain("customer@example.test");
+    expect(serialized).toContain(
+      "__Host-shapewebs-customer-registration-context=",
+    );
+    expect(serialized).toContain("HttpOnly");
+    expect(serialized).toContain("Secure");
+    expect(serialized).not.toContain("Domain=");
+    expect(clearCustomerRegistrationContext(true)).toContain("Max-Age=0");
+    await expect(
+      decryptCustomerRegistrationContext(encrypted, encryptionSecret),
+    ).resolves.toEqual({
+      email: "customer@example.test",
+      name: "Lifecycle Customer",
+    });
+  });
+
+  it("makes Google linking an expiring server-authorized operation", () => {
+    const secret = "a-separate-customer-auth-secret-that-is-long-enough";
+    const issuedAt = Date.now();
+    const grant = createCustomerMethodAuthorization(
+      {
+        action: "link_google",
+        sessionId: "customer-session-123",
+        userId: "customer-user-123",
+      },
+      secret,
+      issuedAt,
+    );
+
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "customer-session-123",
+        userId: "customer-user-123",
+      }),
+    ).toBe(true);
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "different-customer-session",
+        userId: "customer-user-123",
+      }),
+    ).toBe(false);
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
+        sessionId: "customer-session-123",
+        userId: "different-customer-user",
+      }),
+    ).toBe(false);
+    expect(
+      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 61_000),
+    ).toBe(false);
+    expect(
+      verifyCustomerMethodAuthorization(`${grant}tampered`, secret, issuedAt),
+    ).toBe(false);
   });
 });
 
@@ -151,5 +225,18 @@ describe("customer password assurance", () => {
         { fetchImplementation },
       ),
     ).rejects.toMatchObject({ code: "provider_unavailable" });
+  });
+
+  it("verifies a credential without exposing or reusing its stored hash", async () => {
+    const password = "måne støv correctly 2026";
+    const hash = await hashCustomerPassword(password);
+
+    expect(hash).not.toContain(password);
+    await expect(verifyCustomerPasswordHash(password, hash)).resolves.toBe(
+      true,
+    );
+    await expect(
+      verifyCustomerPasswordHash("a different secure passphrase", hash),
+    ).resolves.toBe(false);
   });
 });

@@ -10,7 +10,11 @@ import * as customerAuthSchema from "@shapewebs/database/customer-auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { emailAddressSchema } from "@shapewebs/validation";
 import type { GenericEndpointContext } from "better-auth";
-import { APIError } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { haveIBeenPwned } from "better-auth/plugins";
 
@@ -26,6 +30,7 @@ import {
   hashCustomerOpaqueToken,
   isCustomerBearerToken,
 } from "./customer-tokens";
+import { verifyCustomerMethodAuthorization } from "./customer-method-authorization";
 
 const customerSessionLifetimeSeconds = 7 * 24 * 60 * 60;
 const passwordResetLifetimeSeconds = 60 * 60;
@@ -42,7 +47,6 @@ const disabledCustomerAuthPaths = [
   "/change-email",
   "/delete-user",
   "/get-access-token",
-  "/link-social",
   "/list-accounts",
   "/list-sessions",
   "/refresh-token",
@@ -216,7 +220,10 @@ export function createShapewebsCustomerAuth(
           before: async (newSession, context) => {
             let active = await customerHasActiveMembership(
               options.databaseUrl,
-              newSession.userId,
+              {
+                organizationId: options.organizationId,
+                userId: newSession.userId,
+              },
             );
 
             if (!active && isGoogleCallback(context)) {
@@ -292,7 +299,10 @@ export function createShapewebsCustomerAuth(
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ token, user }) => {
         if (
-          !(await customerHasActiveMembership(options.databaseUrl, user.id))
+          !(await customerHasActiveMembership(options.databaseUrl, {
+            organizationId: options.organizationId,
+            userId: user.id,
+          }))
         ) {
           return;
         }
@@ -315,6 +325,36 @@ export function createShapewebsCustomerAuth(
           userId: user.id,
         });
       },
+    },
+    hooks: {
+      before: createAuthMiddleware(async (context) => {
+        if (context.path !== "/link-social") {
+          return;
+        }
+
+        const authorization =
+          context.request?.headers.get("x-shapewebs-method-authorization") ??
+          context.headers?.get("x-shapewebs-method-authorization");
+
+        const activeSession = await getSessionFromCtx(context);
+
+        if (
+          !activeSession ||
+          !verifyCustomerMethodAuthorization(
+            authorization,
+            options.secret,
+            Date.now(),
+            {
+              sessionId: activeSession.session.id,
+              userId: activeSession.user.id,
+            },
+          )
+        ) {
+          throw new APIError("FORBIDDEN", {
+            message: "Recent customer reauthentication is required.",
+          });
+        }
+      }),
     },
     onAPIError: {
       errorURL: "/login?error=authentication",

@@ -61,13 +61,45 @@ export function hasPortalAuthEnvironment(
 }
 
 export function isPortalIdentityImplemented(): boolean {
-  // This code-owned gate cannot be opened with provider configuration alone.
-  // It is replaced only after customer auth, authorization and RLS are proven.
-  return false;
+  // This remains code-owned: provider values cannot enable an unimplemented
+  // route set. Runtime readiness still requires the complete isolated portal
+  // namespace below.
+  return true;
 }
 
 export function isPortalRuntimeReady(
   environment: PortalEnvironment = process.env,
 ): boolean {
   return isPortalIdentityImplemented() && hasPortalAuthEnvironment(environment);
+}
+
+export function getPortalDatabaseUrl(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.PORTAL_DATABASE_URL ?? null)
+    : null;
+}
+
+export function getPortalOrganizationId(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.SHAPEWEBS_ORGANIZATION_ID ?? null)
+    : null;
+}
+
+export function getPortalBaseUrl(
+  environment: PortalEnvironment = process.env,
+): string | null {
+  return isPortalRuntimeReady(environment)
+    ? (environment.PORTAL_BETTER_AUTH_URL ?? null)
+    : null;
+}
+
+export function splitPortalEnvironmentList(value?: string): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

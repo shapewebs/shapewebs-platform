@@ -11,7 +11,10 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@shapewebs/auth": "workspace:*",
     "@shapewebs/config": "workspace:*",
+    "@shapewebs/database": "workspace:*",
+    "@shapewebs/email": "workspace:*",
     "@shapewebs/observability": "workspace:*",
     "@shapewebs/ui": "workspace:*",
     "@shapewebs/validation": "workspace:*",
