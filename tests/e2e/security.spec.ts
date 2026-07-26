@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const adminOrigin = "http://127.0.0.1:3101";
+const portalOrigin = "http://127.0.0.1:3102";
 
 test("public responses expose the required production security policy", async ({
   request,
@@ -76,6 +77,41 @@ test("admin routes fail closed when authentication is unconfigured", async ({
   expect(response.status()).toBe(503);
   expect(headers["cache-control"]).toBe("no-store");
   expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
+});
+
+test("customer portal routes remain unavailable before identity is implemented", async ({
+  request,
+}) => {
+  const response = await request.get(portalOrigin);
+  const headers = response.headers();
+
+  expect(response.status()).toBe(503);
+  expect(headers["cache-control"]).toBe("no-store");
+  expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
+  expect(headers["content-security-policy"]).toContain("'strict-dynamic'");
+  expect(
+    headers["content-security-policy"].match(/script-src [^;]+/)?.[0],
+  ).not.toContain("'unsafe-inline'");
+
+  const readinessResponse = await request.get(
+    `${portalOrigin}/api/health/ready`,
+  );
+
+  expect(readinessResponse.status()).toBe(503);
+  await expect(readinessResponse.json()).resolves.toEqual({
+    status: "unavailable",
+  });
+});
+
+test("customer portal APIs deny browser rendering contexts", async ({
+  request,
+}) => {
+  const response = await request.get(`${portalOrigin}/api/health/live`);
+  const headers = response.headers();
+
+  expect(response.status()).toBe(200);
+  expect(headers["content-security-policy"]).toContain("default-src 'none'");
+  expect(headers["x-content-type-options"]).toBe("nosniff");
 });
 
 test("admin readiness and mutation APIs fail closed without authentication configuration", async ({

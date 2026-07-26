@@ -111,7 +111,7 @@ export function buildAdminContentSecurityPolicy(
   ].join("; ");
 }
 
-export function buildAdminApiContentSecurityPolicy(): string {
+function buildPrivateApiContentSecurityPolicy(): string {
   return [
     "default-src 'none'",
     "base-uri 'none'",
@@ -119,6 +119,14 @@ export function buildAdminApiContentSecurityPolicy(): string {
     "frame-ancestors 'none'",
     "object-src 'none'",
   ].join("; ");
+}
+
+export function buildAdminApiContentSecurityPolicy(): string {
+  return buildPrivateApiContentSecurityPolicy();
+}
+
+export function buildPortalApiContentSecurityPolicy(): string {
+  return buildPrivateApiContentSecurityPolicy();
 }
 
 export function buildWebSecurityHeaders(): Header[] {
@@ -157,4 +165,14 @@ export function buildAdminSecurityHeaders(options?: {
     },
     { key: "X-Robots-Tag", value: "noindex, nofollow" },
   ];
+}
+
+export function buildPortalContentSecurityPolicy(nonce: string): string {
+  return buildAdminContentSecurityPolicy(nonce);
+}
+
+export function buildPortalSecurityHeaders(options?: {
+  includeContentSecurityPolicy?: boolean;
+}): Header[] {
+  return buildAdminSecurityHeaders(options);
 }

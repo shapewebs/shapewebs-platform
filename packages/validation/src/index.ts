@@ -190,6 +190,13 @@ const sharedEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   SYNTHETIC_RETENTION_SECRET: z.string().min(32).optional(),
   PREVIEW_TOKEN_SECRET: z.string().min(32).optional(),
+  PORTAL_BETTER_AUTH_SECRET: z.string().min(32).optional(),
+  PORTAL_BETTER_AUTH_TRUSTED_ORIGINS: z.string().min(1).optional(),
+  PORTAL_BETTER_AUTH_URL: z.url().optional(),
+  PORTAL_DATABASE_URL: z.string().min(1).optional(),
+  PORTAL_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  PORTAL_GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  NEXT_PUBLIC_PORTAL_URL: z.url().optional(),
   REVALIDATION_WEBHOOK_SECRET: z.string().min(32).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
@@ -240,6 +247,17 @@ export const adminEnvSchema = sharedEnvSchema.pick({
   SENTRY_DSN: true,
 });
 
+export const portalEnvSchema = sharedEnvSchema.pick({
+  NEXT_PUBLIC_PORTAL_URL: true,
+  PORTAL_BETTER_AUTH_SECRET: true,
+  PORTAL_BETTER_AUTH_TRUSTED_ORIGINS: true,
+  PORTAL_BETTER_AUTH_URL: true,
+  PORTAL_DATABASE_URL: true,
+  PORTAL_GOOGLE_CLIENT_ID: true,
+  PORTAL_GOOGLE_CLIENT_SECRET: true,
+  SENTRY_DSN: true,
+});
+
 export const serverEnvSchema = sharedEnvSchema;
 
 function stripEmptyValues(env: Record<string, string | undefined>) {
@@ -260,6 +278,12 @@ export function parseAdminEnv(
   env: Record<string, string | undefined> = process.env,
 ) {
   return adminEnvSchema.parse(stripEmptyValues(env));
+}
+
+export function parsePortalEnv(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return portalEnvSchema.parse(stripEmptyValues(env));
 }
 
 export function parseServerEnv(

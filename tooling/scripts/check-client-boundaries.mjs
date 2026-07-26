@@ -143,6 +143,11 @@ function findAppRoot(sourcePath) {
     path.join(workspaceRoot, "apps"),
     sourcePath,
   );
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    return null;
+  }
+
   const [appName] = relativePath.split(path.sep);
   return appName ? path.join(workspaceRoot, "apps", appName) : null;
 }
@@ -278,6 +283,20 @@ for (const sourcePath of appFiles) {
 
   for (const specifier of imports) {
     if (
+      sourcePath.startsWith(path.join(workspaceRoot, "apps/web")) &&
+      (specifier === "@shapewebs/auth" ||
+        specifier.startsWith("@shapewebs/auth/") ||
+        specifier === "better-auth" ||
+        specifier.startsWith("better-auth/"))
+    ) {
+      recordViolation(
+        sourcePath,
+        [sourcePath],
+        "The public application must not import customer or administrative authentication code.",
+      );
+    }
+
+    if (
       sourcePath === adminAuthPath &&
       (specifier === "@shapewebs/db" || specifier.startsWith("@shapewebs/db/"))
     ) {
@@ -285,6 +304,18 @@ for (const sourcePath of appFiles) {
         sourcePath,
         [sourcePath],
         "Primary admin authentication must not depend on the transitional Supabase package.",
+      );
+    }
+
+    const resolvedImport = await resolveImport(sourcePath, specifier);
+    const sourceAppRoot = findAppRoot(sourcePath);
+    const importedAppRoot = resolvedImport ? findAppRoot(resolvedImport) : null;
+
+    if (sourceAppRoot && importedAppRoot && sourceAppRoot !== importedAppRoot) {
+      recordViolation(
+        sourcePath,
+        [sourcePath, resolvedImport],
+        "Applications must communicate through explicit contracts rather than source imports.",
       );
     }
   }

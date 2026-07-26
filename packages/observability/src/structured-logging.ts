@@ -2,7 +2,7 @@ import { trace } from "@opentelemetry/api";
 
 export type StructuredLogLevel = "debug" | "info" | "warn" | "error";
 export type ShapewebsService =
-  "shapewebs-web" | "shapewebs-admin" | "shapewebs-worker";
+  "shapewebs-web" | "shapewebs-admin" | "shapewebs-portal" | "shapewebs-worker";
 export type ShapewebsEnvironment =
   "development" | "preview" | "production" | "test";
 export type StructuredEventCode = `shapewebs.${string}`;

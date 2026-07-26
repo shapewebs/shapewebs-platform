@@ -8,6 +8,7 @@ export const siteConfig = {
     "Beautiful, fast websites built with intention. Designed to feel alive, intuitive, and human.",
   productionUrl: "https://shapewebs.com",
   adminUrl: "https://admin.shapewebs.com",
+  portalUrl: "https://portal.shapewebs.com",
   defaultLocale: "en" as const,
   accentColor: "#007AFF",
   themeColorLight: "#F6FAFF",

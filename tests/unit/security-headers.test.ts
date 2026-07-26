@@ -3,6 +3,9 @@ import {
   buildAdminApiContentSecurityPolicy,
   buildAdminContentSecurityPolicy,
   buildAdminSecurityHeaders,
+  buildPortalApiContentSecurityPolicy,
+  buildPortalContentSecurityPolicy,
+  buildPortalSecurityHeaders,
   buildWebSecurityHeaders,
 } from "../../packages/config/src/security";
 
@@ -48,6 +51,20 @@ describe("security headers", () => {
     const headers = toHeaderMap(buildAdminSecurityHeaders());
 
     expect(headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
+
+  it("keeps the portal private with an independent nonce policy", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const headers = toHeaderMap(buildPortalSecurityHeaders());
+    const csp = buildPortalContentSecurityPolicy("portalNonce123");
+    const apiCsp = buildPortalApiContentSecurityPolicy();
+
+    expect(headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(csp).toContain("'nonce-portalNonce123'");
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp.match(/script-src [^;]+/)?.[0]).not.toContain("'unsafe-inline'");
+    expect(csp).not.toContain("challenges.cloudflare.com");
+    expect(apiCsp).toContain("default-src 'none'");
   });
 
   it("builds an admin nonce policy without inline script execution", () => {

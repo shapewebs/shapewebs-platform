@@ -113,6 +113,11 @@ The existing Vercel projects remain the deployment targets:
 - `shapewebs-web`, rooted at `apps/web`
 - `shapewebs-admin`, rooted at `apps/admin`
 
+`apps/portal` is an independently verified but deliberately unavailable build
+target. It does not receive a Vercel project, domain, provider credentials, or
+customer data until its customer identity and tenant-isolation launch gates
+are implemented and reviewed.
+
 Do not expose authentication secrets, migration credentials, private storage
 credentials, or admin-only database access to `apps/web`. Preview environments
 must use isolated non-production data before database-backed previews are
@@ -125,6 +130,7 @@ navigation, and visual system are reviewed as product code. The custom admin
 platform owns content that naturally changes over time, such as enquiries,
 clients, projects, case studies, posts, media, and operational notes.
 
-The future customer portal belongs in the authenticated platform. Its
+The future customer portal is a separate authenticated application. Its
 organization, membership, project, update, and file models are planned now so
-customer access can be added without moving identity or project data later.
+customer access can be added without sharing administrative identity or moving
+project data later.
