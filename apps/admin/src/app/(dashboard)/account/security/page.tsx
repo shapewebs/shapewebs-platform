@@ -5,7 +5,14 @@ import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import { SecurityMethods } from "./security-methods";
 import styles from "./page.module.css";
 
-export default async function AccountSecurityPage() {
+export default async function AccountSecurityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    resume?: string | string[];
+  }>;
+}) {
+  const query = await searchParams;
   const runtime = await requireAdminSession({
     redirectTo: "/account/security",
   });
@@ -32,6 +39,7 @@ export default async function AccountSecurityPage() {
         <SecurityMethods
           email={runtime.primarySession.user.email}
           initialMethods={methods}
+          resumePasswordLink={query.resume === "password-link"}
         />
       ) : null}
     </main>

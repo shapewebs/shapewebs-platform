@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getSafeAdminRedirectTarget } from "../../apps/admin/src/lib/redirect";
+import {
+  getAdminStepUpUrl,
+  getSafeAdminRedirectTarget,
+} from "../../apps/admin/src/lib/redirect";
 
 describe("admin redirect sanitizer", () => {
   it("preserves allowlisted admin paths, queries, and fragments", () => {
@@ -26,5 +29,19 @@ describe("admin redirect sanitizer", () => {
 
   it("falls back when URL parsing fails", () => {
     expect(getSafeAdminRedirectTarget("http://[")).toBe("/dashboard");
+  });
+
+  it("builds a password-link step-up URL with a sanitized resume target", () => {
+    expect(
+      getAdminStepUpUrl(
+        "/account/security?resume=password-link",
+        "password-link",
+      ),
+    ).toBe(
+      "/login/mfa?reason=password-link&redirectTo=%2Faccount%2Fsecurity%3Fresume%3Dpassword-link",
+    );
+    expect(
+      getAdminStepUpUrl("https://example.com/account", "password-link"),
+    ).toBe("/login/mfa?reason=password-link&redirectTo=%2Fdashboard");
   });
 });
