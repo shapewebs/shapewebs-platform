@@ -7,6 +7,7 @@ const {
   DATABASE_ADMIN_URL,
   DATABASE_MIGRATION_URL,
   DATABASE_OWNER_URL,
+  DATABASE_PORTAL_URL,
   DATABASE_PUBLIC_URL,
   DATABASE_WEB_URL,
 } = process.env;
@@ -15,6 +16,7 @@ const requiredEnvironment = [
   ["DATABASE_ADMIN_URL", DATABASE_ADMIN_URL],
   ["DATABASE_MIGRATION_URL", DATABASE_MIGRATION_URL],
   ["DATABASE_OWNER_URL", DATABASE_OWNER_URL],
+  ["DATABASE_PORTAL_URL", DATABASE_PORTAL_URL],
   ["DATABASE_PUBLIC_URL", DATABASE_PUBLIC_URL],
   ["DATABASE_WEB_URL", DATABASE_WEB_URL],
 ];
@@ -28,6 +30,7 @@ for (const [name, value] of requiredEnvironment) {
 const admin = neon(DATABASE_ADMIN_URL);
 const fixtureAdmin = neon(DATABASE_OWNER_URL);
 const migrator = neon(DATABASE_MIGRATION_URL);
+const portal = neon(DATABASE_PORTAL_URL);
 const publicReader = neon(DATABASE_PUBLIC_URL);
 const web = neon(DATABASE_WEB_URL);
 
@@ -35,6 +38,8 @@ const runId = randomUUID();
 const ids = {
   adminUser: `security-admin-${runId}`,
   customerUser: `security-customer-${runId}`,
+  customerShadowAdminUser: `security-customer-shadow-${runId}`,
+  otherCustomerUser: `security-customer-other-${runId}`,
   otherUser: `security-other-${runId}`,
   organizationA: randomUUID(),
   organizationB: randomUUID(),
@@ -96,23 +101,51 @@ async function withAdminContext({
   return result;
 }
 
+async function withPortalContext({
+  organizationId,
+  userId,
+  membershipRole = "customer",
+  query,
+}) {
+  const [, , , result] = await portal.transaction([
+    portal`select set_config('app.organization_id', ${organizationId}, true)`,
+    portal`select set_config('app.user_id', ${userId}, true)`,
+    portal`select set_config('app.membership_role', ${membershipRole}, true)`,
+    query,
+  ]);
+
+  return result;
+}
+
 async function seed() {
   await fixtureAdmin.transaction([
     fixtureAdmin`insert into auth.user (id, name, email, email_verified, created_at, updated_at)
       values
         (${ids.adminUser}, 'Security Admin', ${`security-admin-${runId}@example.test`}, true, now(), now()),
-        (${ids.customerUser}, 'Security Customer', ${`security-customer-${runId}@example.test`}, true, now(), now()),
+        (${ids.customerShadowAdminUser}, 'Security Customer Shadow', ${`security-customer-shadow-${runId}@example.test`}, true, now(), now()),
         (${ids.otherUser}, 'Security Other', ${`security-other-${runId}@example.test`}, true, now(), now())`,
+    fixtureAdmin`insert into customer_auth.user (id, name, email, email_verified, created_at, updated_at)
+      values
+        (${ids.customerUser}, 'Security Customer', ${`security-customer-${runId}@example.test`}, true, now(), now()),
+        (${ids.otherCustomerUser}, 'Security Other Customer', ${`security-other-customer-${runId}@example.test`}, true, now(), now())`,
     fixtureAdmin`insert into app.organizations (id, slug, name)
       values
         (${ids.organizationA}, ${`security-a-${runId}`}, 'Security Organization A'),
         (${ids.organizationB}, ${`security-b-${runId}`}, 'Security Organization B')`,
-    fixtureAdmin`insert into app.memberships (organization_id, user_id, role, status)
+    fixtureAdmin`insert into app.staff_memberships (organization_id, user_id, role, status)
       values
         (${ids.organizationA}, ${ids.adminUser}, 'owner', 'active'),
         (${ids.organizationB}, ${ids.adminUser}, 'owner', 'active'),
-        (${ids.organizationA}, ${ids.customerUser}, 'customer', 'active'),
         (${ids.organizationB}, ${ids.otherUser}, 'editor', 'active')`,
+    fixtureAdmin`insert into app.customer_memberships (
+        organization_id,
+        user_id,
+        status,
+        accepted_at
+      )
+      values
+        (${ids.organizationA}, ${ids.customerUser}, 'active', now()),
+        (${ids.organizationB}, ${ids.otherCustomerUser}, 'active', now())`,
     fixtureAdmin`insert into auth.session (
         id,
         expires_at,
@@ -168,7 +201,7 @@ async function seed() {
           ${`token-customer-${runId}`},
           now(),
           now(),
-          ${ids.customerUser}
+          ${ids.customerShadowAdminUser}
         ),
         (
           ${ids.otherAdminSession},
@@ -231,7 +264,7 @@ async function seed() {
         ),
         (
           ${ids.customerSession},
-          ${ids.customerUser},
+          ${ids.customerShadowAdminUser},
           now(),
           now(),
           null
@@ -255,8 +288,10 @@ async function seed() {
         (${ids.assignedProject}, ${ids.organizationA}, 'assigned', 'Assigned Project', 'in_progress'),
         (${ids.unassignedProject}, ${ids.organizationA}, 'unassigned', 'Unassigned Project', 'planned'),
         (${ids.otherOrganizationProject}, ${ids.organizationB}, 'other-org', 'Other Organization Project', 'review')`,
-    fixtureAdmin`insert into app.project_memberships (project_id, user_id)
-      values (${ids.assignedProject}, ${ids.customerUser})`,
+    fixtureAdmin`insert into app.customer_project_memberships (project_id, user_id)
+      values
+        (${ids.assignedProject}, ${ids.customerUser}),
+        (${ids.otherOrganizationProject}, ${ids.otherCustomerUser})`,
     fixtureAdmin`insert into app.project_updates (
         id,
         project_id,
@@ -435,8 +470,10 @@ async function cleanup() {
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.organizations
       where id in (${ids.organizationA}, ${ids.organizationB})`,
+    fixtureAdmin`delete from customer_auth.user
+      where id in (${ids.customerUser}, ${ids.otherCustomerUser})`,
     fixtureAdmin`delete from auth.user
-      where id in (${ids.adminUser}, ${ids.customerUser}, ${ids.otherUser})`,
+      where id in (${ids.adminUser}, ${ids.customerShadowAdminUser}, ${ids.otherUser})`,
   ]);
 }
 
@@ -445,20 +482,24 @@ async function verifyRoleAttributes() {
     select
       rolname,
       rolsuper,
+      rolinherit,
       rolcreaterole,
       rolcreatedb,
+      rolcanlogin,
+      rolreplication,
       rolbypassrls,
       pg_has_role(rolname, 'neon_superuser', 'member') as neon_superuser_member
     from pg_roles
     where rolname in (
       'shapewebs_admin_runtime',
       'shapewebs_migrator',
+      'shapewebs_portal_runtime',
       'shapewebs_public_reader',
       'shapewebs_web_runtime'
     )
   `;
 
-  assert.equal(roles.length, 4);
+  assert.equal(roles.length, 5);
   for (const role of roles) {
     assert.equal(role.rolsuper, false, `${role.rolname} must not be superuser`);
     assert.equal(
@@ -481,6 +522,20 @@ async function verifyRoleAttributes() {
       false,
       `${role.rolname} must not inherit neon_superuser`,
     );
+
+    if (role.rolname === "shapewebs_portal_runtime") {
+      assert.equal(role.rolinherit, false, "portal runtime must use NOINHERIT");
+      assert.equal(
+        role.rolcanlogin,
+        true,
+        "portal runtime must be a login role",
+      );
+      assert.equal(
+        role.rolreplication,
+        false,
+        "portal runtime must not replicate",
+      );
+    }
   }
 }
 
@@ -601,7 +656,11 @@ async function verifyAdminIsolation() {
     membershipRole: "customer",
     query: admin`select id from app.projects`,
   });
-  assert.deepEqual(customerProjects, [{ id: ids.assignedProject }]);
+  assert.deepEqual(
+    customerProjects,
+    [],
+    "the admin runtime must not become a customer data plane by changing context",
+  );
 
   const customerUpdates = await withAdminContext({
     organizationId: ids.organizationA,
@@ -609,15 +668,20 @@ async function verifyAdminIsolation() {
     membershipRole: "customer",
     query: admin`select id from app.project_updates`,
   });
-  assert.deepEqual(customerUpdates, [{ id: ids.visibleUpdate }]);
+  assert.deepEqual(customerUpdates, []);
 
-  const customerMemberships = await withAdminContext({
+  const customerStaffMemberships = await withAdminContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
     membershipRole: "customer",
-    query: admin`select user_id from app.memberships`,
+    query: admin`select user_id from app.staff_memberships`,
   });
-  assert.deepEqual(customerMemberships, [{ user_id: ids.customerUser }]);
+  assert.deepEqual(customerStaffMemberships, []);
+
+  await expectDenied(
+    admin`select id from customer_auth.user`,
+    "admin runtime customer-auth access",
+  );
 
   const organizationAContent = await withAdminContext({
     organizationId: ids.organizationA,
@@ -796,6 +860,160 @@ async function verifyAdminIsolation() {
   );
 }
 
+async function verifyPortalIsolation() {
+  const organization = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select id from app.organizations`,
+  });
+  assert.deepEqual(organization, [{ id: ids.organizationA }]);
+
+  const memberships = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select organization_id, user_id, status
+      from app.customer_memberships`,
+  });
+  assert.deepEqual(memberships, [
+    {
+      organization_id: ids.organizationA,
+      user_id: ids.customerUser,
+      status: "active",
+    },
+  ]);
+
+  const projects = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select id from app.projects order by id`,
+  });
+  assert.deepEqual(projects, [{ id: ids.assignedProject }]);
+
+  const projectAssignments = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select project_id, user_id
+      from app.customer_project_memberships`,
+  });
+  assert.deepEqual(projectAssignments, [
+    { project_id: ids.assignedProject, user_id: ids.customerUser },
+  ]);
+
+  const updates = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select id from app.project_updates`,
+  });
+  assert.deepEqual(updates, [{ id: ids.visibleUpdate }]);
+
+  const crossTenantOrganization = await withPortalContext({
+    organizationId: ids.organizationB,
+    userId: ids.customerUser,
+    query: portal`select id from app.organizations`,
+  });
+  const crossTenantMembership = await withPortalContext({
+    organizationId: ids.organizationB,
+    userId: ids.customerUser,
+    query: portal`select user_id from app.customer_memberships`,
+  });
+  const crossTenantProject = await withPortalContext({
+    organizationId: ids.organizationB,
+    userId: ids.customerUser,
+    query: portal`select id from app.projects`,
+  });
+  const crossTenantAssignment = await withPortalContext({
+    organizationId: ids.organizationB,
+    userId: ids.customerUser,
+    query: portal`select user_id from app.customer_project_memberships`,
+  });
+  const crossTenantUpdate = await withPortalContext({
+    organizationId: ids.organizationB,
+    userId: ids.customerUser,
+    query: portal`select id from app.project_updates`,
+  });
+  for (const [label, value] of [
+    ["organization", crossTenantOrganization],
+    ["membership", crossTenantMembership],
+    ["project", crossTenantProject],
+    ["assignment", crossTenantAssignment],
+    ["update", crossTenantUpdate],
+  ]) {
+    assert.deepEqual(
+      value,
+      [],
+      `a customer must not read another tenant's ${label}`,
+    );
+  }
+
+  const spoofedStaffRole = await withPortalContext({
+    membershipRole: "owner",
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select id from app.projects`,
+  });
+  assert.deepEqual(
+    spoofedStaffRole,
+    [],
+    "the portal runtime must not become staff by changing context",
+  );
+
+  await expectDenied(
+    portal`select user_id from app.staff_memberships`,
+    "portal runtime staff membership access",
+  );
+  await expectDenied(
+    portal`select id from auth.user`,
+    "portal runtime administrative auth access",
+  );
+  await expectDenied(
+    portal`select id from app.content_documents`,
+    "portal runtime CMS draft access",
+  );
+  await expectDenied(
+    withPortalContext({
+      organizationId: ids.organizationA,
+      userId: ids.customerUser,
+      query: portal`update app.projects
+        set summary = summary
+        where id = ${ids.assignedProject}`,
+    }),
+    "portal runtime project mutation",
+  );
+
+  const suspended = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.customer_memberships
+      set status = 'suspended'
+      where organization_id = ${ids.organizationA}
+        and user_id = ${ids.customerUser}
+      returning user_id`,
+  });
+  assert.deepEqual(suspended, [{ user_id: ids.customerUser }]);
+
+  const suspendedProjects = await withPortalContext({
+    organizationId: ids.organizationA,
+    userId: ids.customerUser,
+    query: portal`select id from app.projects`,
+  });
+  assert.deepEqual(
+    suspendedProjects,
+    [],
+    "suspension must immediately remove project access",
+  );
+
+  await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`update app.customer_memberships
+      set status = 'active'
+      where organization_id = ${ids.organizationA}
+        and user_id = ${ids.customerUser}`,
+  });
+}
+
 async function authorizeSyntheticAdminSession({
   sessionId,
   userId,
@@ -806,7 +1024,7 @@ async function authorizeSyntheticAdminSession({
   const results = await admin.transaction([
     admin`select set_config('app.organization_id', ${organizationId}, true)`,
     admin`select set_config('app.user_id', ${userId}, true)`,
-    admin`select set_config('app.membership_role', 'customer', true)`,
+    admin`select set_config('app.membership_role', '', true)`,
     admin`update auth.admin_session_security as security
       set last_seen_at = ${now}
       from auth.session as session
@@ -819,7 +1037,7 @@ async function authorizeSyntheticAdminSession({
         and session.expires_at > ${now}
         and exists (
           select 1
-          from app.memberships
+          from app.staff_memberships
           where organization_id = ${organizationId}
             and user_id = ${userId}
             and status = 'active'
@@ -827,7 +1045,7 @@ async function authorizeSyntheticAdminSession({
         )
       returning security.step_up_verified_at`,
     admin`select role
-      from app.memberships
+      from app.staff_memberships
       where organization_id = ${organizationId}
         and user_id = ${userId}
         and status = 'active'
@@ -998,7 +1216,7 @@ async function revokeSyntheticOrganizationSession(targetSessionId) {
           and id <> ${ids.activeAdminSession}
           and exists (
             select 1
-            from app.memberships
+            from app.staff_memberships
             where organization_id = ${ids.organizationA}
               and user_id = auth.session.user_id
               and status = 'active'
@@ -1056,7 +1274,7 @@ async function verifyAdminSessionAssurance() {
     ["expired", ids.expiredAdminSession, ids.adminUser],
     ["idle", ids.idleAdminSession, ids.adminUser],
     ["revoked", ids.revokedAdminSession, ids.adminUser],
-    ["customer-role", ids.customerSession, ids.customerUser],
+    ["customer-shaped", ids.customerSession, ids.customerShadowAdminUser],
   ]) {
     assert.equal(
       await authorizeSyntheticAdminSession({ sessionId, userId }),
@@ -1077,7 +1295,7 @@ async function verifyAdminSessionManagement() {
       inner join auth.admin_session_security as security
         on security.session_id = session.id
         and security.user_id = session.user_id
-      inner join app.memberships as membership
+      inner join app.staff_memberships as membership
         on membership.organization_id = ${ids.organizationA}
         and membership.user_id = session.user_id
         and membership.status = 'active'
@@ -1979,12 +2197,13 @@ try {
   await verifyAdminTotpAssurance();
   await verifyAdminSessionManagement();
   await verifyAdminIsolation();
+  await verifyPortalIsolation();
   await verifyPublicAndWebBoundaries();
   await verifySyntheticRetentionPolicy();
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, RLS, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, owner-only organization settings, tenant-isolated CMS reads, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

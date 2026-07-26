@@ -5,8 +5,8 @@ import {
   adminSessionSecurity,
   adminTotpSecurity,
   auditEvents,
-  memberships,
-  membershipRole,
+  staffMembershipRole,
+  staffMemberships,
   organizationSettings,
   session as authSession,
   user as authUser,
@@ -15,7 +15,7 @@ import { defaultOrganizationSettingsValue } from "./settings-defaults";
 
 const inactivityLimitMs = 30 * 60 * 1_000;
 
-type MembershipRole = (typeof membershipRole.enumValues)[number];
+type StaffMembershipRole = (typeof staffMembershipRole.enumValues)[number];
 
 export type AdminAuthorizationContext = {
   actor: {
@@ -23,7 +23,7 @@ export type AdminAuthorizationContext = {
   };
   latestStepUpAt: Date | null;
   organizationId: string;
-  role: Exclude<MembershipRole, "customer">;
+  role: StaffMembershipRole;
   session: {
     id: string;
   };
@@ -62,7 +62,7 @@ function summarizeUserAgent(value: string | null): string {
 function contextQueries(
   database: ReturnType<typeof createDatabase>,
   identity: Pick<AdminSessionIdentity, "organizationId" | "userId">,
-  role: MembershipRole,
+  role: StaffMembershipRole | "",
 ) {
   return [
     database.execute(
@@ -87,7 +87,7 @@ export async function provisionOwnerAdminSession(
   await database.batch([
     ...context,
     database
-      .insert(memberships)
+      .insert(staffMemberships)
       .values({
         organizationId: identity.organizationId,
         role: "owner",
@@ -129,7 +129,7 @@ export async function appendAdminAuditEvent(
     action: string;
     requestId?: string;
     result: "denied" | "failure" | "success";
-    role: Exclude<MembershipRole, "customer">;
+    role: StaffMembershipRole;
     targetId?: string;
     targetType: string;
   },
@@ -196,7 +196,7 @@ export async function authorizeAdminSession(
   now = new Date(),
 ): Promise<AdminAuthorizationContext | null> {
   const database = createDatabase(databaseUrl);
-  const context = contextQueries(database, identity, "customer");
+  const context = contextQueries(database, identity, "");
   const inactivityCutoff = new Date(now.getTime() - inactivityLimitMs);
 
   const results = await database.batch([
@@ -219,11 +219,11 @@ export async function authorizeAdminSession(
           )`,
           sql`exists (
             select 1
-            from ${memberships}
-            where ${memberships.organizationId} = ${identity.organizationId}
-              and ${memberships.userId} = ${identity.userId}
-              and ${memberships.status} = 'active'
-              and ${memberships.role} in ('owner', 'editor')
+            from ${staffMemberships}
+            where ${staffMemberships.organizationId} = ${identity.organizationId}
+              and ${staffMemberships.userId} = ${identity.userId}
+              and ${staffMemberships.status} = 'active'
+              and ${staffMemberships.role} in ('owner', 'editor')
           )`,
         ),
       )
@@ -232,14 +232,14 @@ export async function authorizeAdminSession(
       }),
     database
       .select({
-        role: memberships.role,
+        role: staffMemberships.role,
       })
-      .from(memberships)
+      .from(staffMemberships)
       .where(
         and(
-          eq(memberships.organizationId, identity.organizationId),
-          eq(memberships.userId, identity.userId),
-          eq(memberships.status, "active"),
+          eq(staffMemberships.organizationId, identity.organizationId),
+          eq(staffMemberships.userId, identity.userId),
+          eq(staffMemberships.status, "active"),
         ),
       )
       .limit(1),
@@ -262,7 +262,7 @@ export async function authorizeAdminSession(
     },
     latestStepUpAt: security.stepUpVerifiedAt,
     organizationId: identity.organizationId,
-    role: membership.role as Exclude<MembershipRole, "customer">,
+    role: membership.role,
     session: {
       id: identity.sessionId,
     },
@@ -310,12 +310,12 @@ export async function listOrganizationAdminSessions(
       )
       .innerJoin(authUser, eq(authUser.id, authSession.userId))
       .innerJoin(
-        memberships,
+        staffMemberships,
         and(
-          eq(memberships.organizationId, authorization.organizationId),
-          eq(memberships.userId, authSession.userId),
-          eq(memberships.status, "active"),
-          sql`${memberships.role} in ('owner', 'editor')`,
+          eq(staffMemberships.organizationId, authorization.organizationId),
+          eq(staffMemberships.userId, authSession.userId),
+          eq(staffMemberships.status, "active"),
+          sql`${staffMemberships.role} in ('owner', 'editor')`,
         ),
       )
       .where(
@@ -474,11 +474,11 @@ export async function revokeOrganizationAdminSession(
           and ${authSession.id} <> ${authorization.session.id}
           and exists (
             select 1
-            from ${memberships}
-            where ${memberships.organizationId} = ${authorization.organizationId}
-              and ${memberships.userId} = ${authSession.userId}
-              and ${memberships.status} = 'active'
-              and ${memberships.role} in ('owner', 'editor')
+            from ${staffMemberships}
+            where ${staffMemberships.organizationId} = ${authorization.organizationId}
+              and ${staffMemberships.userId} = ${authSession.userId}
+              and ${staffMemberships.status} = 'active'
+              and ${staffMemberships.role} in ('owner', 'editor')
           )
         returning ${authSession.id}
       ),
