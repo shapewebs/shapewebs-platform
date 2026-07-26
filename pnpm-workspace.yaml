@@ -3,6 +3,17 @@ packages:
   - packages/*
   - workers/*
 
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
