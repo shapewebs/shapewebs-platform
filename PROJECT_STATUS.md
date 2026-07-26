@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `d22ca30`; current evidence branch
-  `codex/record-staging-assurance`
+- Branch: protected `staging` at `7b5098e`; current correction branch
+  `codex/fix-revalidation-oidc`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -18,19 +18,26 @@
   merged; complete foundation pull request
   `shapewebs/shapewebs-platform#26` merged into protected `staging` at
   `52680c4`; deployment-sequencing pull request
-  `shapewebs/shapewebs-platform#27` merged at `d22ca30`
+  `shapewebs/shapewebs-platform#27` merged at `d22ca30`; administrative
+  recovery correction `#28` merged at `3115c3c`; exact-origin private-preview
+  transfer correction `#29` merged at `7b5098e`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#27` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#29` are merged into protected `staging`. Migrations `0000` through `0012` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
-and protected CMS navigation have passed on the fixed staging origin. No
-content slice has been connected to production data or promoted to the
-production domains.
+and protected CMS navigation have passed on the fixed staging origin. The
+complete authenticated draft, one-time preview, publish, exact public read,
+unpublish, immutable rollback and final cleanup journey has passed on fixed
+staging. Its remaining operational finding is protected cross-project cache
+revalidation; the preview-only workload trust and branch-scoped application
+secret are configured and the code correction is under review. No content
+slice has been connected to production data or promoted to the production
+domains.
 
 ## Implemented on this branch
 
@@ -256,7 +263,10 @@ production domains.
   credential. The browser can explicitly exit through a POST-only route.
 - The revalidation endpoint uses constant-time secret comparison, exact JSON
   content type, a streamed 2 KiB body limit, a strict DTO and normalized
-  internal paths.
+  internal paths. The current correction adds exact-origin sender validation,
+  short-lived Vercel workload OIDC through a Preview-to-Preview trusted-source
+  rule, and a separate application secret shared only by the two exact staging
+  branch environments.
 
 ## Verified evidence
 
@@ -424,6 +434,16 @@ waited until the exact public and admin Vercel contexts succeeded, then passed
 k6 and ZAP. The sequence and timestamps are recorded in
 `docs/audits/staging-assurance-sequencing-2026-07-25.md`.
 
+Pull request `#28` repaired administrative session rotation and added audited,
+immutable CMS unpublish and rollback controls. Pull request `#29` added the one
+exact public origin to the admin's nonce CSP for POST-only private preview.
+After both merged, a fresh Google/TOTP browser session completed the entire
+synthetic content lifecycle. Revisions 1 through 5 proved one-time preview,
+preview exit and replay denial, publication, exact public reads, real public
+`404` after unpublish, rollback as a new immutable publication and final
+archival cleanup. The exact evidence and the cache-revalidation finding are
+recorded in `docs/audits/admin-mfa-cms-recovery-2026-07-26.md`.
+
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
@@ -499,19 +519,17 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Deploy and inspect the `__Host-` cookie, POST-only preview/outbox and logout
-   browser-state hardening on fixed staging.
-2. Verify step-up expiry, session revocation, audit evidence, and the
-   anonymous/expired/revoked/wrong-role fail-closed cases on fixed staging.
-3. Merge the administrative session-rotation correction and audited CMS
-   unpublish/rollback controls, then exercise authenticated draft, revision,
-   POST-only preview, publish, exact public read, unpublish, rollback, preview
-   replay denial and preview exit journeys on persistent staging. The complete
-   fresh-and-restored disposable Neon lifecycle is green with 15 integration
-   tests; fixed-staging browser evidence remains pending.
+1. Merge the Preview-to-Preview OIDC revalidation correction, then prove a
+   fixed-staging publish and cleanup complete without an operational warning.
+2. Verify step-up expiry, session revocation, audit evidence, and the remaining
+   anonymous/expired/revoked/wrong-role fail-closed browser cases on fixed
+   staging.
+3. Implement the bounded private/public Vercel Blob repository and malicious
+   upload controls needed by the minimum CMS.
 4. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-5. After fixed-staging recovery evidence, add storage controls, the final
-   public studio design, and production recovery gates in the milestone order
-   documented in
+5. Begin the final public studio design after the fixed-staging foundation
+   gate, while preserving the separately accepted invitation-only customer
+   identity architecture for Google and verified email/password access.
+6. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

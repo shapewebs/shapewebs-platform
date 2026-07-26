@@ -20,6 +20,7 @@ import {
 
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
+import { triggerPublicContentRevalidation } from "@/lib/public-revalidation";
 
 export type PreviewSavedPageState =
   | {
@@ -36,45 +37,6 @@ export type PreviewSavedPageState =
 
 function getSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-}
-
-async function triggerWebRevalidation(input: {
-  documentId: string;
-  localeCode: string;
-  paths: string[];
-}) {
-  const secret = process.env.REVALIDATION_WEBHOOK_SECRET;
-
-  if (!secret) {
-    return false;
-  }
-
-  try {
-    const responses = await Promise.all(
-      [...new Set(input.paths)].map((path) =>
-        fetch(`${getSiteOrigin()}/api/revalidate`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-shapewebs-revalidate-secret": secret,
-          },
-          body: JSON.stringify({
-            contentType: "page",
-            documentId: input.documentId,
-            localeCode: input.localeCode,
-            path,
-          }),
-          cache: "no-store",
-          redirect: "error",
-          signal: AbortSignal.timeout(5_000),
-        }),
-      ),
-    );
-
-    return responses.every((response) => response.ok);
-  } catch {
-    return false;
-  }
 }
 
 function getPublicPagePath(slug: string, localeCode: string) {
@@ -217,10 +179,11 @@ export async function savePageEditorAction(formData: FormData) {
 
   if (
     parsed.data.intent === "publish" &&
-    !(await triggerWebRevalidation({
+    !(await triggerPublicContentRevalidation({
       documentId: result.documentId,
       localeCode: result.localeCode,
       paths: [getPublicPagePath(parsed.data.slug, result.localeCode)],
+      vercelOidcToken: requestHeaders.get("x-vercel-oidc-token") ?? undefined,
     }))
   ) {
     status = "published-revalidation-pending";
@@ -297,10 +260,11 @@ export async function unpublishPageAction(formData: FormData) {
   if (
     result.status !== "duplicate" &&
     result.previousSlug &&
-    !(await triggerWebRevalidation({
+    !(await triggerPublicContentRevalidation({
       documentId: result.documentId,
       localeCode: result.localeCode,
       paths: [getPublicPagePath(result.previousSlug, result.localeCode)],
+      vercelOidcToken: requestHeaders.get("x-vercel-oidc-token") ?? undefined,
     }))
   ) {
     status = "unpublished-revalidation-pending";
@@ -384,10 +348,11 @@ export async function rollbackPageAction(formData: FormData) {
     }
 
     if (
-      !(await triggerWebRevalidation({
+      !(await triggerPublicContentRevalidation({
         documentId: result.documentId,
         localeCode: result.localeCode,
         paths,
+        vercelOidcToken: requestHeaders.get("x-vercel-oidc-token") ?? undefined,
       }))
     ) {
       status = "rolled-back-revalidation-pending";

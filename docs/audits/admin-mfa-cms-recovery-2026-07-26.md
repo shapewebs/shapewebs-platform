@@ -104,3 +104,61 @@ boundary:
 Fixed-staging proof still requires a successful one-time preview transfer,
 private/no-store rendering, preview exit and replay denial after the correction
 passes the protected pull-request and deployment gates.
+
+## Fixed-staging browser evidence
+
+Pull requests `#28` and `#29` passed the protected quality, security, Vercel
+and disposable-Neon gates and were merged into `staging`. The owner then
+completed a fresh Google session and local TOTP step-up on the fixed admin
+origin. The authenticated browser proof used only the persistent synthetic
+staging database and document
+`0f924f64-e69f-4274-8a82-273c18a6b649`, locale `en`, slug
+`staging-assurance-20260726`.
+
+The complete lifecycle passed:
+
+- revision 1 was saved as a draft;
+- the POST-only preview handoff rendered the exact private revision on
+  `staging.shapewebs.com` with the private/no-store controls;
+- explicit preview exit returned to the public home page;
+- replaying the consumed preview route returned `404`;
+- revision 2 was published and the exact public slug rendered it;
+- revision 3 unpublished the locale and the exact public slug returned a real
+  `404`;
+- revision 4 restored revision 1 as a new immutable publication and the exact
+  public slug rendered it; and
+- revision 5 unpublished the locale again, leaving the synthetic document
+  archived and the public slug at `404`.
+
+The first browser tab had become stale while the staging deployment changed.
+It correctly failed closed when its primary session could no longer be
+resolved. A normal reload followed by a fresh TOTP code reached the dashboard;
+no bypass, replayed code or session repair was needed.
+
+## Protected revalidation finding and correction
+
+Every database mutation and exact public read above succeeded, but the editor
+reported `*-revalidation-pending`. Both fixed staging applications lacked the
+same branch-scoped `REVALIDATION_WEBHOOK_SECRET`, and Vercel Authentication
+also protected the public revalidation endpoint from the admin application's
+server-to-server POST.
+
+The staging correction is deliberately two-layered:
+
+- one new sensitive 256-bit application secret is stored only in the
+  `staging` branch's Preview environment for `shapewebs-admin` and
+  `shapewebs-web`;
+- Vercel Trusted Sources permits only `shapewebs-admin` Preview tokens to
+  access `shapewebs-web` Preview deployments;
+- the admin forwards the incoming short-lived Vercel workload token as
+  `x-vercel-trusted-oidc-idp-token` without persisting or logging it;
+- the public route still requires the independent application secret using
+  its constant-time comparison; and
+- exact-origin parsing, bounded headers, strict payload validation, a
+  five-second timeout and redirect refusal keep failures closed and visible.
+
+Unit tests prove successful token/secret forwarding, duplicate-path collapse,
+local unprotected operation, invalid origin and payload rejection, header
+injection rejection, provider denial and transport failure. A post-merge
+fixed-staging publish/unpublish cycle remains the final runtime proof for this
+correction.
