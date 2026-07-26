@@ -48,11 +48,47 @@ function buildCsp(options: {
   ].join("; ");
 }
 
-export function buildAdminContentSecurityPolicy(nonce: string): string {
+function normalizeAdminFormActionOrigins(origins: string[]): string[] {
+  return [...new Set(origins)].map((origin) => {
+    let parsed: URL;
+
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error("The admin CSP form-action origin is invalid.");
+    }
+
+    if (
+      parsed.origin !== origin ||
+      parsed.username ||
+      parsed.password ||
+      (parsed.protocol !== "https:" &&
+        !(
+          process.env.NODE_ENV === "development" &&
+          parsed.protocol === "http:" &&
+          ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname)
+        ))
+    ) {
+      throw new Error(
+        "The admin CSP form-action origin must be an exact secure origin.",
+      );
+    }
+
+    return parsed.origin;
+  });
+}
+
+export function buildAdminContentSecurityPolicy(
+  nonce: string,
+  options: { formActionOrigins?: string[] } = {},
+): string {
   if (!/^[A-Za-z0-9+/=_-]+$/.test(nonce)) {
     throw new Error("The CSP nonce contains invalid characters.");
   }
 
+  const formActionOrigins = normalizeAdminFormActionOrigins(
+    options.formActionOrigins ?? [],
+  );
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
@@ -63,7 +99,7 @@ export function buildAdminContentSecurityPolicy(nonce: string): string {
   return [
     "default-src 'self'",
     "base-uri 'none'",
-    "form-action 'self'",
+    `form-action 'self'${formActionOrigins.length > 0 ? ` ${formActionOrigins.join(" ")}` : ""}`,
     "frame-ancestors 'none'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",

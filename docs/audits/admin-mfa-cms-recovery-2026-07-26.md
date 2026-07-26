@@ -77,3 +77,30 @@ deleted. The final deterministic fixture hash was
 Fixed-staging browser verification remains required after this correction
 passes protected GitHub and Vercel checks and is deployed to the staging
 aliases.
+
+## Private-preview transfer finding
+
+The first authenticated fixed-staging draft save succeeded and created
+document `0f924f64-e69f-4274-8a82-273c18a6b649` with immutable revision `1`.
+The subsequent private-preview handoff was correctly prepared by the admin
+application but blocked by the browser because the nonce-based admin CSP
+limited `form-action` to `'self'`. The private-preview design intentionally
+uses a POST from the admin origin to the separate public origin, so that
+restriction prevented the single-use grant from reaching the public
+application.
+
+The correction keeps the policy fail-closed while allowing the required trust
+boundary:
+
+- the admin proxy derives only the origin from the validated public-site URL;
+- `form-action` receives that one exact origin in addition to `'self'`;
+- duplicate origins are removed;
+- wildcard, credential-bearing, path-bearing and non-HTTPS production values
+  are rejected;
+- HTTP remains available only for loopback development; and
+- an absent configured public origin preserves the original `'self'`-only
+  behavior.
+
+Fixed-staging proof still requires a successful one-time preview transfer,
+private/no-store rendering, preview exit and replay denial after the correction
+passes the protected pull-request and deployment gates.
