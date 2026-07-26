@@ -21,10 +21,10 @@ export default async function CustomerSecurityPage({
     throw new Error("Customer authentication methods are unavailable.");
   }
 
-  const methods = await getCustomerAuthenticationMethods(
-    databaseUrl,
-    runtime.primarySession.user.id,
-  );
+  const methods = await getCustomerAuthenticationMethods(databaseUrl, {
+    organizationId: runtime.authorization.organizationId,
+    userId: runtime.primarySession.user.id,
+  });
   const query = await searchParams;
   const requestHeaders = await headers();
   const message = query.status

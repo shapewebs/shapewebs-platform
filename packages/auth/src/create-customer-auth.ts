@@ -220,7 +220,10 @@ export function createShapewebsCustomerAuth(
           before: async (newSession, context) => {
             let active = await customerHasActiveMembership(
               options.databaseUrl,
-              newSession.userId,
+              {
+                organizationId: options.organizationId,
+                userId: newSession.userId,
+              },
             );
 
             if (!active && isGoogleCallback(context)) {
@@ -296,7 +299,10 @@ export function createShapewebsCustomerAuth(
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ token, user }) => {
         if (
-          !(await customerHasActiveMembership(options.databaseUrl, user.id))
+          !(await customerHasActiveMembership(options.databaseUrl, {
+            organizationId: options.organizationId,
+            userId: user.id,
+          }))
         ) {
           return;
         }

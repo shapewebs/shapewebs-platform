@@ -8,7 +8,10 @@ import {
   type CustomerAuthorizationContext,
 } from "@shapewebs/database/server";
 
-import { getPortalDatabaseUrl } from "./auth-environment";
+import {
+  getPortalDatabaseUrl,
+  getPortalOrganizationId,
+} from "./auth-environment";
 import { getPortalAuth } from "./better-auth";
 import { getSafePortalRedirectTarget } from "./redirect";
 
@@ -30,8 +33,9 @@ const getCustomerRuntimeState = cache(
   async (): Promise<CustomerRuntimeState> => {
     const auth = getPortalAuth();
     const databaseUrl = getPortalDatabaseUrl();
+    const organizationId = getPortalOrganizationId();
 
-    if (!auth || !databaseUrl) {
+    if (!auth || !databaseUrl || !organizationId) {
       return {
         authenticationAvailable: false,
         authorization: null,
@@ -52,6 +56,7 @@ const getCustomerRuntimeState = cache(
     }
 
     const authorization = await authorizeCustomerSession(databaseUrl, {
+      organizationId,
       sessionId: primarySession.session.id,
       userId: primarySession.user.id,
     });

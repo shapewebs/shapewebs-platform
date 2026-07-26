@@ -79,6 +79,12 @@ export function getPortalDatabaseUrl(): string | null {
     : null;
 }
 
+export function getPortalOrganizationId(): string | null {
+  return isPortalRuntimeReady()
+    ? (process.env.SHAPEWEBS_ORGANIZATION_ID ?? null)
+    : null;
+}
+
 export function getPortalBaseUrl(): string | null {
   return isPortalRuntimeReady()
     ? (process.env.PORTAL_BETTER_AUTH_URL ?? null)

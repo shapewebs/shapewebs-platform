@@ -42,10 +42,10 @@ export async function POST(request: Request) {
   }
 
   const runtime = authorization.runtime;
-  const methods = await getCustomerAuthenticationMethods(
-    databaseUrl,
-    runtime.primarySession.user.id,
-  );
+  const methods = await getCustomerAuthenticationMethods(databaseUrl, {
+    organizationId: runtime.authorization.organizationId,
+    userId: runtime.primarySession.user.id,
+  });
   if (methods.google) {
     return portalRedirectResponse(
       request,
@@ -53,10 +53,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const passwordHash = await getCustomerCredentialPasswordHash(
-    databaseUrl,
-    runtime.primarySession.user.id,
-  );
+  const passwordHash = await getCustomerCredentialPasswordHash(databaseUrl, {
+    organizationId: runtime.authorization.organizationId,
+    userId: runtime.primarySession.user.id,
+  });
   if (
     !passwordHash ||
     !(await verifyCustomerPasswordHash(password, passwordHash))

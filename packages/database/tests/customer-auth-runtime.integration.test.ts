@@ -135,6 +135,15 @@ describe.sequential("customer Better Auth runtime", () => {
 
     await expect(
       authorizeCustomerSession(databaseUrl, {
+        organizationId: "20000000-0000-4000-8000-000000000002",
+        sessionId,
+        userId: customerId,
+      }),
+    ).resolves.toBeNull();
+
+    await expect(
+      authorizeCustomerSession(databaseUrl, {
+        organizationId,
         sessionId,
         userId: customerId,
       }),
@@ -161,6 +170,7 @@ describe.sequential("customer Better Auth runtime", () => {
 
     await expect(
       authorizeCustomerSession(databaseUrl, {
+        organizationId,
         sessionId,
         userId: customerId,
       }),

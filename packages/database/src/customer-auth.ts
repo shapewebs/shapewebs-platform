@@ -64,6 +64,23 @@ function adminContextQueries(
   ] as const;
 }
 
+function customerContextQueries(
+  database: ReturnType<typeof createDatabase>,
+  identity: { organizationId: string; userId: string },
+) {
+  return [
+    database.execute(
+      sql`select set_config('app.organization_id', ${identity.organizationId}, true)`,
+    ),
+    database.execute(
+      sql`select set_config('app.user_id', ${identity.userId}, true)`,
+    ),
+    database.execute(
+      sql`select set_config('app.membership_role', 'customer', true)`,
+    ),
+  ] as const;
+}
+
 export async function createCustomerInvitation(
   databaseUrl: string,
   input: {
@@ -242,30 +259,38 @@ export async function acceptCustomerGoogleInvitation(
 
 export async function customerHasActiveMembership(
   databaseUrl: string,
-  userId: string,
+  identity: { organizationId: string; userId: string },
 ): Promise<boolean> {
   const database = createDatabase(databaseUrl);
-  const result = await database.execute<{ active: boolean }>(sql`
-    select app.customer_has_active_membership(${userId}) as active
-  `);
+  const results = await database.batch([
+    ...customerContextQueries(database, identity),
+    database.execute<{ active: boolean }>(sql`
+      select app.current_customer_has_active_membership() as active
+    `),
+  ]);
+  const result = results[3];
 
   return result.rows[0]?.active === true;
 }
 
 export async function getCustomerAuthenticationMethods(
   databaseUrl: string,
-  userId: string,
+  identity: { organizationId: string; userId: string },
 ): Promise<{ google: boolean; password: boolean }> {
   const database = createDatabase(databaseUrl);
-  const accounts = await database
-    .select({ providerId: customerAccount.providerId })
-    .from(customerAccount)
-    .where(
-      and(
-        eq(customerAccount.userId, userId),
-        sql`app.customer_has_active_membership(${userId})`,
+  const results = await database.batch([
+    ...customerContextQueries(database, identity),
+    database
+      .select({ providerId: customerAccount.providerId })
+      .from(customerAccount)
+      .where(
+        and(
+          eq(customerAccount.userId, identity.userId),
+          sql`app.current_customer_has_active_membership()`,
+        ),
       ),
-    );
+  ]);
+  const accounts = results[3];
   const providers = new Set(accounts.map((account) => account.providerId));
 
   return {
@@ -276,20 +301,24 @@ export async function getCustomerAuthenticationMethods(
 
 export async function getCustomerCredentialPasswordHash(
   databaseUrl: string,
-  userId: string,
+  identity: { organizationId: string; userId: string },
 ): Promise<string | null> {
   const database = createDatabase(databaseUrl);
-  const result = await database
-    .select({ password: customerAccount.password })
-    .from(customerAccount)
-    .where(
-      and(
-        eq(customerAccount.userId, userId),
-        eq(customerAccount.providerId, "credential"),
-        sql`app.customer_has_active_membership(${userId})`,
-      ),
-    )
-    .limit(1);
+  const results = await database.batch([
+    ...customerContextQueries(database, identity),
+    database
+      .select({ password: customerAccount.password })
+      .from(customerAccount)
+      .where(
+        and(
+          eq(customerAccount.userId, identity.userId),
+          eq(customerAccount.providerId, "credential"),
+          sql`app.current_customer_has_active_membership()`,
+        ),
+      )
+      .limit(1),
+  ]);
+  const result = results[3];
 
   return result[0]?.password ?? null;
 }
@@ -308,46 +337,50 @@ export async function provisionCustomerSessionSecurity(
 
 export async function authorizeCustomerSession(
   databaseUrl: string,
-  input: { sessionId: string; userId: string },
+  input: { organizationId: string; sessionId: string; userId: string },
   now = new Date(),
 ): Promise<CustomerAuthorizationContext | null> {
   const database = createDatabase(databaseUrl);
   const inactivityCutoff = new Date(now.getTime() - customerInactivityLimitMs);
-  const result = await database.execute<{
-    organizationId: string;
-    sessionId: string;
-    userId: string;
-  }>(sql`
-    with authorized_session as (
-      update ${customerSessionSecurity}
-      set
-        last_seen_at = ${now},
-        updated_at = ${now}
-      where session_id = ${input.sessionId}
-        and user_id = ${input.userId}
-        and revoked_at is null
-        and last_seen_at > ${inactivityCutoff}
-        and exists (
-          select 1
-          from ${customerSession}
-          where ${customerSession.id} = ${input.sessionId}
-            and ${customerSession.userId} = ${input.userId}
-            and ${customerSession.expiresAt} > ${now}
-        )
-        and app.customer_has_active_membership(${input.userId})
-      returning session_id, user_id
-    )
-    select
-      authorized_session.session_id as "sessionId",
-      authorized_session.user_id as "userId",
-      membership.organization_id::text as "organizationId"
-    from authorized_session
-    inner join app.customer_memberships as membership
-      on membership.user_id = authorized_session.user_id
-      and membership.status = 'active'
-    order by membership.organization_id
-    limit 2
-  `);
+  const results = await database.batch([
+    ...customerContextQueries(database, input),
+    database.execute<{
+      organizationId: string;
+      sessionId: string;
+      userId: string;
+    }>(sql`
+      with authorized_session as (
+        update ${customerSessionSecurity}
+        set
+          last_seen_at = ${now},
+          updated_at = ${now}
+        where session_id = ${input.sessionId}
+          and user_id = ${input.userId}
+          and revoked_at is null
+          and last_seen_at > ${inactivityCutoff}
+          and exists (
+            select 1
+            from ${customerSession}
+            where ${customerSession.id} = ${input.sessionId}
+              and ${customerSession.userId} = ${input.userId}
+              and ${customerSession.expiresAt} > ${now}
+          )
+          and app.current_customer_has_active_membership()
+        returning session_id, user_id
+      )
+      select
+        authorized_session.session_id as "sessionId",
+        authorized_session.user_id as "userId",
+        membership.organization_id::text as "organizationId"
+      from authorized_session
+      inner join app.customer_memberships as membership
+        on membership.user_id = authorized_session.user_id
+        and membership.organization_id = ${input.organizationId}::uuid
+        and membership.status = 'active'
+      limit 1
+    `),
+  ]);
+  const result = results[3];
 
   if (result.rows.length !== 1 || !result.rows[0]) {
     return null;
