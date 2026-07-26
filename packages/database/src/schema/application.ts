@@ -85,6 +85,13 @@ export const outboxStatus = appSchema.enum("outbox_status", [
   "permanent_failure",
 ]);
 
+export const mediaFileStatus = appSchema.enum("media_file_status", [
+  "pending",
+  "ready",
+  "failed",
+  "cleanup_required",
+]);
+
 const currentOrganizationId = sql`nullif(current_setting('app.organization_id', true), '')::uuid`;
 const currentUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const currentMembershipRole = sql`nullif(current_setting('app.membership_role', true), '')`;
@@ -1200,20 +1207,122 @@ export const files = appSchema.table(
       .references(() => organizations.id, { onDelete: "cascade" }),
     storageKey: text("storage_key").notNull(),
     visibility: text("visibility").$type<"public" | "private">().notNull(),
+    status: mediaFileStatus("status").default("ready").notNull(),
+    storageProvider: text("storage_provider").default("legacy").notNull(),
+    storeId: text("store_id"),
+    storageUrl: text("storage_url"),
+    storageEtag: text("storage_etag"),
     mimeType: text("mime_type").notNull(),
     byteSize: integer("byte_size").notNull(),
+    originalByteSize: integer("original_byte_size"),
+    sha256: text("sha256"),
+    width: integer("width"),
+    height: integer("height"),
     originalName: text("original_name").notNull(),
+    failureCode: text("failure_code"),
     uploadedByUserId: text("uploaded_by_user_id")
       .notNull()
       .references(() => adminUser.id, { onDelete: "restrict" }),
     createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (table) => [
     uniqueIndex("files_storage_key_unique").on(table.storageKey),
+    index("files_organization_status_created_idx").on(
+      table.organizationId,
+      table.status,
+      table.createdAt,
+    ),
     check("files_byte_size_positive", sql`${table.byteSize} > 0`),
+    check(
+      "files_original_byte_size_positive",
+      sql`${table.originalByteSize} is null or ${table.originalByteSize} > 0`,
+    ),
     check(
       "files_visibility_valid",
       sql`${table.visibility} in ('public', 'private')`,
+    ),
+    check(
+      "files_storage_provider_valid",
+      sql`${table.storageProvider} in ('legacy', 'vercel_blob')`,
+    ),
+    check(
+      "files_storage_key_bounded",
+      sql`char_length(${table.storageKey}) between 1 and 512
+        and ${table.storageKey} !~ '[[:cntrl:]]'
+        and ${table.storageKey} not like '/%'
+        and ${table.storageKey} not like '%..%'`,
+    ),
+    check(
+      "files_original_name_bounded",
+      sql`char_length(${table.originalName}) between 1 and 180
+        and ${table.originalName} !~ '[[:cntrl:]/\\\\]'`,
+    ),
+    check(
+      "files_mime_type_bounded",
+      sql`char_length(${table.mimeType}) between 3 and 120`,
+    ),
+    check(
+      "files_image_dimensions_consistent",
+      sql`(
+        ${table.width} is null
+        and ${table.height} is null
+      ) or (
+        ${table.width} between 1 and 8192
+        and ${table.height} between 1 and 8192
+      )`,
+    ),
+    check(
+      "files_sha256_format",
+      sql`${table.sha256} is null or ${table.sha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "files_failure_code_bounded",
+      sql`${table.failureCode} is null
+        or char_length(${table.failureCode}) between 3 and 80`,
+    ),
+    check(
+      "files_vercel_blob_state_consistent",
+      sql`(
+        ${table.storageProvider} = 'legacy'
+        and ${table.status} = 'ready'
+        and ${table.storeId} is null
+        and ${table.storageUrl} is null
+        and ${table.storageEtag} is null
+        and ${table.originalByteSize} is null
+        and ${table.sha256} is null
+        and ${table.width} is null
+        and ${table.height} is null
+        and ${table.failureCode} is null
+      ) or (
+        ${table.storageProvider} = 'vercel_blob'
+        and char_length(${table.storeId}) between 8 and 128
+        and ${table.storeId} !~ '[[:cntrl:][:space:]]'
+        and ${table.originalByteSize} is not null
+        and ${table.sha256} is not null
+        and ${table.width} is not null
+        and ${table.height} is not null
+        and (
+          (
+            ${table.status} in ('pending', 'failed')
+            and ${table.storageUrl} is null
+            and ${table.storageEtag} is null
+          ) or (
+            ${table.status} in ('ready', 'cleanup_required')
+            and char_length(${table.storageUrl}) between 20 and 2048
+            and char_length(${table.storageEtag}) between 1 and 256
+          )
+        )
+        and (
+          (
+            ${table.status} in ('pending', 'ready')
+            and ${table.failureCode} is null
+          ) or (
+            ${table.status} in ('failed', 'cleanup_required')
+            and ${table.failureCode} is not null
+          )
+        )
+      )`,
     ),
     pgPolicy("admins read files in current organization", {
       for: "select",
@@ -1225,10 +1334,93 @@ export const files = appSchema.table(
       to: adminRuntimeRole,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner} and ${table.uploadedByUserId} = ${currentUserId}`,
     }),
+    pgPolicy("editors update files in current organization", {
+      for: "update",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
     pgPolicy("editors delete files in current organization", {
       for: "delete",
       to: adminRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("web runtime reads ready public files", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.visibility} = 'public'
+        and ${table.status} = 'ready'`,
+    }),
+  ],
+);
+
+export const fileLocalizations = appSchema.table(
+  "file_localizations",
+  {
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    fileId: uuid("file_id")
+      .notNull()
+      .references(() => files.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    altText: text("alt_text").notNull(),
+    caption: text("caption"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.fileId, table.locale],
+      name: "file_localizations_file_locale_pk",
+    }),
+    index("file_localizations_organization_locale_idx").on(
+      table.organizationId,
+      table.locale,
+    ),
+    check(
+      "file_localizations_locale_supported",
+      sql`${table.locale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "file_localizations_alt_text_bounded",
+      sql`char_length(${table.altText}) between 1 and 180`,
+    ),
+    check(
+      "file_localizations_caption_bounded",
+      sql`${table.caption} is null or char_length(${table.caption}) <= 280`,
+    ),
+    pgPolicy("admins read file localizations in current organization", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("editors manage file localizations in current organization", {
+      for: "all",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId} and ${isEditorOrOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${isEditorOrOwner}
+        and exists (
+          select 1
+          from ${files}
+          where ${files.id} = ${table.fileId}
+            and ${files.organizationId} = ${table.organizationId}
+        )`,
+    }),
+    pgPolicy("web runtime reads ready public file localizations", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and exists (
+          select 1
+          from ${files}
+          where ${files.id} = ${table.fileId}
+            and ${files.organizationId} = ${table.organizationId}
+            and ${files.visibility} = 'public'
+            and ${files.status} = 'ready'
+        )`,
     }),
   ],
 );

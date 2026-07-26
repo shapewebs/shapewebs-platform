@@ -82,6 +82,21 @@ export {
   type OrganizationSettingsSnapshot,
 } from "./organization-settings";
 export {
+  completeMediaCleanup,
+  completePrivateMediaUpload,
+  failPrivateMediaUpload,
+  getPrivateMediaUploadState,
+  listAdminMediaFiles,
+  listMediaCleanupCandidates,
+  markPrivateMediaCleanupRequired,
+  reservePrivateMediaUpload,
+  type AdminMediaFileDto,
+  type MediaCleanupCandidate,
+  type MediaFileStatus,
+  type PrivateMediaUploadState,
+  type ReservePrivateMediaUploadInput,
+} from "./media";
+export {
   acceptCustomerGoogleInvitation,
   authorizeCustomerSession,
   claimCustomerAuthEmail,

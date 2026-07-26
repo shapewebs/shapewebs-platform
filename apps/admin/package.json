@@ -16,6 +16,7 @@
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/database": "workspace:*",
     "@shapewebs/email": "workspace:*",
+    "@shapewebs/media": "workspace:*",
     "@shapewebs/observability": "workspace:*",
     "@shapewebs/ui": "workspace:*",
     "@shapewebs/validation": "workspace:*",

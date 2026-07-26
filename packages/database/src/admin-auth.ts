@@ -1019,29 +1019,25 @@ export async function setAdminSessionStepUp(
   verifiedAt: Date,
 ): Promise<boolean> {
   const database = createDatabase(databaseUrl);
-  const result = await database
-    .update(adminSessionSecurity)
-    .set({
-      lastSeenAt: verifiedAt,
-      stepUpVerifiedAt: verifiedAt,
-    })
-    .where(
-      and(
-        eq(adminSessionSecurity.sessionId, input.sessionId),
-        eq(adminSessionSecurity.userId, input.userId),
-        isNull(adminSessionSecurity.revokedAt),
-        sql`exists (
-          select 1
-          from ${authSession}
-          where ${authSession.id} = ${input.sessionId}
-            and ${authSession.userId} = ${input.userId}
-            and ${authSession.expiresAt} > ${verifiedAt}
-        )`,
-      ),
-    )
-    .returning({ sessionId: adminSessionSecurity.sessionId });
+  const result = await database.execute<{ sessionId: string }>(sql`
+    update ${adminSessionSecurity}
+    set
+      ${sql.identifier("last_seen_at")} = ${verifiedAt},
+      ${sql.identifier("step_up_verified_at")} = ${verifiedAt}
+    where ${adminSessionSecurity.sessionId} = ${input.sessionId}
+      and ${adminSessionSecurity.userId} = ${input.userId}
+      and ${adminSessionSecurity.revokedAt} is null
+      and exists (
+        select 1
+        from ${authSession}
+        where ${authSession.id} = ${input.sessionId}
+          and ${authSession.userId} = ${input.userId}
+          and ${authSession.expiresAt} > now()
+      )
+    returning ${adminSessionSecurity.sessionId} as "sessionId"
+  `);
 
-  return result.length === 1;
+  return result.rows.length === 1;
 }
 
 export async function revokeAdminSessionSecurity(

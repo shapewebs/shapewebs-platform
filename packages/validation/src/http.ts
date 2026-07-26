@@ -1,10 +1,10 @@
-export async function readBoundedText(
+export async function readBoundedBytes(
   request: Request,
   maximumBytes: number,
 ): Promise<
   | {
       status: "ok";
-      value: string;
+      value: Uint8Array;
     }
   | {
       status: "too_large";
@@ -27,7 +27,7 @@ export async function readBoundedText(
   if (!request.body) {
     return {
       status: "ok",
-      value: "",
+      value: new Uint8Array(),
     };
   }
 
@@ -66,6 +66,28 @@ export async function readBoundedText(
 
   return {
     status: "ok",
-    value: new TextDecoder().decode(body),
+    value: body,
   };
+}
+
+export async function readBoundedText(
+  request: Request,
+  maximumBytes: number,
+): Promise<
+  | {
+      status: "ok";
+      value: string;
+    }
+  | {
+      status: "too_large";
+    }
+> {
+  const body = await readBoundedBytes(request, maximumBytes);
+
+  return body.status === "ok"
+    ? {
+        status: "ok",
+        value: new TextDecoder().decode(body.value),
+      }
+    : body;
 }
