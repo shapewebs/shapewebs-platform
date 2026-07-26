@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `a509f69`; current implementation branch
-  `codex/customer-auth-schema`
+- Branch: protected `staging` at `b8f9750`; current evidence branch
+  `codex/customer-auth-staging-evidence`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -22,14 +22,15 @@
   recovery correction `#28` merged at `3115c3c`; exact-origin private-preview
   transfer correction `#29` merged at `7b5098e`; protected revalidation
   correction `#30` merged at `ea97ea4`; protected runtime evidence `#31`
-  merged at `bc0abc5`; isolated portal foundation `#32` merged at `a509f69`
+  merged at `bc0abc5`; isolated portal foundation `#32` merged at `a509f69`;
+  customer identity boundary `#33` merged at `b8f9750`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#32` are merged into protected `staging`. Migrations `0000` through `0012` are
+`#33` are merged into protected `staging`. Migrations `0000` through `0013` are
 applied to the persistent synthetic staging database and its live security
 verification passes. Google OAuth, local TOTP enrollment, successful step-up
 and protected CMS navigation have passed on the fixed staging origin. The
@@ -74,9 +75,9 @@ production domains.
 - `apps/web`, `apps/admin`, and the fail-closed `apps/portal` foundation remain
   independently buildable Next.js applications. The portal has no Vercel
   project, fixed staging domain, authentication endpoint, customer-facing
-  route, or production deployment. Its reviewed database boundary exists on
-  the current implementation branch but is not applied to persistent staging
-  until its protected pull request passes.
+  route, or production deployment. Its reviewed database boundary is applied
+  to persistent synthetic staging and remains unreachable from customer-facing
+  routes.
 - Portal provider values use a distinct `PORTAL_*` namespace. A code-owned
   implementation gate keeps every portal UI route unavailable with HTTP `503`
   even if provider values are supplied prematurely. Liveness remains
@@ -114,11 +115,12 @@ production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0012`, including marker-restricted synthetic lead retention,
-  owner-only organization settings, complete content/workflow enums and the
-  administrative TOTP replay/lockout table. The runtime roles passed the
-  complete RLS and authorization suite. Neon Free cannot protect the persistent
-  branch, so a protected paid production branch remains a launch gate.
+  through `0013`, including marker-restricted synthetic lead retention,
+  owner-only organization settings, complete content/workflow enums,
+  administrative TOTP replay/lockout, and the separate customer identity and
+  membership boundary. The runtime roles passed the complete RLS and
+  authorization suite. Neon Free cannot protect the persistent branch, so a
+  protected paid production branch remains a launch gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget remains restricted to the public
   staging hostname. Automated staging uses Cloudflare's official test pair in
@@ -191,6 +193,13 @@ production domains.
   rollback, deterministic export, and byte-identical restore. Both disposable
   branches and the short-lived diagnostic branch were deleted. Evidence is in
   `docs/audits/customer-identity-boundary-verification-2026-07-26.md`.
+- Pull request `#33` reproduced that lifecycle through the protected GitHub
+  environment and merged at `b8f9750`. An expiring point-in-time branch
+  preserves the pre-`0013` staging state through 28 July 2026. The dedicated
+  migrator applied `0013`; the live journal contains 14 migrations, all three
+  membership tables have forced RLS, and the complete six-identity security
+  suite passed. Both fixed Vercel staging deployments and post-merge k6/ZAP
+  run `30206702702` are green.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
@@ -556,20 +565,17 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Merge and apply the reviewed customer identity boundary to persistent
-   synthetic staging, then repeat the live RLS suite with the branch-scoped
-   portal runtime.
-2. Implement invitation-gated verified email/password customer authentication
+1. Implement invitation-gated verified email/password customer authentication
    with uniform responses, durable verification/reset email, recent
    reauthentication, and fail-closed portal session authorization.
-3. Add the dedicated customer Google OAuth client and explicit signed-in
+2. Add the dedicated customer Google OAuth client and explicit signed-in
    account-linking journeys without implicit same-email linking.
-4. Implement the bounded private/public Vercel Blob repository and malicious
+3. Implement the bounded private/public Vercel Blob repository and malicious
    upload controls needed by the minimum CMS.
-5. Rehearse the accepted-risk expiry checks and production provider launch
+4. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-6. Begin the final public studio design after the fixed-staging foundation
+5. Begin the final public studio design after the fixed-staging foundation
    gate, while preserving the separately accepted invitation-only customer
    identity architecture for Google and verified email/password access.
-7. Add production recovery gates in the milestone order documented in
+6. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.
