@@ -74,9 +74,8 @@ The successful source and restore branches,
 deleted. The final deterministic fixture hash was
 `5d6bb329a4109f8d6e5a03d851e6a4f7728c6f74f96c036ab9aa905a62f2973c`.
 
-Fixed-staging browser verification remains required after this correction
-passes protected GitHub and Vercel checks and is deployed to the staging
-aliases.
+The fixed-staging browser verification was completed after the correction
+passed protected GitHub and Vercel checks and reached both staging aliases.
 
 ## Private-preview transfer finding
 
@@ -101,9 +100,8 @@ boundary:
 - an absent configured public origin preserves the original `'self'`-only
   behavior.
 
-Fixed-staging proof still requires a successful one-time preview transfer,
-private/no-store rendering, preview exit and replay denial after the correction
-passes the protected pull-request and deployment gates.
+The fixed-staging proof below includes the successful one-time preview
+transfer, private/no-store rendering, preview exit and replay denial.
 
 ## Fixed-staging browser evidence
 
@@ -159,6 +157,29 @@ The staging correction is deliberately two-layered:
 
 Unit tests prove successful token/secret forwarding, duplicate-path collapse,
 local unprotected operation, invalid origin and payload rejection, header
-injection rejection, provider denial and transport failure. A post-merge
-fixed-staging publish/unpublish cycle remains the final runtime proof for this
-correction.
+injection rejection, provider denial and transport failure.
+
+Pull request `#30` passed Quality, Security, CodeQL, both Vercel deployments
+and the path-gated Neon check before merging into protected `staging` at
+`ea97ea4`. Post-merge run
+[`30203830963`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30203830963)
+waited for both fixed deployments, then passed its exact-target k6 thresholds
+and passive ZAP baseline.
+
+The owner completed a fresh TOTP step-up and the final runtime proof then
+passed without any operational warning:
+
+- revision 6 published with change note
+  `Post-merge protected revalidation proof`;
+- the editor redirected with exact status `published`, not
+  `published-revalidation-pending`;
+- the exact public slug rendered revision 6 from Neon;
+- revision 7 unpublished the locale;
+- the editor redirected with exact status `unpublished`, not
+  `unpublished-revalidation-pending`; and
+- the exact public slug rendered the real `404` page afterward.
+
+The final synthetic state is archived at version 7. No staging publication or
+unresolved revalidation warning remains. This proves the protected
+Preview-to-Preview OIDC path and the independent application-secret check
+together, while production remained unchanged.
