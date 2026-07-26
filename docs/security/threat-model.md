@@ -15,6 +15,7 @@ flowchart LR
   Web --> NeonWeb["Neon web runtime role"]
   Admin --> BetterAuth["Better Auth"]
   BetterAuth --> Google["Google OAuth"]
+  BetterAuth --> AdminAuthOutbox["Durable employee auth-email outbox"]
   Admin --> NeonAdmin["Neon admin runtime role"]
   Admin --> Blob["Vercel Blob"]
   Admin --> Resend["Resend"]
@@ -87,22 +88,23 @@ Planned customer-specific threats and controls are:
 
 ## Threat scenarios and required controls
 
-| Scenario                     | Boundary                 | Required prevention/detection                                                                       | Verification                                         |
-| ---------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Authorization or IDOR bypass | Browser → admin/data     | Server-owned authorization context, per-action checks, forced RLS, minimal DTOs                     | Anonymous, role and cross-tenant negative tests      |
-| OAuth account takeover       | Google → Better Auth     | Exact origins/callbacks, allowlisted owner, state/PKCE, short admin session, mandatory TOTP step-up | OAuth-state and non-allowlisted-user tests           |
-| Session theft/replay         | Browser → admin          | Secure HttpOnly host-only cookies, database sessions, revocation, inactivity and absolute expiry    | Expired/revoked/replayed-session tests               |
-| CSRF                         | Browser → mutation       | Better Auth origin validation, Next.js Origin/Host checks, exact trusted origins, SameSite cookies  | Cross-origin POST tests                              |
-| Stored content injection     | CMS → public site        | Structured content, no arbitrary scripts/HTML, output encoding, CSP                                 | Malicious-content and CSP tests                      |
-| Malicious file               | Browser → Blob           | Server-owned key, type/signature/size/dimension validation, private/public separation               | Polyglot, oversize and type-mismatch tests           |
-| Lead abuse                   | Browser → form           | Byte/content validation, Turnstile server verification, application and WAF rate limits             | Missing/reused token, flood and oversized-body tests |
-| Lead loss                    | Web → Neon/Resend        | Atomic lead/outbox transaction; email is never the record of truth                                  | Database/provider/worker failure tests               |
-| Webhook forgery/replay       | Resend → admin           | Signature verification, event-ID uniqueness, idempotent monotonic state handling                    | Invalid signature, duplicate and out-of-order tests  |
-| Secret leakage               | Code/log/CI              | Push protection, secret scanning, typed redacted logging, least-privilege Actions                   | Seeded-secret and redaction tests                    |
-| Supply-chain compromise      | Registry/Actions → build | Lockfile, SHA-pinned Actions, dependency review, OSV, CodeQL, Scorecard                             | Clean-runner CI                                      |
-| Preview reaches real data    | Vercel → Neon            | Separate non-production project, disposable branches, no production secrets in previews             | Environment inventory and lifecycle test             |
-| Destructive migration        | CI → Neon                | Protected environment, dedicated migrator, disposable migration/rollback/restore                    | Neon lifecycle gate                                  |
-| Provider outage              | Vercel/Neon/Resend       | Timeouts, durable retries, degraded readiness, monitoring and rollback                              | Fault-injection tests                                |
+| Scenario                      | Boundary                 | Required prevention/detection                                                                         | Verification                                            |
+| ----------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Authorization or IDOR bypass  | Browser → admin/data     | Server-owned authorization context, per-action checks, forced RLS, minimal DTOs                       | Anonymous, role and cross-tenant negative tests         |
+| OAuth account takeover        | Google → Better Auth     | Exact origins/callbacks, allowlisted owner, state/PKCE, short admin session, mandatory TOTP step-up   | OAuth-state and non-allowlisted-user tests              |
+| Password attack/account merge | Browser → Better Auth    | Allowlist, verified mailbox, HIBP, throttles, no implicit merge, session-bound explicit link and TOTP | Spray, enumeration, reset/replay and link-binding tests |
+| Session theft/replay          | Browser → admin          | Secure HttpOnly host-only cookies, database sessions, revocation, inactivity and absolute expiry      | Expired/revoked/replayed-session tests                  |
+| CSRF                          | Browser → mutation       | Better Auth origin validation, Next.js Origin/Host checks, exact trusted origins, SameSite cookies    | Cross-origin POST tests                                 |
+| Stored content injection      | CMS → public site        | Structured content, no arbitrary scripts/HTML, output encoding, CSP                                   | Malicious-content and CSP tests                         |
+| Malicious file                | Browser → Blob           | Server-owned key, type/signature/size/dimension validation, private/public separation                 | Polyglot, oversize and type-mismatch tests              |
+| Lead abuse                    | Browser → form           | Byte/content validation, Turnstile server verification, application and WAF rate limits               | Missing/reused token, flood and oversized-body tests    |
+| Lead loss                     | Web → Neon/Resend        | Atomic lead/outbox transaction; email is never the record of truth                                    | Database/provider/worker failure tests                  |
+| Webhook forgery/replay        | Resend → admin           | Signature verification, event-ID uniqueness, idempotent monotonic state handling                      | Invalid signature, duplicate and out-of-order tests     |
+| Secret leakage                | Code/log/CI              | Push protection, secret scanning, typed redacted logging, least-privilege Actions                     | Seeded-secret and redaction tests                       |
+| Supply-chain compromise       | Registry/Actions → build | Lockfile, SHA-pinned Actions, dependency review, OSV, CodeQL, Scorecard                               | Clean-runner CI                                         |
+| Preview reaches real data     | Vercel → Neon            | Separate non-production project, disposable branches, no production secrets in previews               | Environment inventory and lifecycle test                |
+| Destructive migration         | CI → Neon                | Protected environment, dedicated migrator, disposable migration/rollback/restore                      | Neon lifecycle gate                                     |
+| Provider outage               | Vercel/Neon/Resend       | Timeouts, durable retries, degraded readiness, monitoring and rollback                                | Fault-injection tests                                   |
 
 ## Abuse-case invariants
 

@@ -1,9 +1,23 @@
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  isNull,
+  lt,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { createDatabase } from "./client";
 import {
   adminSessionSecurity,
   adminTotpSecurity,
+  adminAuthEmailOutbox,
+  account as authAccount,
   auditEvents,
   staffMembershipRole,
   staffMemberships,
@@ -42,6 +56,15 @@ export type AdminSessionSummary = {
   userName: string;
 };
 
+export type ClaimedAdminAuthEmail = {
+  attempt: number;
+  encryptedToken: string;
+  eventId: string;
+  idempotencyKey: string;
+  kind: "email_verification" | "password_reset";
+  recipient: string;
+};
+
 type AdminSessionIdentity = {
   organizationId: string;
   sessionId: string;
@@ -77,12 +100,12 @@ function contextQueries(
   ] as const;
 }
 
-export async function provisionOwnerAdminSession(
+export async function provisionAdminSession(
   databaseUrl: string,
-  identity: AdminSessionIdentity,
+  identity: AdminSessionIdentity & { role: StaffMembershipRole },
 ): Promise<void> {
   const database = createDatabase(databaseUrl);
-  const context = contextQueries(database, identity, "owner");
+  const context = contextQueries(database, identity, identity.role);
 
   await database.batch([
     ...context,
@@ -90,7 +113,7 @@ export async function provisionOwnerAdminSession(
       .insert(staffMemberships)
       .values({
         organizationId: identity.organizationId,
-        role: "owner",
+        role: identity.role,
         status: "active",
         userId: identity.userId,
       })
@@ -121,6 +144,314 @@ export async function provisionOwnerAdminSession(
       targetType: "session",
     }),
   ]);
+}
+
+export async function getAdminAuthenticationMethods(
+  databaseUrl: string,
+  userId: string,
+): Promise<{ google: boolean; password: boolean }> {
+  const database = createDatabase(databaseUrl);
+  const accounts = await database
+    .select({ providerId: authAccount.providerId })
+    .from(authAccount)
+    .where(eq(authAccount.userId, userId));
+  const providers = new Set(accounts.map((account) => account.providerId));
+
+  return {
+    google: providers.has("google"),
+    password: providers.has("credential"),
+  };
+}
+
+export async function getAdminCredentialPasswordHash(
+  databaseUrl: string,
+  userId: string,
+): Promise<string | null> {
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .select({ password: authAccount.password })
+    .from(authAccount)
+    .where(
+      and(
+        eq(authAccount.userId, userId),
+        eq(authAccount.providerId, "credential"),
+      ),
+    )
+    .limit(1);
+
+  return result[0]?.password ?? null;
+}
+
+export async function findAdminSessionByToken(
+  databaseUrl: string,
+  token: string,
+): Promise<{ expiresAt: Date; id: string; userId: string } | null> {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+    return null;
+  }
+
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .select({
+      expiresAt: authSession.expiresAt,
+      id: authSession.id,
+      userId: authSession.userId,
+    })
+    .from(authSession)
+    .where(
+      and(eq(authSession.token, token), gt(authSession.expiresAt, new Date())),
+    )
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+export async function enqueueAdminAuthEmail(
+  databaseUrl: string,
+  input: {
+    encryptedToken: string;
+    expiresAt: Date;
+    idempotencyKey: string;
+    kind: "email_verification" | "password_reset";
+    organizationId: string;
+    recipient: string;
+    tokenHash: string;
+    userId: string;
+  },
+): Promise<void> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    { organizationId: input.organizationId, userId: input.userId },
+    "",
+  );
+
+  await database.batch([
+    ...context,
+    database
+      .insert(adminAuthEmailOutbox)
+      .values(input)
+      .onConflictDoNothing({ target: adminAuthEmailOutbox.idempotencyKey }),
+  ]);
+}
+
+export async function claimAdminAuthEmail(
+  databaseUrl: string,
+  input: { organizationId: string; workerId: string },
+  now = new Date(),
+): Promise<ClaimedAdminAuthEmail | null> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    { organizationId: input.organizationId, userId: "" },
+    "",
+  );
+  const staleLockCutoff = new Date(now.getTime() - 5 * 60 * 1_000);
+  const uncertainDeliveryCutoff = new Date(
+    now.getTime() - 23 * 60 * 60 * 1_000,
+  );
+  const eligible = or(
+    and(
+      eq(adminAuthEmailOutbox.status, "pending"),
+      lte(adminAuthEmailOutbox.nextAttemptAt, now),
+    ),
+    and(
+      eq(adminAuthEmailOutbox.status, "processing"),
+      lt(adminAuthEmailOutbox.lockedAt, staleLockCutoff),
+      gt(adminAuthEmailOutbox.lockedAt, uncertainDeliveryCutoff),
+    ),
+  );
+
+  await database.batch([
+    ...context,
+    database
+      .update(adminAuthEmailOutbox)
+      .set({
+        lastErrorCode: sql`case
+          when ${adminAuthEmailOutbox.expiresAt} <= ${now}
+            then 'auth_token_expired'
+          when ${adminAuthEmailOutbox.attempts} >= 10
+            then 'retry_attempts_exhausted'
+          else 'provider_idempotency_window_expired'
+        end`,
+        lockedAt: null,
+        lockedBy: null,
+        processedAt: now,
+        status: "permanent_failure",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.organizationId, input.organizationId),
+          or(
+            lte(adminAuthEmailOutbox.expiresAt, now),
+            gte(adminAuthEmailOutbox.attempts, 10),
+            and(
+              eq(adminAuthEmailOutbox.status, "processing"),
+              lte(adminAuthEmailOutbox.lockedAt, uncertainDeliveryCutoff),
+            ),
+          ),
+          or(
+            eq(adminAuthEmailOutbox.status, "pending"),
+            eq(adminAuthEmailOutbox.status, "processing"),
+          ),
+        ),
+      ),
+  ]);
+
+  const candidateResults = await database.batch([
+    ...context,
+    database
+      .select({
+        attempts: adminAuthEmailOutbox.attempts,
+        encryptedToken: adminAuthEmailOutbox.encryptedToken,
+        eventId: adminAuthEmailOutbox.id,
+        idempotencyKey: adminAuthEmailOutbox.idempotencyKey,
+        kind: adminAuthEmailOutbox.kind,
+        recipient: adminAuthEmailOutbox.recipient,
+      })
+      .from(adminAuthEmailOutbox)
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.organizationId, input.organizationId),
+          gt(adminAuthEmailOutbox.expiresAt, now),
+          lt(adminAuthEmailOutbox.attempts, 10),
+          eligible,
+        ),
+      )
+      .orderBy(asc(adminAuthEmailOutbox.createdAt))
+      .limit(1),
+  ]);
+  const candidate = candidateResults[3][0];
+
+  if (!candidate) {
+    return null;
+  }
+
+  const claimResults = await database.batch([
+    ...context,
+    database
+      .update(adminAuthEmailOutbox)
+      .set({
+        attempts: sql`${adminAuthEmailOutbox.attempts} + 1`,
+        lockedAt: now,
+        lockedBy: input.workerId,
+        status: "processing",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.id, candidate.eventId),
+          eq(adminAuthEmailOutbox.organizationId, input.organizationId),
+          gt(adminAuthEmailOutbox.expiresAt, now),
+          lt(adminAuthEmailOutbox.attempts, 10),
+          eligible,
+        ),
+      )
+      .returning({ id: adminAuthEmailOutbox.id }),
+  ]);
+  const claimed = claimResults[3];
+
+  return claimed.length === 1
+    ? {
+        attempt: candidate.attempts + 1,
+        encryptedToken: candidate.encryptedToken,
+        eventId: candidate.eventId,
+        idempotencyKey: candidate.idempotencyKey,
+        kind: candidate.kind,
+        recipient: candidate.recipient,
+      }
+    : null;
+}
+
+export async function completeAdminAuthEmail(
+  databaseUrl: string,
+  input: {
+    eventId: string;
+    organizationId: string;
+    providerMessageId: string;
+    workerId: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    { organizationId: input.organizationId, userId: "" },
+    "",
+  );
+  const results = await database.batch([
+    ...context,
+    database
+      .update(adminAuthEmailOutbox)
+      .set({
+        lastErrorCode: null,
+        lockedAt: null,
+        lockedBy: null,
+        processedAt: now,
+        providerMessageId: input.providerMessageId,
+        status: "sent",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.id, input.eventId),
+          eq(adminAuthEmailOutbox.organizationId, input.organizationId),
+          eq(adminAuthEmailOutbox.status, "processing"),
+          eq(adminAuthEmailOutbox.lockedBy, input.workerId),
+        ),
+      )
+      .returning({ id: adminAuthEmailOutbox.id }),
+  ]);
+  const result = results[3];
+
+  return result.length === 1;
+}
+
+export async function failAdminAuthEmail(
+  databaseUrl: string,
+  input: {
+    errorCode: string;
+    eventId: string;
+    nextAttemptAt: Date;
+    organizationId: string;
+    permanent: boolean;
+    workerId: string;
+  },
+  now = new Date(),
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const context = contextQueries(
+    database,
+    { organizationId: input.organizationId, userId: "" },
+    "",
+  );
+  const results = await database.batch([
+    ...context,
+    database
+      .update(adminAuthEmailOutbox)
+      .set({
+        lastErrorCode: input.errorCode.slice(0, 80),
+        lockedAt: null,
+        lockedBy: null,
+        nextAttemptAt: input.nextAttemptAt,
+        processedAt: input.permanent ? now : null,
+        status: input.permanent ? "permanent_failure" : "pending",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(adminAuthEmailOutbox.id, input.eventId),
+          eq(adminAuthEmailOutbox.organizationId, input.organizationId),
+          eq(adminAuthEmailOutbox.status, "processing"),
+          eq(adminAuthEmailOutbox.lockedBy, input.workerId),
+        ),
+      )
+      .returning({ id: adminAuthEmailOutbox.id }),
+  ]);
+  const result = results[3];
+
+  return result.length === 1;
 }
 
 export async function appendAdminAuditEvent(
@@ -618,6 +949,37 @@ export async function consumeAdminTotpCounter(
   `);
 
   return result.rows.length === 1;
+}
+
+export async function setAdminSessionStepUp(
+  databaseUrl: string,
+  input: Omit<AdminSessionIdentity, "organizationId" | "stepUpVerifiedAt">,
+  verifiedAt: Date,
+): Promise<boolean> {
+  const database = createDatabase(databaseUrl);
+  const result = await database
+    .update(adminSessionSecurity)
+    .set({
+      lastSeenAt: verifiedAt,
+      stepUpVerifiedAt: verifiedAt,
+    })
+    .where(
+      and(
+        eq(adminSessionSecurity.sessionId, input.sessionId),
+        eq(adminSessionSecurity.userId, input.userId),
+        isNull(adminSessionSecurity.revokedAt),
+        sql`exists (
+          select 1
+          from ${authSession}
+          where ${authSession.id} = ${input.sessionId}
+            and ${authSession.userId} = ${input.userId}
+            and ${authSession.expiresAt} > ${verifiedAt}
+        )`,
+      ),
+    )
+    .returning({ sessionId: adminSessionSecurity.sessionId });
+
+  return result.length === 1;
 }
 
 export async function revokeAdminSessionSecurity(

@@ -7,6 +7,7 @@ export function splitEnvironmentList(value: string | undefined): string[] {
 
 export function hasAdminAuthConfig(): boolean {
   return Boolean(
+    process.env.ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET &&
     process.env.ADMIN_OWNER_EMAILS &&
     process.env.BETTER_AUTH_SECRET &&
     process.env.BETTER_AUTH_URL &&
@@ -23,6 +24,10 @@ export function isLocalAdminSetupMode(): boolean {
 
 export function getAdminDatabaseUrl(): string | null {
   return process.env.DATABASE_URL ?? null;
+}
+
+export function getAdminBaseUrl(): string | null {
+  return process.env.BETTER_AUTH_URL ?? null;
 }
 
 export function getAdminOrganizationId(): string | null {

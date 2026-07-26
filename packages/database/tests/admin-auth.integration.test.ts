@@ -2,14 +2,22 @@ import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  claimAdminAuthEmail,
+  completeAdminAuthEmail,
   consumeAdminTotpCounter,
+  enqueueAdminAuthEmail,
+  getAdminAuthenticationMethods,
+  getAdminCredentialPasswordHash,
   recordAdminTotpFailure,
   rotateAdminSessionToken,
+  setAdminSessionStepUp,
 } from "../src/admin-auth";
 import { createDatabase } from "../src/client";
 import {
   adminSessionSecurity,
   adminTotpSecurity,
+  adminAuthEmailOutbox,
+  account,
   auditEvents,
   session,
 } from "../src/schema";
@@ -27,8 +35,18 @@ const database = createDatabase(fixtureDatabaseUrl);
 const sessionId = "lifecycle-admin-auth-integration-session";
 const sessionToken = "lifecycle-admin-auth-integration-token";
 const userId = "lifecycle-owner";
+const organizationId = "10000000-0000-4000-8000-000000000001";
+const googleAccountId = "lifecycle-admin-google-method";
+const credentialAccountId = "lifecycle-admin-password-method";
+const authEmailIdempotencyKey =
+  "admin.password_reset/lifecycle-admin-auth-integration";
 
 async function removeFixture() {
+  await database
+    .delete(adminAuthEmailOutbox)
+    .where(eq(adminAuthEmailOutbox.idempotencyKey, authEmailIdempotencyKey));
+  await database.delete(account).where(eq(account.id, googleAccountId));
+  await database.delete(account).where(eq(account.id, credentialAccountId));
   await database.delete(auditEvents).where(eq(auditEvents.targetId, sessionId));
   await database
     .delete(adminTotpSecurity)
@@ -156,7 +174,7 @@ describe.sequential("Neon administrative TOTP repository", () => {
         authorization: {
           actor: { id: userId },
           latestStepUpAt: verifiedAt,
-          organizationId: "10000000-0000-4000-8000-000000000001",
+          organizationId,
           role: "owner",
           session: { id: sessionId },
         },
@@ -201,5 +219,105 @@ describe.sequential("Neon administrative TOTP repository", () => {
         requestId: "admin-auth-rotation-integration",
       },
     ]);
+  });
+
+  it("transfers an exact TOTP step-up to a valid replacement session", async () => {
+    const verifiedAt = new Date();
+
+    await expect(
+      setAdminSessionStepUp(databaseUrl, { sessionId, userId }, verifiedAt),
+    ).resolves.toBe(true);
+    await expect(
+      setAdminSessionStepUp(
+        databaseUrl,
+        { sessionId: "missing-admin-session", userId },
+        verifiedAt,
+      ),
+    ).resolves.toBe(false);
+
+    await expect(
+      database
+        .select({ stepUpVerifiedAt: adminSessionSecurity.stepUpVerifiedAt })
+        .from(adminSessionSecurity)
+        .where(eq(adminSessionSecurity.sessionId, sessionId)),
+    ).resolves.toEqual([{ stepUpVerifiedAt: verifiedAt }]);
+  });
+
+  it("reports both attached login methods without returning credential data", async () => {
+    const now = new Date();
+    await database.insert(account).values([
+      {
+        accountId: "google-subject",
+        id: googleAccountId,
+        providerId: "google",
+        updatedAt: now,
+        userId,
+      },
+      {
+        accountId: userId,
+        id: credentialAccountId,
+        password: "stored-lifecycle-password-hash",
+        providerId: "credential",
+        updatedAt: now,
+        userId,
+      },
+    ]);
+
+    await expect(
+      getAdminAuthenticationMethods(databaseUrl, userId),
+    ).resolves.toEqual({ google: true, password: true });
+    await expect(
+      getAdminCredentialPasswordHash(databaseUrl, userId),
+    ).resolves.toBe("stored-lifecycle-password-hash");
+  });
+
+  it("delivers each durable administrative auth email claim once", async () => {
+    const tokenHash = "a".repeat(64);
+    await enqueueAdminAuthEmail(databaseUrl, {
+      encryptedToken: "e".repeat(64),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+      idempotencyKey: authEmailIdempotencyKey,
+      kind: "password_reset",
+      organizationId,
+      recipient: "lifecycle-owner@example.test",
+      tokenHash,
+      userId,
+    });
+    await enqueueAdminAuthEmail(databaseUrl, {
+      encryptedToken: "e".repeat(64),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+      idempotencyKey: authEmailIdempotencyKey,
+      kind: "password_reset",
+      organizationId,
+      recipient: "lifecycle-owner@example.test",
+      tokenHash,
+      userId,
+    });
+
+    const claimed = await claimAdminAuthEmail(databaseUrl, {
+      organizationId,
+      workerId: "lifecycle-admin-auth-worker",
+    });
+    expect(claimed).toMatchObject({
+      attempt: 1,
+      idempotencyKey: authEmailIdempotencyKey,
+      kind: "password_reset",
+    });
+    expect(claimed).not.toBeNull();
+
+    await expect(
+      completeAdminAuthEmail(databaseUrl, {
+        eventId: claimed?.eventId ?? "",
+        organizationId,
+        providerMessageId: "lifecycle-resend-message",
+        workerId: "lifecycle-admin-auth-worker",
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      claimAdminAuthEmail(databaseUrl, {
+        organizationId,
+        workerId: "second-lifecycle-worker",
+      }),
+    ).resolves.toBeNull();
   });
 });

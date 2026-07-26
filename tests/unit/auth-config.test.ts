@@ -10,6 +10,8 @@ import {
 const validOptions = {
   baseUrl: "http://localhost:3001",
   databaseUrl: "postgresql://user:password@localhost:5432/shapewebs",
+  emailEncryptionSecret:
+    "a-separate-admin-email-encryption-secret-that-is-long-enough",
   organizationId: "f6214344-7525-42d0-83ac-210881b1b7b6",
   ownerEmails: ["owner@shapewebs.com"],
   production: false,
@@ -81,19 +83,39 @@ describe("Better Auth security configuration", () => {
     ).toThrow("invalid email");
   });
 
-  it("uses fixed short-lived sessions and disables password authentication", () => {
+  it("uses fixed sessions and permits secure Google and password methods", () => {
     const auth = createShapewebsAuth(validOptions);
 
     expect(auth.options.session?.expiresIn).toBe(60 * 60 * 8);
     expect(auth.options.session?.freshAge).toBe(60 * 5);
     expect(auth.options.session?.disableSessionRefresh).toBe(true);
-    expect(auth.options.emailAndPassword?.enabled).toBe(false);
+    expect(auth.options.emailAndPassword).toMatchObject({
+      autoSignIn: false,
+      disableSignUp: false,
+      enabled: true,
+      maxPasswordLength: 128,
+      minPasswordLength: 15,
+      requireEmailVerification: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+    });
+    expect(auth.options.account?.accountLinking).toMatchObject({
+      allowDifferentEmails: false,
+      allowUnlinkingAll: false,
+      disableImplicitLinking: true,
+      trustedProviders: ["google"],
+      updateUserInfoOnLink: false,
+    });
     expect(auth.options.rateLimit).toMatchObject({
       customRules: {
+        "/request-password-reset": { max: 3, window: 60 },
+        "/reset-password": { max: 5, window: 60 },
+        "/sign-in/email": { max: 5, window: 60 },
         "/sign-in/social": {
           max: 10,
           window: 60,
         },
+        "/sign-up/email": { max: 3, window: 60 },
       },
       enabled: true,
       max: 60,
@@ -106,10 +128,10 @@ describe("Better Auth security configuration", () => {
         "/get-access-token",
         "/refresh-token",
         "/list-sessions",
+        "/request-password-reset",
         "/revoke-other-sessions",
         "/revoke-session",
         "/revoke-sessions",
-        "/sign-in/email",
         "/sign-up/email",
         "/two-factor/disable",
         "/two-factor/generate-backup-codes",
@@ -120,7 +142,24 @@ describe("Better Auth security configuration", () => {
         "/two-factor/verify-totp",
       ]),
     );
+    expect(auth.options.disabledPaths).not.toContain("/sign-in/email");
+    expect(auth.options.disabledPaths).toContain("/sign-up/email");
     expect(auth.options.hooks?.before).toBeTypeOf("function");
+  });
+
+  it("rejects invalid editor allowlists and short email encryption secrets", () => {
+    expect(() =>
+      createShapewebsAuth({
+        ...validOptions,
+        editorEmails: ["owner@shapewebs.com"],
+      }),
+    ).toThrow("ADMIN_EDITOR_EMAILS");
+    expect(() =>
+      createShapewebsAuth({
+        ...validOptions,
+        emailEncryptionSecret: "short",
+      }),
+    ).toThrow("ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET");
   });
 
   it("does not expose unused factor-management endpoints", async () => {
@@ -131,9 +170,11 @@ describe("Better Auth security configuration", () => {
       "/get-access-token",
       "/refresh-token",
       "/list-sessions",
+      "/request-password-reset",
       "/revoke-other-sessions",
       "/revoke-session",
       "/revoke-sessions",
+      "/sign-up/email",
       "/two-factor/disable",
       "/two-factor/generate-backup-codes",
       "/two-factor/get-totp-uri",

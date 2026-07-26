@@ -4,6 +4,9 @@ import { getSafeAdminRedirectTarget } from "../../apps/admin/src/lib/redirect";
 describe("admin redirect sanitizer", () => {
   it("preserves allowlisted admin paths, queries, and fragments", () => {
     expect(getSafeAdminRedirectTarget("/audit")).toBe("/audit");
+    expect(getSafeAdminRedirectTarget("/account/security")).toBe(
+      "/account/security",
+    );
     expect(
       getSafeAdminRedirectTarget("/content/pages/123?mode=edit#title"),
     ).toBe("/content/pages/123?mode=edit#title");

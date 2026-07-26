@@ -3,8 +3,8 @@
 ## Current milestone
 
 - Date: 26 July 2026
-- Branch: protected `staging` at `8e7a437`; current implementation branch
-  `codex/customer-portal-auth-routes`
+- Branch: protected `staging` at `ee46f64`; current implementation branch
+  `codex/admin-multimethod-auth` in draft pull request `#38`
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -25,14 +25,17 @@
   merged at `bc0abc5`; isolated portal foundation `#32` merged at `a509f69`;
   customer identity boundary `#33` merged at `b8f9750`; persistent customer
   identity staging evidence `#34` merged at `b943a196`; invitation-gated
-  customer credential foundation `#35` merged at `8e7a437`
+  customer credential foundation `#35` merged at `8e7a437`; customer
+  authentication evidence `#36` merged at `8a1ff8e`; multi-method customer
+  routes `#37` passed the complete disposable lifecycle and merged at
+  `ee46f64`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#35` are merged into protected `staging`. Migrations `0000` through `0014` are
+`#37` are merged into protected `staging`. Migrations `0000` through `0014` are
 applied to the persistent synthetic staging database and its live six-identity
 security verification passes. Google OAuth, local TOTP enrollment, successful
 step-up and protected CMS navigation have passed on the fixed staging origin. The
@@ -131,9 +134,16 @@ production domains.
 
 ### Authentication and authorization
 
-- Better Auth is mounted only in `apps/admin` at `/api/auth/[...all]`.
-- Authentication uses Google OAuth and an explicit owner email allowlist.
-  Public signup and email/password authentication are disabled.
+- The public application contains no authentication runtime. Admin and portal
+  own independent Better Auth instances, schemas, secrets, cookies and route
+  namespaces; the portal remains fail-closed without its dedicated providers.
+- The current branch gives every allowlisted owner/editor one administrative
+  account with Google, a verified password, or both attached as login methods.
+  Open signup, implicit email merging and privileged unlinking remain disabled.
+- Google-first employees may add a password through a verified single-use
+  mailbox link. Password-first employees may connect Google only after current
+  password verification and a fresh TOTP step-up. The link grant is signed,
+  action-specific, short-lived and bound to the active user/session.
 - Production configuration requires an exact HTTPS base origin, exact trusted
   origins, Google credentials, a strong secret, and an organization UUID.
   Wildcard preview origins fail configuration validation.
@@ -150,8 +160,8 @@ production domains.
   endpoints are disabled. The owner settings view exposes only token-free
   organization-scoped session summaries, and a TOTP step-up from the preceding
   five minutes is required to revoke another administrative session.
-- Google authentication is followed by a custom TOTP step-up. Publishing and
-  other sensitive mutations require a fresh step-up.
+- Google or password authentication is followed by the same custom TOTP
+  step-up. Publishing and other sensitive mutations require a fresh step-up.
 - The fixed staging login now recognizes the configured Shapewebs cookie
   prefix. The current branch passes Better Auth's runtime key configuration
   into TOTP decryption, including versioned secret envelopes, and replaces
@@ -173,18 +183,23 @@ production domains.
   client, Neon schema, and runtime role. It supports invitation-gated Google
   and verified email/password onboarding with explicit same-email account
   linking, without weakening or sharing administrative authentication.
-- The current implementation branch adds fail-closed customer routes over the
+- Protected staging now contains fail-closed customer routes over the
   protected credential foundation: project-bound invitation acceptance,
   Google-first or password-first onboarding, login/logout, generic recovery,
   explicit same-account Google linking, verified-email password addition,
   authorization-backed dashboard/security pages, Turnstile, and a durable
   encrypted Resend worker. Dedicated portal provider resources are still
   absent, so no customer route is live on staging or production.
+- The stacked administrative slice adds allowlisted password activation,
+  generic recovery, durable encrypted auth-email delivery, method discovery,
+  explicit Google linking, password addition and a shared security page. Its
+  migration `0015` and fixed-staging first-factor journeys remain unproven and
+  therefore are not yet launch evidence.
 
 ### Neon lead, retention and email path
 
-- `packages/database` contains fifteen version-controlled Drizzle migrations,
-  forced RLS,
+- The current branch contains sixteen version-controlled Drizzle migrations;
+  protected staging has applied the first fifteen (`0000`–`0014`). Forced RLS,
   least-privilege runtime roles, transaction-local authorization context, and
   negative authorization tests.
 - Both application Development database URLs use pooled Neon endpoints.
@@ -222,6 +237,14 @@ production domains.
   suite passed, both branch-scoped runtime credentials were rotated and stored
   only in Vercel Sensitive scope plus macOS Keychain, and both fixed staging
   deployments returned to `READY` without changing development or production.
+- Pull request `#37` then added the customer-facing invitation, activation,
+  login, recovery and security routes without provisioning provider resources.
+  Protected run
+  [`30218909081`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30218909081)
+  passed fresh migrations, the real Better Auth runtime, exact-tenant and
+  wrong-tenant session authorization, the complete forced-RLS suite, rollback,
+  byte-identical restore and disposable-branch cleanup before the pull request
+  merged at `ee46f64`.
 - Contact and project-inquiry handlers enforce JSON content type, a 16 KiB
   streamed-body limit, Zod validation, UUID command IDs, bounded local rate
   limiting, and server-side Turnstile verification.
@@ -587,13 +610,15 @@ persistent-staging deployment and rollback evidence.
 
 ## Next implementation slices
 
-1. Mount only the fail-closed portal invitation, mailbox-verification,
-   email/password login, logout and session-authorization routes over the
-   verified customer credential foundation.
-2. Add uniform reset/recovery responses, recent reauthentication and explicit
-   signed-in same-email Google linking without implicit account merging.
+1. Complete and review the employee multi-method slice in pull request `#38`,
+   including
+   migration `0015`, forced-RLS auth-email evidence and both build engines.
+2. Provision the exact branch-scoped admin auth-email encryption secret, apply
+   `0015` through the dedicated migrator after a rollback branch, and prove
+   password-first, Google-first, dual-method and mandatory-TOTP journeys on the
+   fixed admin staging origin.
 3. Provision the dedicated customer Google OAuth client and separate portal
-   staging providers only when the routes are ready for fixed-origin evidence.
+   staging providers only when the route PR and database lifecycle are green.
 4. Implement the bounded private/public Vercel Blob repository and malicious
    upload controls needed by the minimum CMS.
 5. Rehearse the accepted-risk expiry checks and production provider launch

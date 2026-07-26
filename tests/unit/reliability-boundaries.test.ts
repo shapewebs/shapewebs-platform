@@ -83,6 +83,8 @@ describe("reliability and provider boundaries", () => {
 
   it("fails the outbox configuration closed if one dependency is missing", () => {
     const completeEnvironment = {
+      ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET:
+        "a-separate-admin-email-encryption-secret-with-32-characters",
       BETTER_AUTH_URL: "https://admin.shapewebs.com",
       DATABASE_URL: "postgresql://redacted",
       LEAD_NOTIFICATION_FROM_EMAIL: "website@example.com",
@@ -93,6 +95,8 @@ describe("reliability and provider boundaries", () => {
 
     expect(getOutboxEnvironment(completeEnvironment)).toEqual({
       adminBaseUrl: "https://admin.shapewebs.com",
+      authEmailEncryptionSecret:
+        "a-separate-admin-email-encryption-secret-with-32-characters",
       databaseUrl: "postgresql://redacted",
       from: "website@example.com",
       organizationId: "f6214344-7525-42d0-83ac-210881b1b7b6",

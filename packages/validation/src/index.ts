@@ -172,6 +172,8 @@ const notificationMailboxSchema = z
   }, "Must be one valid email mailbox.");
 
 const sharedEnvSchema = z.object({
+  ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET: z.string().min(32).optional(),
+  ADMIN_EDITOR_EMAILS: z.string().min(3).optional(),
   ADMIN_OWNER_EMAILS: z.string().min(3).optional(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.url().optional(),
@@ -232,6 +234,8 @@ export const webEnvSchema = sharedEnvSchema.pick({
 });
 
 export const adminEnvSchema = sharedEnvSchema.pick({
+  ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET: true,
+  ADMIN_EDITOR_EMAILS: true,
   ADMIN_OWNER_EMAILS: true,
   BETTER_AUTH_SECRET: true,
   BETTER_AUTH_URL: true,

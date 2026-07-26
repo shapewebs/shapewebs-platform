@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth-environment";
 
 const protectedPrefixes = [
+  "/account",
   "/audit",
   "/content",
   "/dashboard",

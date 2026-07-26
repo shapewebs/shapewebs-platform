@@ -5,6 +5,16 @@ export {
   verifyAdminTotpCode,
   type AdminTotpVerificationResult,
 } from "./admin-totp";
+export {
+  decryptAdminEmailToken,
+  encryptAdminEmailToken,
+  hashAdminEmailToken,
+} from "./admin-email-token";
+export {
+  createAdminMethodAuthorization,
+  verifyAdminMethodAuthorization,
+} from "./admin-method-authorization";
+export { verifyAdminPasswordHash } from "./admin-password";
 export { createShapewebsAuth } from "./create-auth";
 export { createShapewebsCustomerAuth } from "./create-customer-auth";
 export {
@@ -52,6 +62,7 @@ export {
 export {
   generateAdminSessionToken,
   serializeAdminSessionCookie,
+  serializeAdminSessionDeletionCookie,
 } from "./session-cookie";
 export { toNextJsHandler } from "better-auth/next-js";
 export type {

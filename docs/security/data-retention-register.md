@@ -33,6 +33,7 @@ support conversations.
 | OAuth profile                                 | Confidential                                                        | Admin identity and allowlisting            | Google, Better Auth, Neon                                            | Account lifetime plus 30 days                       | Revoke sessions, delete account/profile         |
 | Session, OAuth and TOTP secrets               | Restricted                                                          | Administrative and customer authentication | Browser HttpOnly cookie, Better Auth/Neon, encrypted provider stores | Session/account/credential lifetime                 | Revoke, expire and securely delete              |
 | Customer auth-email tokens                    | Restricted                                                          | Invitation, verification and recovery      | SHA-256 lookup hash and authenticated encrypted envelope in Neon     | Token expiry plus delivery/retry window             | Consume, then remove through bounded cleanup    |
+| Employee auth-email tokens                    | Restricted                                                          | Verification and password recovery         | SHA-256 lookup hash and authenticated encrypted envelope in Neon     | Token expiry plus delivery/retry window             | Consume, then remove through bounded cleanup    |
 | Email delivery events                         | Confidential                                                        | Delivery operations and abuse response     | Neon, Resend                                                         | 90 days unless linked to an incident                | Automated deletion                              |
 | Synthetic test data                           | Confidential synthetic data only                                    | Verification                               | Non-production Neon, CI artifacts                                    | 7 days maximum                                      | Daily marker-restricted cleanup/artifact expiry |
 
@@ -40,8 +41,9 @@ Deletion jobs must be idempotent, auditable, tenant-scoped and tested against a
 synthetic database before production scheduling.
 
 The customer portal is not live. Its 30-day expired-invitation/provisional
-account cleanup and consumed auth-email cleanup are launch gates; the schema
-does not make a not-yet-scheduled deletion claim.
+account cleanup and consumed auth-email cleanup are launch gates. Consumed or
+expired employee auth-email cleanup is also a launch gate; neither schema makes
+a not-yet-scheduled deletion claim.
 
 Lead notification content is deliberately minimized: Resend receives the
 contact identity, form type, submission ID, protected admin link, and delivery

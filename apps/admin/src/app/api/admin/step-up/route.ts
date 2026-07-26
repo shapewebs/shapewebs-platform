@@ -3,11 +3,16 @@ import { createHmac, randomUUID } from "node:crypto";
 import {
   generateAdminSessionToken,
   serializeAdminSessionCookie,
+  serializeAdminSessionDeletionCookie,
   verifyAdminTotpCode,
 } from "@shapewebs/auth/server";
 import {
   appendAdminAuditEvent,
+  appendSystemAuditEvent,
+  authorizeAdminSession,
+  findAdminSessionByToken,
   rotateAdminSessionToken,
+  setAdminSessionStepUp,
   type AdminAuthorizationContext,
 } from "@shapewebs/database/server";
 import {
@@ -19,9 +24,10 @@ import { readBoundedText } from "@shapewebs/validation";
 import {
   getAdminAuth,
   getAdminDatabaseUrl,
+  getAdminOrganizationId,
   isTrustedAdminOrigin,
 } from "@/lib/better-auth";
-import { requirePrimaryAdminSession } from "@/lib/auth";
+import { getAdminRuntimeState } from "@/lib/auth";
 
 const maximumBodyBytes = 1_024;
 const logger = createStructuredLogger({
@@ -68,6 +74,47 @@ function readSetCookies(headers: Headers): string[] {
   return combinedCookie ? [combinedCookie] : [];
 }
 
+function withoutSessionCookie(setCookies: string[]): string[] {
+  return setCookies.filter((cookie) => !cookie.includes(".session_token="));
+}
+
+async function readVerifiedSession(
+  databaseUrl: string,
+  response: Response,
+): Promise<{
+  expiresAt: Date;
+  sessionId: string;
+  token: string;
+  userId: string;
+} | null> {
+  const payload = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as {
+    token?: unknown;
+    user?: { id?: unknown };
+  } | null;
+
+  if (
+    !response.ok ||
+    typeof payload?.token !== "string" ||
+    typeof payload.user?.id !== "string"
+  ) {
+    return null;
+  }
+
+  const session = await findAdminSessionByToken(databaseUrl, payload.token);
+
+  return session && session.userId === payload.user.id
+    ? {
+        expiresAt: session.expiresAt,
+        sessionId: session.id,
+        token: payload.token,
+        userId: session.userId,
+      }
+    : null;
+}
+
 function auditStepUp(
   result: "denied" | "failure" | "success",
   authorization?: AdminAuthorizationContext,
@@ -106,52 +153,12 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "invalid_request" }, 413);
   }
 
-  const runtime = await requirePrimaryAdminSession("/dashboard");
-  const auth = getAdminAuth();
-  const databaseUrl = getAdminDatabaseUrl();
-
-  if (!runtime.authenticationAvailable) {
-    auditStepUp("denied");
-    return jsonNoStore({ error: "authentication_unavailable" }, 503);
-  }
-
-  if (
-    runtime.setupMode ||
-    !runtime.primarySession ||
-    !runtime.authorization ||
-    !auth ||
-    !databaseUrl
-  ) {
-    auditStepUp("denied");
-    return jsonNoStore({ error: "authentication_required" }, 401);
-  }
-
-  const authorization = runtime.authorization;
-  const primarySession = runtime.primarySession;
-  const requestId = request.headers.get("x-request-id") ?? randomUUID();
-  const recordDurableStepUp = (
-    result: "failure" | "success",
-  ): Promise<void> => {
-    return appendAdminAuditEvent(databaseUrl, {
-      action: "auth.totp_step_up",
-      organizationId: authorization.organizationId,
-      requestId,
-      result,
-      role: authorization.role,
-      sessionId: primarySession.session.id,
-      targetId: primarySession.session.id,
-      targetType: "session",
-      userId: primarySession.user.id,
-    });
-  };
-
   let body: unknown;
 
   try {
     body = JSON.parse(rawBody.value) as unknown;
   } catch {
-    await Promise.allSettled([recordDurableStepUp("failure")]);
-    auditStepUp("denied", runtime.authorization);
+    auditStepUp("denied");
     return jsonNoStore({ error: "invalid_request" }, 400);
   }
 
@@ -161,28 +168,181 @@ export async function POST(request: Request) {
       : null;
 
   if (!isValidCode(code)) {
-    await Promise.allSettled([recordDurableStepUp("failure")]);
-    auditStepUp("denied", runtime.authorization);
+    auditStepUp("denied");
     return jsonNoStore({ error: "invalid_code" }, 400);
   }
 
+  const runtime = await getAdminRuntimeState();
+  const auth = getAdminAuth();
+  const databaseUrl = getAdminDatabaseUrl();
+  const organizationId = getAdminOrganizationId();
+
+  if (
+    !runtime.authenticationAvailable ||
+    !auth ||
+    !databaseUrl ||
+    !organizationId
+  ) {
+    auditStepUp("denied");
+    return jsonNoStore({ error: "authentication_unavailable" }, 503);
+  }
+
+  if (runtime.setupMode) {
+    auditStepUp("denied");
+    return jsonNoStore({ error: "authentication_required" }, 401);
+  }
+
+  const requestId = request.headers.get("x-request-id") ?? randomUUID();
+  const recordDurableStepUp = (
+    result: "failure" | "success",
+    authorization?: AdminAuthorizationContext,
+  ): Promise<void> => {
+    return authorization
+      ? appendAdminAuditEvent(databaseUrl, {
+          action: "auth.totp_step_up",
+          organizationId,
+          requestId,
+          result,
+          role: authorization.role,
+          sessionId: authorization.session.id,
+          targetId: authorization.session.id,
+          targetType: "session",
+          userId: authorization.actor.id,
+        })
+      : appendSystemAuditEvent(databaseUrl, {
+          action: "auth.totp_step_up",
+          organizationId,
+          requestId,
+          result,
+          targetType: "authentication",
+        });
+  };
+
   try {
     const authContext = await auth.$context;
+    const primarySession = runtime.primarySession;
+    const authorization = runtime.authorization;
+
+    if (!primarySession || !authorization) {
+      const challengeResponse = await auth.api.verifyTOTP({
+        asResponse: true,
+        body: {
+          code,
+          trustDevice: false,
+        },
+        headers: request.headers,
+      });
+      const challengeCookies = readSetCookies(challengeResponse.headers);
+      const challengeSession = await readVerifiedSession(
+        databaseUrl,
+        challengeResponse,
+      );
+
+      if (!challengeSession) {
+        await Promise.allSettled([recordDurableStepUp("failure")]);
+        auditStepUp("failure", undefined, "primary_verification_failed");
+        return jsonNoStore(
+          { error: "verification_failed" },
+          401,
+          withoutSessionCookie(challengeCookies),
+        );
+      }
+
+      const verification = await verifyAdminTotpCode({
+        code,
+        databaseUrl,
+        secret: authContext.secretConfig,
+        sessionId: challengeSession.sessionId,
+        userId: challengeSession.userId,
+      });
+
+      if (verification.status !== "accepted") {
+        await Promise.allSettled([
+          authContext.internalAdapter.deleteSession(challengeSession.token),
+          recordDurableStepUp("failure"),
+        ]);
+        auditStepUp("failure", undefined, verification.reasonCode);
+        return jsonNoStore({ error: "verification_failed" }, 401, [
+          ...withoutSessionCookie(challengeCookies),
+          serializeAdminSessionDeletionCookie(auth.options),
+        ]);
+      }
+
+      const verifiedAuthorization = await authorizeAdminSession(databaseUrl, {
+        organizationId,
+        sessionId: challengeSession.sessionId,
+        userId: challengeSession.userId,
+      });
+
+      if (!verifiedAuthorization) {
+        await Promise.allSettled([
+          authContext.internalAdapter.deleteSession(challengeSession.token),
+          recordDurableStepUp("failure"),
+        ]);
+        auditStepUp("failure", undefined, "authorization_unavailable");
+        return jsonNoStore({ error: "session_unavailable" }, 401, [
+          ...withoutSessionCookie(challengeCookies),
+          serializeAdminSessionDeletionCookie(auth.options),
+        ]);
+      }
+
+      const rotatedAt = new Date();
+      const replacementToken = generateAdminSessionToken();
+      const rotatedSession = await rotateAdminSessionToken(databaseUrl, {
+        authorization: verifiedAuthorization,
+        newToken: replacementToken,
+        requestId,
+        rotatedAt,
+        verifiedAt: verification.verifiedAt,
+      });
+
+      if (!rotatedSession) {
+        await Promise.allSettled([
+          authContext.internalAdapter.deleteSession(challengeSession.token),
+          recordDurableStepUp("failure", verifiedAuthorization),
+        ]);
+        auditStepUp(
+          "failure",
+          verifiedAuthorization,
+          "session_rotation_failed",
+        );
+        return jsonNoStore({ error: "session_unavailable" }, 401, [
+          ...withoutSessionCookie(challengeCookies),
+          serializeAdminSessionDeletionCookie(auth.options),
+        ]);
+      }
+
+      const replacementCookie = await serializeAdminSessionCookie({
+        authOptions: auth.options,
+        expiresAt: rotatedSession.expiresAt,
+        now: rotatedAt,
+        secret: process.env.BETTER_AUTH_SECRET as string,
+        token: replacementToken,
+      });
+
+      await recordDurableStepUp("success", verifiedAuthorization);
+      auditStepUp("success", verifiedAuthorization);
+      return jsonNoStore({ status: "verified" }, 200, [
+        ...challengeCookies,
+        replacementCookie,
+      ]);
+    }
+
     const verification = await verifyAdminTotpCode({
       code,
       databaseUrl,
       secret: authContext.secretConfig,
-      sessionId: runtime.primarySession.session.id,
-      userId: runtime.primarySession.user.id,
+      sessionId: primarySession.session.id,
+      userId: primarySession.user.id,
     });
 
     if (verification.status !== "accepted") {
-      await Promise.allSettled([recordDurableStepUp("failure")]);
-      auditStepUp("failure", runtime.authorization, verification.reasonCode);
+      await Promise.allSettled([recordDurableStepUp("failure", authorization)]);
+      auditStepUp("failure", authorization, verification.reasonCode);
       return jsonNoStore({ error: "verification_failed" }, 401);
     }
 
-    let setCookies: string[] = [];
+    let setCookies: string[];
 
     if (verification.enrollmentPending) {
       const enrollmentResponse = await auth.api.verifyTOTP({
@@ -193,18 +353,47 @@ export async function POST(request: Request) {
         },
         headers: request.headers,
       });
+      const enrollmentCookies = readSetCookies(enrollmentResponse.headers);
+      const replacementSession = await readVerifiedSession(
+        databaseUrl,
+        enrollmentResponse,
+      );
 
-      if (!enrollmentResponse.ok) {
-        await Promise.allSettled([recordDurableStepUp("failure")]);
-        auditStepUp("failure", runtime.authorization);
-        return jsonNoStore({ error: "verification_failed" }, 401);
+      if (
+        !replacementSession ||
+        replacementSession.userId !== primarySession.user.id ||
+        !(await setAdminSessionStepUp(
+          databaseUrl,
+          {
+            sessionId: replacementSession.sessionId,
+            userId: replacementSession.userId,
+          },
+          verification.verifiedAt,
+        ))
+      ) {
+        if (replacementSession) {
+          await Promise.allSettled([
+            authContext.internalAdapter.deleteSession(replacementSession.token),
+          ]);
+        }
+        await Promise.allSettled([
+          recordDurableStepUp("failure", authorization),
+        ]);
+        auditStepUp("failure", authorization, "enrollment_session_failed");
+        return jsonNoStore({ error: "session_unavailable" }, 401, [
+          ...withoutSessionCookie(enrollmentCookies),
+          serializeAdminSessionDeletionCookie(auth.options),
+        ]);
       }
 
-      setCookies = readSetCookies(enrollmentResponse.headers);
+      setCookies = enrollmentCookies;
 
       if (setCookies.length === 0) {
-        await Promise.allSettled([recordDurableStepUp("failure")]);
-        auditStepUp("failure", runtime.authorization);
+        await Promise.allSettled([
+          authContext.internalAdapter.deleteSession(replacementSession.token),
+          recordDurableStepUp("failure", authorization),
+        ]);
+        auditStepUp("failure", authorization, "session_cookie_unavailable");
         return jsonNoStore({ error: "session_unavailable" }, 401);
       }
     } else {
@@ -219,8 +408,10 @@ export async function POST(request: Request) {
       });
 
       if (!rotatedSession) {
-        await Promise.allSettled([recordDurableStepUp("failure")]);
-        auditStepUp("failure", runtime.authorization);
+        await Promise.allSettled([
+          recordDurableStepUp("failure", authorization),
+        ]);
+        auditStepUp("failure", authorization, "session_rotation_failed");
         return jsonNoStore({ error: "session_unavailable" }, 401);
       }
 
@@ -235,13 +426,19 @@ export async function POST(request: Request) {
       ];
     }
 
-    await recordDurableStepUp("success");
+    await recordDurableStepUp("success", authorization);
 
-    auditStepUp("success", runtime.authorization);
+    auditStepUp("success", authorization);
     return jsonNoStore({ status: "verified" }, 200, setCookies);
   } catch {
-    await Promise.allSettled([recordDurableStepUp("failure")]);
-    auditStepUp("failure", runtime.authorization, "verification_exception");
+    await Promise.allSettled([
+      recordDurableStepUp("failure", runtime.authorization ?? undefined),
+    ]);
+    auditStepUp(
+      "failure",
+      runtime.authorization ?? undefined,
+      "verification_exception",
+    );
     return jsonNoStore({ error: "verification_failed" }, 401);
   }
 }

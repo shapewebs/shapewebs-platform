@@ -16,8 +16,8 @@ export default async function LoginPage() {
         <p className={styles.eyebrowZ3p9t2}>Shapewebs Admin</p>
         <h1 className={styles.titleR6k2m4}>CMS access</h1>
         <p className={styles.copyH2v8q6}>
-          Sign in with your allowlisted Google account, then complete a TOTP
-          check before entering the CMS.
+          Use Google or your password for the same allowlisted employee account,
+          then complete TOTP before entering the CMS.
         </p>
 
         {isLocalSetupMode ? (

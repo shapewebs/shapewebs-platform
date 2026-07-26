@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   generateAdminSessionToken,
   serializeAdminSessionCookie,
+  serializeAdminSessionDeletionCookie,
 } from "../../packages/auth/src/session-cookie";
 import { getSessionCookie } from "../../packages/auth/src/proxy";
 
@@ -94,5 +95,16 @@ describe("administrative session cookie rotation", () => {
         token: "b".repeat(43),
       }),
     ).rejects.toThrow("rotated administrative session");
+  });
+
+  it("clears the exact host-only administrative session cookie", () => {
+    const cookie = serializeAdminSessionDeletionCookie(productionAuthOptions);
+
+    expect(cookie).toContain("__Host-shapewebs.session_token=");
+    expect(cookie).toContain("Max-Age=0");
+    expect(cookie).toContain("Expires=Thu, 01 Jan 1970 00:00:00 GMT");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Secure");
+    expect(cookie).not.toContain("Domain=");
   });
 });

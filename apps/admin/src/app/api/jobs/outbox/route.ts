@@ -1,12 +1,19 @@
 import { randomUUID } from "node:crypto";
 
+import { decryptAdminEmailToken } from "@shapewebs/auth/server";
 import {
+  claimAdminAuthEmail,
   claimLeadNotification,
+  completeAdminAuthEmail,
   completeLeadNotification,
+  failAdminAuthEmail,
   failLeadNotification,
   suppressLeadNotification,
 } from "@shapewebs/database/server";
-import { sendLeadNotification } from "@shapewebs/email/server";
+import {
+  sendAdminAuthNotification,
+  sendLeadNotification,
+} from "@shapewebs/email/server";
 import {
   createStructuredLogger,
   resolveShapewebsEnvironment,
@@ -91,6 +98,64 @@ export async function POST(request: Request) {
       Date.now() - startedAt < maximumWorkerRuntimeMs;
       index += 1
     ) {
+      const authEmail = await claimAdminAuthEmail(environment.databaseUrl, {
+        organizationId: environment.organizationId,
+        workerId,
+      });
+
+      if (authEmail) {
+        const token = await decryptAdminEmailToken(
+          authEmail.encryptedToken,
+          environment.authEmailEncryptionSecret,
+        );
+        const delivery = token
+          ? await sendAdminAuthNotification(environment.resendApiKey, {
+              adminBaseUrl: environment.adminBaseUrl,
+              from: environment.from,
+              idempotencyKey: authEmail.idempotencyKey,
+              kind: authEmail.kind,
+              to: authEmail.recipient,
+              token,
+            })
+          : {
+              errorCode: "encrypted_token_invalid",
+              status: "permanent_failure" as const,
+            };
+
+        if (delivery.status === "sent") {
+          const completed = await completeAdminAuthEmail(
+            environment.databaseUrl,
+            {
+              eventId: authEmail.eventId,
+              organizationId: environment.organizationId,
+              providerMessageId: delivery.providerMessageId,
+              workerId,
+            },
+          );
+          if (!completed) break;
+          processed += 1;
+          continue;
+        }
+
+        const permanent =
+          delivery.status === "permanent_failure" || authEmail.attempt >= 10;
+        const failed = await failAdminAuthEmail(environment.databaseUrl, {
+          errorCode:
+            authEmail.attempt >= 10
+              ? "retry_attempts_exhausted"
+              : delivery.errorCode,
+          eventId: authEmail.eventId,
+          nextAttemptAt: nextRetryAt(authEmail.attempt),
+          organizationId: environment.organizationId,
+          permanent,
+          workerId,
+        });
+        if (!failed) break;
+        if (permanent) permanentFailures += 1;
+        else retryableFailures += 1;
+        continue;
+      }
+
       const notification = await claimLeadNotification(
         environment.databaseUrl,
         {

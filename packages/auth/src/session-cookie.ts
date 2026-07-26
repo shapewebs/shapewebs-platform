@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { getCookies } from "better-auth/cookies";
-import { serializeSignedCookie } from "better-call";
+import { serializeCookie, serializeSignedCookie } from "better-call";
 
 const sessionTokenPattern = /^[A-Za-z0-9_-]{43}$/;
 
@@ -36,5 +36,17 @@ export async function serializeAdminSessionCookie(input: {
   return serializeSignedCookie(sessionCookie.name, input.token, input.secret, {
     ...sessionCookie.attributes,
     maxAge: remainingSeconds,
+  });
+}
+
+export function serializeAdminSessionDeletionCookie(
+  authOptions: AuthCookieOptions,
+): string {
+  const sessionCookie = getCookies(authOptions).sessionToken;
+
+  return serializeCookie(sessionCookie.name, "", {
+    ...sessionCookie.attributes,
+    expires: new Date(0),
+    maxAge: 0,
   });
 }
