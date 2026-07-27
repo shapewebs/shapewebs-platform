@@ -42,11 +42,7 @@
     "verify": "pnpm format:check && pnpm lint && pnpm lint:docs && pnpm typecheck && pnpm monitoring:checkly:validate && pnpm security:asvs:check && pnpm security:dependency-patches:check && pnpm test:workers && pnpm test:coverage && pnpm check:boundaries && pnpm check:deps && pnpm check:cycles && pnpm check:generated && pnpm audit",
     "verify:release": "pnpm verify && pnpm build:workers && pnpm build:turbopack && pnpm build:webpack && pnpm check:runtime-artifacts && pnpm test:e2e && pnpm test:performance && pnpm test:load:smoke && pnpm test:zap:baseline && pnpm security:asvs:gate",
     "clean": "pnpm clean:artifacts",
-    "clean:artifacts": "node tooling/scripts/clean-artifacts.mjs",
-    "supabase:status": "pnpm dlx supabase@2.88.1 status",
-    "supabase:start": "pnpm dlx supabase@2.88.1 start",
-    "supabase:reset": "pnpm dlx supabase@2.88.1 db reset",
-    "supabase:stop": "pnpm dlx supabase@2.88.1 stop"
+    "clean:artifacts": "node tooling/scripts/clean-artifacts.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

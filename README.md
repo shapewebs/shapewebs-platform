@@ -1,11 +1,11 @@
 # Shapewebs Platform
 
-The Shapewebs monorepo contains two independently deployable Next.js
-applications:
+The Shapewebs monorepo contains two deployed Next.js applications and one
+isolated future portal:
 
 - `apps/web` — the static-first studio website for `shapewebs.com`
-- `apps/admin` — the private CMS and future customer platform for
-  `admin.shapewebs.com`
+- `apps/admin` — the private CMS for `admin.shapewebs.com`
+- `apps/portal` — the fail-closed, invitation-only future customer surface
 
 Shared code lives in `packages/*`. The public site and authenticated platform
 remain separate so identity and CMS dependencies cannot enter the marketing
@@ -13,23 +13,22 @@ bundle.
 
 ## Foundation status
 
-The hardened foundation and clean non-production Neon database are complete on
-`codex/foundation`; production has not been changed. The repository is being
-migrated in small, reviewable pull requests from its existing Supabase
-prototype to:
+The hardened foundation and isolated non-production Neon database are complete
+on protected `staging`; production has not been changed. Verified runtime paths
+use:
 
 - Better Auth for Google login, database sessions, and admin TOTP step-up
 - Neon Postgres with isolated preview branches
 - Drizzle schemas and reviewed SQL migrations
 - Vercel Blob for public and private media
 
-Supabase remains transitional code only until the complete replacement passes
-authentication, preview-isolation, restore, and release tests. Better Auth is
-mounted only in the admin app with Google allowlisting and explicit TOTP
-step-up. Public leads now use an atomic Neon lead/outbox transaction, while
-provider credentials and the fixed staging journey remain launch gates.
-Production authentication and form persistence fail closed when required
-configuration is missing.
+The obsolete Supabase prototype has been removed after authentication,
+preview-isolation, publishing, restore, and release verification. Admin and
+portal own separate Better Auth instances and identity boundaries. Employees
+and future customers can attach Google, password, or both to one account;
+administrative access still requires TOTP. Public leads use an atomic Neon
+lead/outbox transaction. Production authentication and form persistence fail
+closed when required configuration is missing.
 
 See the [foundation architecture](docs/foundation/architecture.md), the
 [current-state audit](docs/audits/current-state-2026-07-23.md), and the
@@ -43,8 +42,8 @@ the [Phase 0 implementation plan](docs/plans/phase-0-foundation.md), and the
 - Better Auth 1.6.25
 - Neon Postgres with `@neondatabase/serverless`
 - Drizzle ORM and reviewed SQL migrations
-- Resend for transactional notifications; `shapewebs.com` is provider-verified,
-  while staging/Production credentials remain pending
+- Resend for transactional notifications; `shapewebs.com` and the restricted
+  staging path are verified, while Production credentials remain pending
 - OpenTelemetry, Vercel Observability/Speed Insights, and Checkly
   monitoring-as-code
 - strict TypeScript
@@ -66,23 +65,22 @@ packages/
   config/
   content-schema/
   database/
-  db/
+  email/
   i18n/
+  media/
   observability/
   ui/
   validation/
 docs/
 drizzle/
 tests/
-supabase/  # transitional implementation removed after the migration
 tooling/
 .github/
 ```
 
-The `db` package and `supabase/` directory remain transitional until the
-verified `database` and `auth` paths fully replace them. Git history is the
-archive; obsolete runtime code is removed instead of moved into a `legacy`
-directory.
+`packages/database` and `drizzle/` are the only current application database
+implementation and migration sources. Git history archives the removed
+prototype; obsolete runtime code is not kept in a `legacy` directory.
 
 ## Local commands
 
