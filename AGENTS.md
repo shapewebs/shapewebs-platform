@@ -15,7 +15,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - `apps/web` for the public site
   - `apps/admin` for the CMS/admin portal
   - `packages/*` for shared logic
-  - `supabase/` for migrations and database security
+  - `drizzle/` for version-controlled Neon migrations and database security
 - Keep public and admin concerns separated; do not casually move admin features into the public app.
 - Prefer the existing global-CSS-first architecture unless the user explicitly asks for a utility-first approach.
 - For the component system, prefer shared global foundation CSS for tokens/theme/reset and CSS Modules for component-scoped styling.
@@ -27,8 +27,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Keep validation logic in `packages/validation`.
 - Keep shared configuration and security header builders in `packages/config`.
 - Keep shared locale/region logic in `packages/i18n`.
-- Keep DB contracts and repository helpers in `packages/db`.
-- Treat Supabase SQL migrations as the source of truth; avoid dashboard-only schema changes.
+- Keep DB contracts and repository helpers in `packages/database`.
+- Treat Drizzle SQL migrations as the source of truth; avoid dashboard-only schema changes.
 - Maintain RLS-aware design. Public content should only ever read published records.
 - Use `packages/ui/src/system/registry.ts` to check whether a design-system component is fully styled or only scaffolded.
 

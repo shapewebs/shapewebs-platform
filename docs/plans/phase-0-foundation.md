@@ -1,8 +1,12 @@
 # Phase 0: harden and migrate the live foundation
 
-- Status: in progress; local foundation and non-production database verified
+> Historical plan: the Supabase-to-Neon replacement and package cleanup
+> described here are complete on protected `staging`. Current execution state
+> lives in `PROJECT_STATUS.md` and `docs/plans/roadmap-2026-07-24.md`.
+
+- Status: complete on protected `staging`
 - Repository: `shapewebs/shapewebs-platform`
-- Branch: `codex/foundation`
+- Historical implementation branch: `codex/foundation`
 - Production baseline: commit `33affde`
 - Goal: produce a secure, testable Better Auth + Neon foundation without
   changing production

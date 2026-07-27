@@ -225,11 +225,14 @@ async function walkClientGraph(entry, sourcePath, chain, visited) {
       continue;
     }
 
-    if (specifier === "@shapewebs/db") {
+    if (
+      specifier === "@shapewebs/database" ||
+      specifier.startsWith("@shapewebs/database/")
+    ) {
       recordViolation(
         entry,
         [...chain, sourcePath],
-        'Client code must import the explicit "@shapewebs/db/browser" entry.',
+        `Client graph imports server-owned database module "${specifier}".`,
       );
       continue;
     }
@@ -237,21 +240,6 @@ async function walkClientGraph(entry, sourcePath, chain, visited) {
     const resolvedImport = await resolveImport(sourcePath, specifier);
 
     if (!resolvedImport) {
-      continue;
-    }
-
-    const normalizedImport = resolvedImport.split(path.sep).join("/");
-
-    if (
-      normalizedImport.includes("/packages/db/src/repositories/") ||
-      normalizedImport.includes("/packages/db/src/supabase/server.") ||
-      normalizedImport.includes("/packages/db/src/auth/")
-    ) {
-      recordViolation(
-        entry,
-        [...chain, sourcePath, resolvedImport],
-        "Client graph reaches a privileged database module.",
-      );
       continue;
     }
 
@@ -271,7 +259,6 @@ await Promise.all([
 
 const appFiles = await listSourceFiles(path.join(workspaceRoot, "apps"));
 const clientEntries = [];
-const adminAuthPath = path.join(workspaceRoot, "apps/admin/src/lib/auth.ts");
 
 for (const sourcePath of appFiles) {
   const source = await readFile(sourcePath, "utf8");
@@ -293,17 +280,6 @@ for (const sourcePath of appFiles) {
         sourcePath,
         [sourcePath],
         "The public application must not import customer or administrative authentication code.",
-      );
-    }
-
-    if (
-      sourcePath === adminAuthPath &&
-      (specifier === "@shapewebs/db" || specifier.startsWith("@shapewebs/db/"))
-    ) {
-      recordViolation(
-        sourcePath,
-        [sourcePath],
-        "Primary admin authentication must not depend on the transitional Supabase package.",
       );
     }
 
