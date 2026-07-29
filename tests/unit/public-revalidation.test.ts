@@ -93,6 +93,33 @@ describe("public content revalidation", () => {
     );
   });
 
+  it("accepts a bounded published Sanity ID and preserves the post content type", async () => {
+    const fetchImplementation = vi.fn(
+      async () => new Response(null, { status: 204 }),
+    );
+
+    await expect(
+      triggerPublicContentRevalidation(
+        {
+          contentType: "post",
+          documentId: "blog-post-7f53cf47-1234-4abc-9234-667d9c48f001",
+          localeCode: "en",
+          paths: ["/blog/provider-assurance"],
+        },
+        {
+          environment: buildEnvironment(),
+          fetchImplementation: fetchImplementation as typeof fetch,
+        },
+      ),
+    ).resolves.toBe(true);
+
+    const request = fetchImplementation.mock.calls[0]?.[1];
+    expect(JSON.parse(String(request?.body))).toMatchObject({
+      contentType: "post",
+      documentId: "blog-post-7f53cf47-1234-4abc-9234-667d9c48f001",
+    });
+  });
+
   it("fails closed for missing, malformed, or insecure configuration", async () => {
     const fetchImplementation = vi.fn(
       async () => new Response(null, { status: 200 }),
@@ -140,7 +167,7 @@ describe("public content revalidation", () => {
         paths: [],
       },
       {
-        documentId: "not-a-uuid",
+        documentId: "drafts.not-a-public-id",
         localeCode: "en",
         paths: ["/services"],
       },

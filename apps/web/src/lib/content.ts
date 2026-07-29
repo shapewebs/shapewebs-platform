@@ -20,7 +20,7 @@ export function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
 
-function getContentDatabaseConfiguration() {
+export function getContentDatabaseConfiguration() {
   const databaseUrl = process.env.DATABASE_URL ?? null;
   const organizationId = process.env.SHAPEWEBS_ORGANIZATION_ID ?? null;
 

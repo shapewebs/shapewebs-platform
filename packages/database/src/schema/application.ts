@@ -96,6 +96,7 @@ const currentOrganizationId = sql`nullif(current_setting('app.organization_id', 
 const currentUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const currentMembershipRole = sql`nullif(current_setting('app.membership_role', true), '')`;
 const currentPreviewTokenHash = sql`nullif(current_setting('app.preview_token_hash', true), '')`;
+const currentPreviewSessionTokenHash = sql`nullif(current_setting('app.preview_session_token_hash', true), '')`;
 const isOwner = sql`${currentMembershipRole} = 'owner'`;
 const isEditorOrOwner = sql`${currentMembershipRole} in ('owner', 'editor')`;
 const projectBelongsToCurrentOrganization = (projectId: unknown) =>
@@ -1013,6 +1014,13 @@ export const contentPreviewGrants = appSchema.table(
           (
             ${table.tokenHash} = ${currentPreviewTokenHash}
             and ${table.createdAt} > now() - interval '5 minutes'
+            and (
+              ${table.consumedAt} is null
+              or (
+                ${table.consumedAt} is not null
+                and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
+              )
+            )
           )
           or (
             ${table.sessionTokenHash} = ${currentPreviewTokenHash}
@@ -1031,7 +1039,143 @@ export const contentPreviewGrants = appSchema.table(
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}
         and ${table.tokenHash} = ${currentPreviewTokenHash}
         and ${table.consumedAt} is not null
+        and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
+        and ${table.expiresAt} > now()`,
+    }),
+  ],
+);
+
+export const sanityContentPreviewGrants = appSchema.table(
+  "sanity_content_preview_grants",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    documentId: text("document_id").notNull(),
+    revisionId: text("revision_id").notNull(),
+    locale: text("locale").notNull(),
+    slug: text("slug").notNull(),
+    path: text("path").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    sessionTokenHash: text("session_token_hash"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => adminUser.id, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("sanity_preview_grants_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("sanity_preview_grants_session_token_hash_unique").on(
+      table.sessionTokenHash,
+    ),
+    index("sanity_preview_grants_expiry_idx").on(table.expiresAt),
+    index("sanity_preview_grants_document_revision_idx").on(
+      table.documentId,
+      table.revisionId,
+    ),
+    check(
+      "sanity_preview_grants_document_id_safe",
+      sql`char_length(${table.documentId}) between 1 and 160
+        and ${table.documentId} ~ '^[A-Za-z0-9_-]+([.][A-Za-z0-9_-]+)*$'
+        and ${table.documentId} not like 'drafts.%'
+        and ${table.documentId} not like 'versions.%'
+        and strpos(${table.documentId}, '..') = 0`,
+    ),
+    check(
+      "sanity_preview_grants_revision_id_safe",
+      sql`char_length(${table.revisionId}) between 1 and 128
+        and ${table.revisionId} ~ '^[A-Za-z0-9_-]+$'`,
+    ),
+    check(
+      "sanity_preview_grants_locale_supported",
+      sql`${table.locale} in ('en', 'da-DK')`,
+    ),
+    check(
+      "sanity_preview_grants_slug_format",
+      sql`char_length(${table.slug}) between 1 and 120
+        and ${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`,
+    ),
+    check(
+      "sanity_preview_grants_path_safe",
+      sql`char_length(${table.path}) between 1 and 240
+        and left(${table.path}, 1) = '/'
+        and left(${table.path}, 2) <> '//'
+        and strpos(${table.path}, chr(92)) = 0
+        and ${table.path} !~ '[[:cntrl:]]'`,
+    ),
+    check(
+      "sanity_preview_grants_token_hash_format",
+      sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "sanity_preview_grants_session_token_hash_format",
+      sql`${table.sessionTokenHash} is null
+        or ${table.sessionTokenHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "sanity_preview_grants_expiry_bounded",
+      sql`${table.expiresAt} > ${table.createdAt}
+        and ${table.expiresAt} <= ${table.createdAt} + interval '30 minutes'`,
+    ),
+    check(
+      "sanity_preview_grants_consumption_bounded",
+      sql`(
+        ${table.consumedAt} is null
+        and ${table.sessionTokenHash} is null
+      ) or (
+        ${table.consumedAt} is not null
         and ${table.sessionTokenHash} is not null
+        and ${table.consumedAt} >= ${table.createdAt}
+        and ${table.consumedAt} < ${table.expiresAt}
+      )`,
+    ),
+    pgPolicy("editors create Sanity preview grants", {
+      for: "insert",
+      to: adminRuntimeRole,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.createdByUserId} = ${currentUserId}
+        and ${isEditorOrOwner}
+        and ${table.consumedAt} is null
+        and ${table.sessionTokenHash} is null`,
+    }),
+    pgPolicy("web runtime reads exact Sanity preview grant", {
+      for: "select",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.expiresAt} > now()
+        and (
+          (
+            ${table.tokenHash} = ${currentPreviewTokenHash}
+            and ${table.createdAt} > now() - interval '5 minutes'
+            and (
+              ${table.consumedAt} is null
+              or (
+                ${table.consumedAt} is not null
+                and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
+              )
+            )
+          )
+          or (
+            ${table.sessionTokenHash} = ${currentPreviewTokenHash}
+            and ${table.consumedAt} is not null
+          )
+        )`,
+    }),
+    pgPolicy("web runtime consumes fresh Sanity preview grant", {
+      for: "update",
+      to: webRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.tokenHash} = ${currentPreviewTokenHash}
+        and ${table.consumedAt} is null
+        and ${table.expiresAt} > now()
+        and ${table.createdAt} > now() - interval '5 minutes'`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.tokenHash} = ${currentPreviewTokenHash}
+        and ${table.consumedAt} is not null
+        and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
         and ${table.expiresAt} > now()`,
     }),
   ],
@@ -1193,7 +1337,134 @@ export const providerWebhookEvents = appSchema.table(
       for: "insert",
       to: adminRuntimeRole,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}
-        and ${table.provider} = 'resend'`,
+        and ${table.provider} in ('resend', 'sanity')`,
+    }),
+  ],
+);
+
+export const contentProviderCommands = appSchema.table(
+  "content_provider_commands",
+  {
+    id: uuid("id").primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "restrict" }),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => adminUser.id, { onDelete: "restrict" }),
+    sessionId: text("session_id").notNull(),
+    provider: text("provider").default("sanity").notNull(),
+    action: text("action").notNull(),
+    targetId: text("target_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    status: text("status")
+      .$type<"reserved" | "succeeded" | "uncertain">()
+      .default("reserved")
+      .notNull(),
+    providerTransactionId: text("provider_transaction_id"),
+    failureCode: text("failure_code"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("content_provider_commands_organization_created_idx").on(
+      table.organizationId,
+      table.createdAt,
+    ),
+    index("content_provider_commands_status_updated_idx").on(
+      table.status,
+      table.updatedAt,
+    ),
+    check(
+      "content_provider_commands_provider_valid",
+      sql`${table.provider} = 'sanity'`,
+    ),
+    check(
+      "content_provider_commands_action_valid",
+      sql`${table.action} in (
+        'blog_post.create',
+        'blog_post.save',
+        'blog_post.publish',
+        'blog_post.unpublish'
+      )`,
+    ),
+    check(
+      "content_provider_commands_target_bounded",
+      sql`char_length(${table.targetId}) between 1 and 160
+        and ${table.targetId} !~ '[[:cntrl:][:space:]]'`,
+    ),
+    check(
+      "content_provider_commands_fingerprint_format",
+      sql`${table.requestFingerprint} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "content_provider_commands_status_valid",
+      sql`${table.status} in ('reserved', 'succeeded', 'uncertain')`,
+    ),
+    check(
+      "content_provider_commands_transaction_bounded",
+      sql`${table.providerTransactionId} is null
+        or (
+          char_length(${table.providerTransactionId}) between 1 and 160
+          and ${table.providerTransactionId} !~ '[[:cntrl:][:space:]]'
+        )`,
+    ),
+    check(
+      "content_provider_commands_failure_code_bounded",
+      sql`${table.failureCode} is null
+        or (
+          char_length(${table.failureCode}) between 3 and 80
+          and ${table.failureCode} ~ '^[a-z0-9_]+$'
+        )`,
+    ),
+    check(
+      "content_provider_commands_state_consistent",
+      sql`(
+        ${table.status} = 'reserved'
+        and ${table.providerTransactionId} is null
+        and ${table.failureCode} is null
+        and ${table.completedAt} is null
+      ) or (
+        ${table.status} = 'succeeded'
+        and ${table.providerTransactionId} is not null
+        and ${table.failureCode} is null
+        and ${table.completedAt} is not null
+      ) or (
+        ${table.status} = 'uncertain'
+        and ${table.providerTransactionId} is null
+        and ${table.failureCode} is not null
+        and ${table.completedAt} is null
+      )`,
+    ),
+    pgPolicy("admins read content provider commands", {
+      for: "select",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and (
+          nullif(current_setting('app.membership_role', true), '') = 'owner'
+          or (
+            nullif(current_setting('app.membership_role', true), '') = 'editor'
+            and ${table.actorUserId} = ${currentUserId}
+          )
+        )`,
+    }),
+    pgPolicy("editors insert own content provider commands", {
+      for: "insert",
+      to: adminRuntimeRole,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.actorUserId} = ${currentUserId}
+        and ${isEditorOrOwner}`,
+    }),
+    pgPolicy("editors update own content provider commands", {
+      for: "update",
+      to: adminRuntimeRole,
+      using: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.actorUserId} = ${currentUserId}
+        and ${isEditorOrOwner}`,
+      withCheck: sql`${table.organizationId} = ${currentOrganizationId}
+        and ${table.actorUserId} = ${currentUserId}
+        and ${isEditorOrOwner}`,
     }),
   ],
 );

@@ -402,6 +402,20 @@ const contentSlugSchema = z
       !value.startsWith("-") && !value.endsWith("-") && !value.includes("--"),
     "Slug must use single hyphens between lowercase letters and numbers.",
   );
+const publicResourceIdSegmentPattern = /^[A-Za-z0-9_-]+$/u;
+
+function isPublicContentResourceId(value: string): boolean {
+  return (
+    !value.startsWith("drafts.") &&
+    !value.startsWith("versions.") &&
+    value
+      .split(".")
+      .every(
+        (segment) =>
+          segment.length > 0 && publicResourceIdSegmentPattern.test(segment),
+      )
+  );
+}
 
 export const documentFiltersSchema = z
   .object({
@@ -414,7 +428,14 @@ export const documentFiltersSchema = z
 export const revalidationPayloadSchema = z
   .object({
     contentType: contentTypeSchema,
-    documentId: z.uuid(),
+    documentId: z
+      .string()
+      .min(1)
+      .max(160)
+      .refine(
+        isPublicContentResourceId,
+        "A public content resource identifier is required.",
+      ),
     localeCode: localeCodeEnum,
     path: revalidationPathSchema.optional(),
   })

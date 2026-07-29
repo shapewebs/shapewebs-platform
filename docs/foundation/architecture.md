@@ -31,9 +31,11 @@ components or application logic.
 
 Use Neon for managed Postgres and database branches, Drizzle for typed schema
 and reviewed SQL migrations, and separately configured self-hosted Better Auth
-instances for administrators and customers. Use Vercel Blob for media. Deploy
-each enabled Next.js application as a separate project inside the existing
-Vercel **Shapewebs** team. Use GitHub as the source of truth and CI gate.
+instances for administrators and customers. Use Sanity for structured public
+website content and public website images. Use private Vercel Blob for
+confidential employee/customer files. Deploy each enabled Next.js application
+as a separate project inside the existing Vercel **Shapewebs** team. Use GitHub
+as the source of truth and CI gate.
 
 This is deliberately not a microservice architecture. Three bounded web
 applications and one managed data platform are enough. New services should
@@ -48,8 +50,9 @@ flowchart LR
     Portal --> CustomerAuth["Customer Better Auth<br/>Google or verified credentials"]
     Platform --> DB["Neon Postgres<br/>Drizzle + RLS"]
     Portal --> DB
-    Platform --> Storage["Vercel Blob<br/>public + private stores"]
-    Site -->|"published content only"| DB
+    Platform --> Content["Sanity<br/>public content + public images"]
+    Site -->|"published content only"| Content
+    Platform --> Storage["Private Vercel Blob<br/>confidential files"]
     Platform -->|"publish + authenticated revalidation"| Site
     Site --> Vercel["Vercel CDN / WAF / Observability"]
     Platform --> Vercel
@@ -131,30 +134,32 @@ must be upgraded to verified non-vulnerable releases before feature work. The
 architectural commitment is to the stable major lines, not to unbounded
 `latest` dependencies.
 
-| Area                | Choice                                                                              | Reason                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Runtime             | Node.js 24 LTS                                                                      | Current LTS line and supported by the selected tools                                 |
-| Package manager     | pnpm with Corepack                                                                  | Fast, deterministic workspace installs and strict dependency boundaries              |
-| Monorepo            | Turborepo                                                                           | Task graph, caching, affected builds, and first-class Vercel support                 |
-| Framework           | Next.js App Router                                                                  | Server Components, static rendering, metadata, image/font/script optimization        |
-| UI                  | React 19 + strict TypeScript                                                        | Strong typing and server-first rendering                                             |
-| Styling             | Global foundation CSS, CSS custom-property tokens, and component CSS Modules        | Keeps the design system explicit, local, and free of a utility-runtime dependency    |
-| Public components   | Custom semantic components                                                          | Keeps the visual identity original and the dependency graph small                    |
-| Platform components | Accessible primitives, optionally shadcn/Radix source-owned components              | Speeds up CMS controls without defining the public visual language                   |
-| Motion              | CSS first; `motion` only in route-local, lazy-loaded islands when justified         | Prevents animation libraries from becoming a site-wide tax                           |
-| Validation          | Zod at every external boundary                                                      | One content contract shared by the CMS, renderer, and tests                          |
-| Forms               | Native React/Server Actions; React Hook Form only for complex CMS forms             | Avoids shipping a form abstraction where the browser is enough                       |
-| Data                | Neon Postgres                                                                       | Relational model, SQL, backups, preview branches, and future tenant data             |
-| Database access     | Drizzle ORM + `@neondatabase/serverless`                                            | Typed queries, committed migrations, and a serverless-safe Neon driver               |
-| Authentication      | Self-hosted Better Auth in `apps/admin`                                             | Google OAuth, sessions, and future customer sign-up remain under Shapewebs control   |
-| Authorization       | Application permissions plus Postgres roles/RLS                                     | Defense in depth; hiding a route is never treated as authorization                   |
-| Admin MFA           | Better Auth TOTP plus a custom OAuth step-up gate                                   | Better Auth does not apply 2FA to social sign-in by default                          |
-| Media               | Separate public and private Vercel Blob stores                                      | Published assets can be cached while drafts and future customer files remain private |
-| CMS editor          | Custom structured block editor; Tiptap only for rich-text fields that truly need it | Predictable rendering, versioned content, and no arbitrary HTML                      |
-| Email               | Resend behind a server-only `packages/email` boundary                               | Typed HTML/text templates with provider code kept out of both client bundles         |
-| Email reliability   | Neon transactional outbox, idempotent sends, and signed Resend webhooks             | Persist first, retry safely, and treat email as notification rather than source data |
-| Analytics           | Vercel Web Analytics + Speed Insights                                               | Cookie-free traffic analytics plus real-user Core Web Vitals                         |
-| Runtime visibility  | OpenTelemetry interface plus Vercel Observability                                   | Portable request/provider/database traces with one initial operational surface       |
+| Area                | Choice                                                                       | Reason                                                                                |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Runtime             | Node.js 24 LTS                                                               | Current LTS line and supported by the selected tools                                  |
+| Package manager     | pnpm with Corepack                                                           | Fast, deterministic workspace installs and strict dependency boundaries               |
+| Monorepo            | Turborepo                                                                    | Task graph, caching, affected builds, and first-class Vercel support                  |
+| Framework           | Next.js App Router                                                           | Server Components, static rendering, metadata, image/font/script optimization         |
+| UI                  | React 19 + strict TypeScript                                                 | Strong typing and server-first rendering                                              |
+| Styling             | Global foundation CSS, CSS custom-property tokens, and component CSS Modules | Keeps the design system explicit, local, and free of a utility-runtime dependency     |
+| Public components   | Custom semantic components                                                   | Keeps the visual identity original and the dependency graph small                     |
+| Platform components | Accessible primitives, optionally shadcn/Radix source-owned components       | Speeds up CMS controls without defining the public visual language                    |
+| Motion              | CSS first; `motion` only in route-local, lazy-loaded islands when justified  | Prevents animation libraries from becoming a site-wide tax                            |
+| Validation          | Zod at every external boundary                                               | One content contract shared by the CMS, renderer, and tests                           |
+| Forms               | Native React/Server Actions; React Hook Form only for complex CMS forms      | Avoids shipping a form abstraction where the browser is enough                        |
+| Data                | Neon Postgres                                                                | Relational model, SQL, backups, preview branches, and future tenant data              |
+| Database access     | Drizzle ORM + `@neondatabase/serverless`                                     | Typed queries, committed migrations, and a serverless-safe Neon driver                |
+| Authentication      | Self-hosted Better Auth in `apps/admin`                                      | Google OAuth, sessions, and future customer sign-up remain under Shapewebs control    |
+| Authorization       | Application permissions plus Postgres roles/RLS                              | Defense in depth; hiding a route is never treated as authorization                    |
+| Admin MFA           | Better Auth TOTP plus a custom OAuth step-up gate                            | Better Auth does not apply 2FA to social sign-in by default                           |
+| Public content      | Sanity behind owned schemas and repository contracts                         | Mature structured authoring while Shapewebs retains its employee portal and renderer  |
+| Public media        | Sanity image assets, normalized before upload                                | Shared public website library with dimensions, CDN delivery and provider recovery     |
+| Private media       | Private Vercel Blob behind the Neon metadata boundary                        | Confidential employee/customer files never enter the public content provider          |
+| CMS editor          | Owned employee UI using the Portable Text editor API                         | Structured rendering and media placement without exposing Studio as the normal portal |
+| Email               | Resend behind a server-only `packages/email` boundary                        | Typed HTML/text templates with provider code kept out of both client bundles          |
+| Email reliability   | Neon transactional outbox, idempotent sends, and signed Resend webhooks      | Persist first, retry safely, and treat email as notification rather than source data  |
+| Analytics           | Vercel Web Analytics + Speed Insights                                        | Cookie-free traffic analytics plus real-user Core Web Vitals                          |
+| Runtime visibility  | OpenTelemetry interface plus Vercel Observability                            | Portable request/provider/database traces with one initial operational surface        |
 
 ### Why Better Auth and Neon
 

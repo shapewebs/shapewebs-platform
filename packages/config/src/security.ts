@@ -16,6 +16,7 @@ const sharedHeaders: Header[] = [
 
 function buildCsp(options: {
   allowAnalytics: boolean;
+  allowPublicContentImages: boolean;
   allowTurnstile: boolean;
 }) {
   const connectSrc = [
@@ -32,13 +33,19 @@ function buildCsp(options: {
     "'self'",
     ...(options.allowTurnstile ? ["https://challenges.cloudflare.com"] : []),
   ].join(" ");
+  const imageSrc = [
+    "'self'",
+    "data:",
+    "blob:",
+    ...(options.allowPublicContentImages ? ["https://cdn.sanity.io"] : []),
+  ].join(" ");
 
   return [
     "default-src 'self'",
     "base-uri 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "img-src 'self' data: blob:",
+    `img-src ${imageSrc}`,
     "font-src 'self' data:",
     "object-src 'none'",
     `connect-src ${connectSrc}`,
@@ -80,7 +87,10 @@ function normalizeAdminFormActionOrigins(origins: string[]): string[] {
 
 export function buildAdminContentSecurityPolicy(
   nonce: string,
-  options: { formActionOrigins?: string[] } = {},
+  options: {
+    allowPublicContentImages?: boolean;
+    formActionOrigins?: string[];
+  } = {},
 ): string {
   if (!/^[A-Za-z0-9+/=_-]+$/.test(nonce)) {
     throw new Error("The CSP nonce contains invalid characters.");
@@ -95,13 +105,19 @@ export function buildAdminContentSecurityPolicy(
     "'strict-dynamic'",
     ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
   ].join(" ");
+  const imageSrc = [
+    "'self'",
+    "data:",
+    "blob:",
+    ...(options.allowPublicContentImages ? ["https://cdn.sanity.io"] : []),
+  ].join(" ");
 
   return [
     "default-src 'self'",
     "base-uri 'none'",
     `form-action 'self'${formActionOrigins.length > 0 ? ` ${formActionOrigins.join(" ")}` : ""}`,
     "frame-ancestors 'none'",
-    "img-src 'self' data: blob:",
+    `img-src ${imageSrc}`,
     "font-src 'self' data:",
     "object-src 'none'",
     "connect-src 'self'",
@@ -134,7 +150,11 @@ export function buildWebSecurityHeaders(): Header[] {
     ...sharedHeaders,
     {
       key: "Content-Security-Policy",
-      value: buildCsp({ allowAnalytics: true, allowTurnstile: true }),
+      value: buildCsp({
+        allowAnalytics: true,
+        allowPublicContentImages: true,
+        allowTurnstile: true,
+      }),
     },
     {
       key: "Strict-Transport-Security",
@@ -144,6 +164,7 @@ export function buildWebSecurityHeaders(): Header[] {
 }
 
 export function buildAdminSecurityHeaders(options?: {
+  allowPublicContentImages?: boolean;
   includeContentSecurityPolicy?: boolean;
 }): Header[] {
   return [
@@ -155,6 +176,8 @@ export function buildAdminSecurityHeaders(options?: {
             key: "Content-Security-Policy",
             value: buildCsp({
               allowAnalytics: false,
+              allowPublicContentImages:
+                options?.allowPublicContentImages ?? false,
               allowTurnstile: false,
             }),
           },

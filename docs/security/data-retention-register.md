@@ -22,11 +22,12 @@ support conversations.
 
 | Data                                          | Level                                                               | Purpose                                    | Location/processors                                                  | Default retention                                   | Disposal                                        |
 | --------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
-| Published content                             | Public                                                              | Portfolio and company communication        | Neon, Vercel                                                         | While published plus revision policy                | Unpublish, then revision-controlled deletion    |
+| Published website content and public media    | Public                                                              | Portfolio and company communication        | Sanity, Vercel                                                       | While published plus revision policy                | Unpublish, then revision-controlled deletion    |
 | Operational application logs                  | Internal; Confidential if a safe pseudonymous actor hash is present | Reliability and debugging                  | Vercel/selected telemetry backend                                    | 30 days                                             | Automated deletion                              |
 | Security and administrative audit events      | Confidential                                                        | Incident investigation and accountability  | Neon/Vercel                                                          | 365 days                                            | Automated deletion or anonymization             |
 | Unconverted leads                             | Confidential                                                        | Respond to inquiries and sales follow-up   | Neon, Resend notification metadata                                   | 12 months after last meaningful contact             | Delete or irreversibly anonymize                |
-| Unpublished CMS content                       | Confidential                                                        | Review and publishing workflow             | Neon                                                                 | While actively edited plus approved revision period | Controlled revision deletion                    |
+| Unpublished public-site drafts                | Confidential                                                        | Review and publishing workflow             | Sanity                                                               | While actively edited plus approved revision period | Controlled revision deletion                    |
+| Content command and preview-grant records     | Internal; Confidential when linked to an actor                      | Idempotency, audit and exact-draft preview | Neon                                                                 | Command/audit policy; expired grants up to 30 days  | Audited cleanup after expiry/reconciliation     |
 | Active customer/project records               | Confidential                                                        | Contract delivery and customer portal      | Neon, Vercel Blob                                                    | Contract term plus approved legal period            | Controlled export and deletion                  |
 | Customer invitations and provisional accounts | Confidential                                                        | Invitation-only onboarding                 | Neon, Resend delivery metadata                                       | Expiry plus 30 days                                 | Idempotent cleanup after no active membership   |
 | Accounting records                            | Confidential                                                        | Legal/accounting obligation                | Approved accounting systems                                          | Legally required period                             | Do not automate until schedule is approved      |
@@ -53,14 +54,15 @@ deployments. Both uses require an accurate public privacy notice before launch.
 
 ## Processor inventory
 
-| Provider   | Processing                                           | Required control/evidence                                                     |
-| ---------- | ---------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Vercel     | Hosting, deployment, WAF, logs, analytics if enabled | DPA, EU configuration where available, access review, retention settings      |
-| Neon       | PostgreSQL storage, backups and branches             | EU region, DPA, protected production, least-privilege roles, restore evidence |
-| Google     | OAuth identity                                       | Exact redirect origins, minimal scopes, owner access review                   |
-| Resend     | Transactional email and delivery metadata            | EU sending region, DPA, tracking disabled, restricted keys, signed webhooks   |
-| Cloudflare | Turnstile abuse verification                         | Privacy disclosure, server verification, no token retention                   |
-| GitHub     | Source, CI metadata and security alerts              | Organization MFA, rulesets, minimal apps/tokens, private reports              |
+| Provider   | Processing                                           | Required control/evidence                                                                                                    |
+| ---------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Vercel     | Hosting, deployment, WAF, logs, analytics if enabled | DPA, EU configuration where available, access review, retention settings                                                     |
+| Neon       | PostgreSQL storage, backups and branches             | EU region, DPA, protected production, least-privilege roles, restore evidence                                                |
+| Sanity     | Structured public content, drafts and public media   | DPA/subprocessor review, EU project region where available, scoped robot tokens, signed webhooks, revision/deletion evidence |
+| Google     | OAuth identity                                       | Exact redirect origins, minimal scopes, owner access review                                                                  |
+| Resend     | Transactional email and delivery metadata            | EU sending region, DPA, tracking disabled, restricted keys, signed webhooks                                                  |
+| Cloudflare | Turnstile abuse verification                         | Privacy disclosure, server verification, no token retention                                                                  |
+| GitHub     | Source, CI metadata and security alerts              | Organization MFA, rulesets, minimal apps/tokens, private reports                                                             |
 
 Before production, record the executed DPA link/date, subprocessor review date,
 data region, owner and deletion mechanism for each provider.

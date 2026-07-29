@@ -9,22 +9,25 @@
 
 ## Approved communication paths
 
-| Caller                  | Receiver             | Purpose and data                                                                     | Authentication                                                                  | Transport and destination control                                                         |
-| ----------------------- | -------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Public browser          | `shapewebs-web`      | Public pages and bounded lead forms                                                  | None; Turnstile protects lead acceptance                                        | HTTPS on the fixed site origin; HSTS in production                                        |
-| Admin browser           | `shapewebs-admin`    | Google sign-in, TOTP, CMS reads and mutations                                        | Secure host-only Better Auth reference cookie; fresh TOTP for sensitive actions | HTTPS on the fixed admin origin; exact trusted origins and nonce CSP                      |
-| `shapewebs-web`         | Neon                 | Published-content reads, preview activation and atomic lead/outbox writes            | Least-privilege web runtime role                                                | Provider TLS endpoint; pooled runtime connection; no redirect-capable HTTP hop            |
-| `shapewebs-admin`       | Neon                 | Authentication, authorization, CMS, audit, settings and outbox work                  | Separate least-privilege admin runtime role                                     | Provider TLS endpoint; pooled runtime connection; transaction-local authorization context |
-| `shapewebs-admin`       | `shapewebs-web`      | CMS publish, unpublish and rollback cache revalidation                               | Short-lived Vercel workload OIDC plus an independent application secret         | Exact configured public origin; POST; redirects rejected; five-second timeout             |
-| GitHub Actions/migrator | Neon                 | Disposable migrations, security verification, export and restore                     | Dedicated owner/migrator credential in protected stores                         | Direct provider TLS endpoint; no production credential in previews                        |
-| Admin browser/server    | Google               | Authorization-code OAuth and verified ID-token claims                                | Exact OAuth client, state/PKCE/nonce handling and server-held client secret     | Exact Google endpoints and callback origin over publicly trusted TLS                      |
-| `shapewebs-web`         | Cloudflare Turnstile | Single-use challenge token, expected action/hostname and pseudonymous client address | Widget secret scoped to the approved hostname                                   | Exact Siteverify HTTPS endpoint; five-second timeout; redirects rejected                  |
-| Cloudflare Worker       | `shapewebs-admin`    | Bounded outbox trigger                                                               | Dedicated route bearer plus staging-only Vercel bypass                          | Exact fixed HTTPS route; POST; manual redirect policy; 25-second timeout                  |
-| `shapewebs-admin`       | Resend               | Data-minimized lead notification                                                     | Domain- and environment-restricted API key                                      | Exact provider HTTPS SDK endpoint; bounded timeout and durable application idempotency    |
-| Resend                  | `shapewebs-admin`    | Raw signed delivery events                                                           | Webhook signature, timestamp and event-ID deduplication                         | Exact fixed HTTPS webhook route through a dedicated staging bypass                        |
-| Cloudflare Worker       | Checkly              | Outbox completion heartbeat                                                          | Unpredictable heartbeat URL stored as a Worker secret                           | Exact `https://ping.checklyhq.com` origin; POST; manual redirects; five-second timeout    |
-| Checkly                 | Public/admin staging | Synthetic availability and lead journeys                                             | Dedicated monitor credentials and distinct Vercel bypass values                 | Exact allowlisted staging origins over HTTPS                                              |
-| GitHub                  | Vercel               | Reviewed deployments                                                                 | Vercel Git integration and protected branch policy                              | Provider-managed authenticated TLS path                                                   |
+| Caller                  | Receiver             | Purpose and data                                                                     | Authentication                                                                    | Transport and destination control                                                         |
+| ----------------------- | -------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Public browser          | `shapewebs-web`      | Public pages and bounded lead forms                                                  | None; Turnstile protects lead acceptance                                          | HTTPS on the fixed site origin; HSTS in production                                        |
+| Admin browser           | `shapewebs-admin`    | Google sign-in, TOTP, CMS reads and mutations                                        | Secure host-only Better Auth reference cookie; fresh TOTP for sensitive actions   | HTTPS on the fixed admin origin; exact trusted origins and nonce CSP                      |
+| `shapewebs-web`         | Neon                 | Published-content reads, preview activation and atomic lead/outbox writes            | Least-privilege web runtime role                                                  | Provider TLS endpoint; pooled runtime connection; no redirect-capable HTTP hop            |
+| `shapewebs-admin`       | Neon                 | Authentication, authorization, CMS, audit, settings and outbox work                  | Separate least-privilege admin runtime role                                       | Provider TLS endpoint; pooled runtime connection; transaction-local authorization context |
+| `shapewebs-web`         | Sanity               | Published public content; one exact draft revision during an active private preview  | No credential for published reads; scoped server-only Viewer token for preview    | Exact Sanity API/CDN origins over TLS; fixed project and `staging` dataset                |
+| `shapewebs-admin`       | Sanity               | Structured drafts, publishing and normalized public website media                    | Scoped server-only Editor robot token; fresh TOTP for publish/unpublish           | Exact Sanity API origin over TLS; fixed project and `staging` dataset                     |
+| Sanity                  | `shapewebs-admin`    | Bounded public-content change event for cache invalidation and audit                 | Raw-body signature, exact project/dataset headers and durable event deduplication | Exact fixed HTTPS webhook route through a dedicated staging bypass                        |
+| `shapewebs-admin`       | `shapewebs-web`      | CMS publish, unpublish and rollback cache revalidation                               | Short-lived Vercel workload OIDC plus an independent application secret           | Exact configured public origin; POST; redirects rejected; five-second timeout             |
+| GitHub Actions/migrator | Neon                 | Disposable migrations, security verification, export and restore                     | Dedicated owner/migrator credential in protected stores                           | Direct provider TLS endpoint; no production credential in previews                        |
+| Admin browser/server    | Google               | Authorization-code OAuth and verified ID-token claims                                | Exact OAuth client, state/PKCE/nonce handling and server-held client secret       | Exact Google endpoints and callback origin over publicly trusted TLS                      |
+| `shapewebs-web`         | Cloudflare Turnstile | Single-use challenge token, expected action/hostname and pseudonymous client address | Widget secret scoped to the approved hostname                                     | Exact Siteverify HTTPS endpoint; five-second timeout; redirects rejected                  |
+| Cloudflare Worker       | `shapewebs-admin`    | Bounded outbox trigger                                                               | Dedicated route bearer plus staging-only Vercel bypass                            | Exact fixed HTTPS route; POST; manual redirect policy; 25-second timeout                  |
+| `shapewebs-admin`       | Resend               | Data-minimized lead notification                                                     | Domain- and environment-restricted API key                                        | Exact provider HTTPS SDK endpoint; bounded timeout and durable application idempotency    |
+| Resend                  | `shapewebs-admin`    | Raw signed delivery events                                                           | Webhook signature, timestamp and event-ID deduplication                           | Exact fixed HTTPS webhook route through a dedicated staging bypass                        |
+| Cloudflare Worker       | Checkly              | Outbox completion heartbeat                                                          | Unpredictable heartbeat URL stored as a Worker secret                             | Exact `https://ping.checklyhq.com` origin; POST; manual redirects; five-second timeout    |
+| Checkly                 | Public/admin staging | Synthetic availability and lead journeys                                             | Dedicated monitor credentials and distinct Vercel bypass values                   | Exact allowlisted staging origins over HTTPS                                              |
+| GitHub                  | Vercel               | Reviewed deployments                                                                 | Vercel Git integration and protected branch policy                                | Provider-managed authenticated TLS path                                                   |
 
 No deployed Shapewebs runtime executes operating-system commands, follows an
 untrusted redirect, accepts a caller-supplied outbound origin, or uses a
@@ -50,7 +53,8 @@ evidence passes.
 - Database identities are separated into owner/migrator, admin runtime, web
   runtime and public-read roles. Forced RLS and transaction-local context
   provide the second authorization boundary.
-- Provider keys are distinct by provider, purpose and environment. Staging
+- Provider keys are distinct by provider, purpose and environment. Sanity
+  draft-read and content-write capabilities use separate robot identities. Staging
   credentials cannot authorize production resources.
 - The public staging project trusts only admin Preview workload tokens for
   Preview access. It does not trust admin Preview tokens for production, and
@@ -66,9 +70,9 @@ evidence passes.
 - Publicly trusted certificates are used for public and provider endpoints.
   Shapewebs currently operates no private CA, self-signed service certificate
   or client-certificate authentication path.
-- Secrets are stored only in Vercel, Cloudflare, GitHub, Neon, Google, Resend,
-  Checkly or the approved local keychain. No secret belongs in source, build
-  output, logs, URLs or browser-readable environment variables.
+- Secrets are stored only in Vercel, Cloudflare, GitHub, Neon, Google, Sanity,
+  Resend, Checkly or the approved local keychain. No secret belongs in source,
+  build output, logs, URLs or browser-readable environment variables.
 
 ## Transport verification
 

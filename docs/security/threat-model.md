@@ -17,7 +17,10 @@ flowchart LR
   BetterAuth --> Google["Google OAuth"]
   BetterAuth --> AdminAuthOutbox["Durable employee auth-email outbox"]
   Admin --> NeonAdmin["Neon admin runtime role"]
-  Admin --> Blob["Vercel Blob"]
+  Admin --> Blob["Private Vercel Blob"]
+  Admin --> Sanity["Sanity public content and media"]
+  Sanity --> SanityWebhook["Signed Sanity webhook handler"]
+  Web --> Sanity
   Admin --> Resend["Resend"]
   Resend --> Webhook["Signed webhook handler"]
   GitHub["GitHub and Actions"] --> Vercel["Vercel deployments"]
@@ -79,7 +82,7 @@ Planned customer-specific threats and controls are:
 
 ## Protected assets
 
-- Domain, GitHub, Vercel, Neon, Google and Resend operator accounts.
+- Domain, GitHub, Vercel, Neon, Google, Sanity and Resend operator accounts.
 - OAuth, database, storage, webhook, Turnstile and deployment secrets.
 - Admin sessions, TOTP secrets, backup codes and recovery procedures.
 - Lead/customer personal data and private customer files.
@@ -88,23 +91,26 @@ Planned customer-specific threats and controls are:
 
 ## Threat scenarios and required controls
 
-| Scenario                      | Boundary                 | Required prevention/detection                                                                         | Verification                                            |
-| ----------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Authorization or IDOR bypass  | Browser → admin/data     | Server-owned authorization context, per-action checks, forced RLS, minimal DTOs                       | Anonymous, role and cross-tenant negative tests         |
-| OAuth account takeover        | Google → Better Auth     | Exact origins/callbacks, allowlisted owner, state/PKCE, short admin session, mandatory TOTP step-up   | OAuth-state and non-allowlisted-user tests              |
-| Password attack/account merge | Browser → Better Auth    | Allowlist, verified mailbox, HIBP, throttles, no implicit merge, session-bound explicit link and TOTP | Spray, enumeration, reset/replay and link-binding tests |
-| Session theft/replay          | Browser → admin          | Secure HttpOnly host-only cookies, database sessions, revocation, inactivity and absolute expiry      | Expired/revoked/replayed-session tests                  |
-| CSRF                          | Browser → mutation       | Better Auth origin validation, Next.js Origin/Host checks, exact trusted origins, SameSite cookies    | Cross-origin POST tests                                 |
-| Stored content injection      | CMS → public site        | Structured content, no arbitrary scripts/HTML, output encoding, CSP                                   | Malicious-content and CSP tests                         |
-| Malicious file                | Browser → Blob           | Server-owned key, type/signature/size/dimension validation, private/public separation                 | Polyglot, oversize and type-mismatch tests              |
-| Lead abuse                    | Browser → form           | Byte/content validation, Turnstile server verification, application and WAF rate limits               | Missing/reused token, flood and oversized-body tests    |
-| Lead loss                     | Web → Neon/Resend        | Atomic lead/outbox transaction; email is never the record of truth                                    | Database/provider/worker failure tests                  |
-| Webhook forgery/replay        | Resend → admin           | Signature verification, event-ID uniqueness, idempotent monotonic state handling                      | Invalid signature, duplicate and out-of-order tests     |
-| Secret leakage                | Code/log/CI              | Push protection, secret scanning, typed redacted logging, least-privilege Actions                     | Seeded-secret and redaction tests                       |
-| Supply-chain compromise       | Registry/Actions → build | Lockfile, SHA-pinned Actions, dependency review, OSV, CodeQL, Scorecard                               | Clean-runner CI                                         |
-| Preview reaches real data     | Vercel → Neon            | Separate non-production project, disposable branches, no production secrets in previews               | Environment inventory and lifecycle test                |
-| Destructive migration         | CI → Neon                | Protected environment, dedicated migrator, disposable migration/rollback/restore                      | Neon lifecycle gate                                     |
-| Provider outage               | Vercel/Neon/Resend       | Timeouts, durable retries, degraded readiness, monitoring and rollback                                | Fault-injection tests                                   |
+| Scenario                       | Boundary                 | Required prevention/detection                                                                         | Verification                                            |
+| ------------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Authorization or IDOR bypass   | Browser → admin/data     | Server-owned authorization context, per-action checks, forced RLS, minimal DTOs                       | Anonymous, role and cross-tenant negative tests         |
+| OAuth account takeover         | Google → Better Auth     | Exact origins/callbacks, allowlisted owner, state/PKCE, short admin session, mandatory TOTP step-up   | OAuth-state and non-allowlisted-user tests              |
+| Password attack/account merge  | Browser → Better Auth    | Allowlist, verified mailbox, HIBP, throttles, no implicit merge, session-bound explicit link and TOTP | Spray, enumeration, reset/replay and link-binding tests |
+| Session theft/replay           | Browser → admin          | Secure HttpOnly host-only cookies, database sessions, revocation, inactivity and absolute expiry      | Expired/revoked/replayed-session tests                  |
+| CSRF                           | Browser → mutation       | Better Auth origin validation, Next.js Origin/Host checks, exact trusted origins, SameSite cookies    | Cross-origin POST tests                                 |
+| Stored content injection       | CMS → public site        | Structured content, no arbitrary scripts/HTML, output encoding, CSP                                   | Malicious-content and CSP tests                         |
+| Draft or changed-revision leak | Sanity → public/preview  | Published perspective for public reads; one-time, session-bound exact-revision grants for draft reads | Draft, replay, changed-revision and route-binding tests |
+| Ambiguous content mutation     | Admin → Sanity           | Durable command reservation, payload fingerprint, no blind retry and operator reconciliation          | Timeout, duplicate-command and fingerprint tests        |
+| Malicious public media         | Browser → Sanity         | Server-owned token, decoded-image type/size/dimension validation and randomized asset identity        | Polyglot, oversize and type-mismatch tests              |
+| Malicious private file         | Browser → Blob           | Server-owned token, private access, type/signature/size validation and tenant authorization           | Polyglot, oversize, direct-URL and cross-tenant tests   |
+| Lead abuse                     | Browser → form           | Byte/content validation, Turnstile server verification, application and WAF rate limits               | Missing/reused token, flood and oversized-body tests    |
+| Lead loss                      | Web → Neon/Resend        | Atomic lead/outbox transaction; email is never the record of truth                                    | Database/provider/worker failure tests                  |
+| Webhook forgery/replay         | Provider → admin         | Raw-body signature verification, exact provider scope, event-ID uniqueness and idempotent handling    | Invalid signature, wrong scope, duplicate/order tests   |
+| Secret leakage                 | Code/log/CI              | Push protection, secret scanning, typed redacted logging, least-privilege Actions                     | Seeded-secret and redaction tests                       |
+| Supply-chain compromise        | Registry/Actions → build | Lockfile, SHA-pinned Actions, dependency review, OSV, CodeQL, Scorecard                               | Clean-runner CI                                         |
+| Preview reaches real data      | Vercel → Neon            | Separate non-production project, disposable branches, no production secrets in previews               | Environment inventory and lifecycle test                |
+| Destructive migration          | CI → Neon                | Protected environment, dedicated migrator, disposable migration/rollback/restore                      | Neon lifecycle gate                                     |
+| Provider outage                | Vercel/Neon/Resend       | Timeouts, durable retries, degraded readiness, monitoring and rollback                                | Fault-injection tests                                   |
 
 ## Abuse-case invariants
 
@@ -114,6 +120,12 @@ Planned customer-specific threats and controls are:
 - Successful lead acknowledgement means a durable lead and outbox row exist.
 - Retried commands and webhook deliveries do not duplicate side effects.
 - Public content reads never return drafts.
+- A preview grant can reveal only the exact saved Sanity revision, route,
+  locale and slug for which it was issued.
+- Preview activation is atomically bound to one server-generated session hash;
+  the consumed URL token alone cannot read the grant or draft afterward.
+- Sanity is never used for confidential employee/customer files; every asset
+  uploaded there is treated as public website media.
 - A compromised web runtime cannot read auth, audit, private or cross-tenant
   data.
 - A failed dependency does not cause a fail-open authorization decision.

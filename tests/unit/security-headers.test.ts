@@ -32,6 +32,7 @@ describe("security headers", () => {
       "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
     );
     expect(csp).toContain("frame-src 'self' https://challenges.cloudflare.com");
+    expect(csp).toContain("img-src 'self' data: blob: https://cdn.sanity.io");
     expect(csp).not.toContain("'unsafe-eval'");
     expect(headers.get("strict-transport-security")).toContain(
       "includeSubDomains",
@@ -70,7 +71,9 @@ describe("security headers", () => {
 
   it("builds an admin nonce policy without inline script execution", () => {
     vi.stubEnv("NODE_ENV", "production");
-    const csp = buildAdminContentSecurityPolicy("safeNonce123");
+    const csp = buildAdminContentSecurityPolicy("safeNonce123", {
+      allowPublicContentImages: true,
+    });
 
     expect(csp).toContain("'nonce-safeNonce123'");
     expect(csp).toContain("'strict-dynamic'");
@@ -78,6 +81,8 @@ describe("security headers", () => {
     expect(csp.match(/script-src [^;]+/)?.[0]).not.toContain("'unsafe-inline'");
     expect(csp).not.toContain("challenges.cloudflare.com");
     expect(csp).not.toContain("supabase.co");
+    expect(csp).toContain("img-src 'self' data: blob: https://cdn.sanity.io");
+    expect(csp).not.toContain("https://*.sanity.io");
   });
 
   it("allows only the exact public origin for admin preview transfers", () => {

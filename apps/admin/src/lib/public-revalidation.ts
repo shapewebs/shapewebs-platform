@@ -3,6 +3,7 @@ import "server-only";
 import { revalidationPayloadSchema } from "@shapewebs/validation";
 
 type PublicRevalidationInput = {
+  contentType?: "legal" | "method" | "page" | "post" | "project" | "service";
   documentId: string;
   localeCode: string;
   paths: string[];
@@ -77,7 +78,7 @@ export async function triggerPublicContentRevalidation(
 
   const payloads = [...new Set(input.paths)].map((path) =>
     revalidationPayloadSchema.safeParse({
-      contentType: "page",
+      contentType: input.contentType ?? "page",
       documentId: input.documentId,
       localeCode: input.localeCode,
       path,

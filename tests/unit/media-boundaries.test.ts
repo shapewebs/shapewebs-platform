@@ -8,6 +8,7 @@ import {
   type PrivateMediaStorage,
 } from "../../packages/media/src/server";
 import { parseMediaUploadRequest } from "../../apps/admin/src/lib/media-request";
+import { parsePublicMediaUploadRequest } from "../../apps/admin/src/lib/public-media-request";
 import { reconcileMediaCleanupCandidates } from "../../apps/admin/src/lib/media-cleanup";
 import { getMediaEnvironment } from "../../apps/admin/src/lib/media-environment";
 import {
@@ -222,6 +223,58 @@ describe("media security and reliability boundaries", () => {
       error: "invalid_request",
       statusCode: 400,
     });
+  });
+
+  it("accepts only one bounded file at the public-content media boundary", async () => {
+    const formData = new FormData();
+    formData.set(
+      "file",
+      new File([validPng], "pixel.png", { type: "image/png" }),
+    );
+    const request = new Request(
+      "https://admin.shapewebs.com/api/admin/content/media",
+      {
+        body: formData,
+        method: "POST",
+      },
+    );
+
+    await expect(parsePublicMediaUploadRequest(request)).resolves.toMatchObject(
+      {
+        file: {
+          declaredMimeType: "image/png",
+          originalName: "pixel.png",
+        },
+        status: "ok",
+      },
+    );
+  });
+
+  it("rejects metadata and duplicate files at the public-content media boundary", async () => {
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([validPng], "pixel.png", { type: "image/png" }),
+    );
+    formData.append(
+      "file",
+      new File([validPng], "second.png", { type: "image/png" }),
+    );
+    formData.set("altText", "Provider metadata must not be trusted here.");
+    const request = new Request(
+      "https://admin.shapewebs.com/api/admin/content/media",
+      {
+        body: formData,
+        method: "POST",
+      },
+    );
+
+    await expect(parsePublicMediaUploadRequest(request)).resolves.toMatchObject(
+      {
+        error: "invalid_request",
+        statusCode: 400,
+      },
+    );
   });
 
   it("acknowledges only after reservation, Blob storage, and finalization", async () => {

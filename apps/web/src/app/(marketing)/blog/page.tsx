@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDocumentPath, getResolvedContentList } from "@/lib/content";
 import { buildPageMetadata } from "@/lib/metadata";
+import { getWebSanityRuntime } from "@/lib/sanity";
 import styles from "./page.module.css";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Blog",
@@ -18,7 +21,25 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function BlogIndexPage() {
-  const posts = await getResolvedContentList("post");
+  const sanity = getWebSanityRuntime();
+  const posts = sanity
+    ? (
+        await sanity.repository.listBlogPosts({
+          limit: 100,
+          locale: "en",
+        })
+      ).map((post) => ({
+        documentId: post._id,
+        href: `/blog/${post.slug.current}`,
+        summary: post.excerpt,
+        title: post.title,
+      }))
+    : (await getResolvedContentList("post")).map((post) => ({
+        documentId: post.documentId,
+        href: getDocumentPath(post),
+        summary: post.summary,
+        title: post.title,
+      }));
 
   return (
     <section className={styles.pageG5m2q1}>
@@ -33,7 +54,7 @@ export default async function BlogIndexPage() {
             <article className={styles.cardB6m2q9} key={post.documentId}>
               <h2>{post.title}</h2>
               <p>{post.summary}</p>
-              <Link className={styles.linkN4m8p5} href={getDocumentPath(post)}>
+              <Link className={styles.linkN4m8p5} href={post.href}>
                 Read article
               </Link>
             </article>

@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { consumeContentPreviewGrant } from "@shapewebs/database/server";
+import {
+  consumeContentPreviewGrant,
+  consumeSanityContentPreviewGrant,
+} from "@shapewebs/database/server";
 import { readBoundedText } from "@shapewebs/validation";
 
 import { getPublicSiteOrigin } from "@/lib/content";
@@ -74,6 +77,14 @@ export async function POST(request: Request) {
       organizationId,
       token,
     );
+
+    if (!previewGrant) {
+      previewGrant = await consumeSanityContentPreviewGrant(
+        databaseUrl,
+        organizationId,
+        token,
+      );
+    }
   } catch {
     return NextResponse.json(
       { error: "Preview is temporarily unavailable." },

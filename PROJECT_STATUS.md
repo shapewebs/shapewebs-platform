@@ -2,9 +2,9 @@
 
 ## Current milestone
 
-- Date: 26 July 2026
-- Branch: protected `staging` at `6854b08`; current implementation branch
-  `codex/cms-media-foundation` is locally verified and not yet published
+- Date: 29 July 2026
+- Branch: protected `staging` at `a6748eb`; current implementation branch
+  `codex/sanity-content-spike` is locally verified and not yet published
 - Pull requests: staging scheduler evidence
   `shapewebs/shapewebs-platform#15` and Neon organization settings
   `shapewebs/shapewebs-platform#16` merged; authentication, session and Neon CMS
@@ -30,14 +30,17 @@
   routes `#37` passed the complete disposable lifecycle and merged at
   `ee46f64`; secure administrative Google/password authentication `#38`,
   password-link feedback `#39`, and post-step-up request resumption `#40`
-  merged at `159d8b9`, `26b44a0`, and `6854b08`
+  merged at `159d8b9`, `26b44a0`, and `6854b08`; private-media foundation
+  `#41`, Sharp packaging corrections `#42` and `#43`, Frankfurt runtime
+  colocation `#44`, and Supabase retirement `#45` are merged into protected
+  staging at `a6748eb`
 - Status: short-term assurance foundation implemented; isolated staging
   control plane and active staging monitoring provisioned; production launch
   remains gated
 - Production baseline: commit `33affde`
 
 Production remains on the known-good baseline. Pull requests `#16` through
-`#40` are merged into protected `staging`. Migrations `0000` through `0015` are
+`#45` are merged into protected `staging`. Migrations `0000` through `0016` are
 applied to the persistent synthetic staging database and its live six-identity
 security verification passes. Google OAuth, local TOTP enrollment, successful
 step-up and protected CMS navigation have passed on the fixed staging origin. The
@@ -48,6 +51,15 @@ publish, exact public read, unpublish and exact public `404` cleanup cycle using
 the preview-only workload trust and branch-scoped application secret. No
 content slice has been connected to production data or promoted to the
 production domains.
+
+The current branch adds the staging-only Sanity content boundary without
+changing production: project `42f6331k`, public `staging` dataset, separate
+Viewer and Editor robot tokens, exact localhost Studio CORS, and no production
+dataset. Sanity owns structured public blog content and public website images;
+Neon remains the source of truth for identities, authorization, audit,
+idempotency, preview grants and company/customer operations; private Vercel
+Blob remains the boundary for confidential files. The checked-in Studio is a
+provider-recovery surface, not the employee CMS.
 
 ## Implemented on this branch
 
@@ -122,17 +134,51 @@ production domains.
   `staging.shapewebs.com` and `admin-staging.shapewebs.com` Vercel Preview
   domains. Branch-specific variables cannot leak into general previews.
 - A persistent synthetic-only Neon `staging` branch contains migrations `0000`
-  through `0014`, including marker-restricted synthetic lead retention,
+  through `0016`, including marker-restricted synthetic lead retention,
   owner-only organization settings, complete content/workflow enums,
   administrative TOTP replay/lockout, and the separate customer identity and
-  membership boundary. The runtime roles passed the complete RLS and
-  authorization suite. Neon Free cannot protect the persistent branch, so a
-  protected paid production branch remains a launch gate.
+  membership and secure private-media boundaries. The runtime roles passed the
+  complete RLS and authorization suite. Neon Free cannot protect the
+  persistent branch, so a protected paid production branch remains a launch
+  gate.
 - Cloudflare Wrangler uses least-privilege OAuth from the macOS Keychain. The
   `shapewebs-leads-staging` Turnstile widget remains restricted to the public
   staging hostname. Automated staging uses Cloudflare's official test pair in
   the matching Vercel branch scope; preview-only code rejects that mode in
   Vercel production.
+
+### Sanity public-content boundary
+
+- `packages/content-schema` owns strict blog, author, category, image and
+  Portable Text contracts. Arbitrary HTML and editor-provided scripts are not
+  accepted.
+- `packages/content-platform` owns least-privilege published, draft, write and
+  webhook clients. Public marketing routes use the published CDN perspective;
+  authenticated employee routes use token-protected drafts; write credentials
+  remain server-only in the admin app.
+- The employee portal has a structured Portable Text blog editor, a shared
+  public-image library, verified image normalization, optimistic Sanity
+  revisions, fresh-TOTP publish/unpublish, exact cache revalidation and
+  append-only Neon audit evidence.
+- Migration `0017_content-provider-assurance` adds tenant-isolated,
+  forced-RLS command reservations and one-time Sanity preview grants. A command
+  is reserved before Sanity is called and completed with its audit event in one
+  Neon transaction. Ambiguous outcomes are held for reconciliation instead of
+  being replayed blindly.
+- Private previews use a one-time activation token and a separate host-only,
+  HttpOnly session token. The public app renders only the exact saved Sanity
+  revision, locale, slug and route named by the grant; a later edit or publish
+  invalidates that preview. Migration `0018_preview-session-transition` binds
+  activation to the exact server-generated session hash inside one transaction,
+  clears the transition context before the bounded read and leaves the consumed
+  activation token unable to read either the grant or its draft.
+- The signed webhook endpoint checks the exact project/dataset headers,
+  verifies the raw-body signature, deduplicates the at-least-once delivery in
+  Neon, and retries safe public revalidation on duplicate provider delivery.
+- The provider project and local recovery Studio are provisioned. Migration
+  `0017`, the web draft-reader secret, the fixed-staging webhook and live
+  create/preview/publish/unpublish evidence remain staging gates on this
+  unmerged branch.
 
 ### Authentication and authorization
 
@@ -642,30 +688,33 @@ updated the healthy Checkly monitor at `2026-07-25T22:55:52.701Z` without a
 manual ping.
 An external Resend MX test also delivered to `admin@shapewebs.com`, all six
 role aliases and `lukasthomsen@shapewebs.com`; all eight arrived in the central
-Workspace inbox. Production database/auth/email variables remain
-intentionally unconfigured for the new path. Existing transitional Supabase
-production variables are not removed until the new paths have passed
-persistent-staging deployment and rollback evidence.
+Workspace inbox. Production database/auth/email variables remain intentionally
+unconfigured for the new path. Pull request `#45` removed the Supabase
+prototype and all application references from protected staging; the untouched
+production baseline is handled only through the separate production-promotion
+plan.
 
 ## Next implementation slices
 
-1. Publish the secure media slice as a protected staging pull request and let
+1. Publish the Sanity content slice as a protected staging pull request and let
    Quality, CodeQL, OSV, dependency review, Vercel previews, and the path-gated
-   Neon lifecycle reproduce the local evidence.
-2. After the reviewed merge, create a rollback branch, apply migration `0016`
-   with the dedicated migrator, provision one staging-only private Blob store
-   with OIDC, and set only the exact staging Preview store ID.
-3. Prove a real private upload, metadata listing, malformed/oversized denial,
-   authorization denial, cleanup reconciliation, and absence of provider
-   identifiers from browser responses on the fixed admin staging origin.
-4. Provision the dedicated customer Google OAuth client and separate portal
-   staging providers only when the route PR and database lifecycle are green.
-5. Implement the reviewed private-to-public publishing copy and deletion
-   lifecycle only after the private upload slice passes staging evidence.
+   disposable Neon lifecycle reproduce the local evidence.
+2. After reviewed merge, create a rollback branch and apply migration `0017`
+   with the dedicated migrator; install the Viewer token only in the exact web
+   staging environment.
+3. Create the fixed-staging signed Sanity webhook with the exact project,
+   dataset, published-document filter, bounded projection and a dedicated
+   Vercel protection bypass.
+4. Prove a real employee create, image upload, save, one-time exact-revision
+   preview, fresh-TOTP publish, public read, unpublish, public `404`, webhook
+   replay and cleanup journey.
+5. Rehearse ambiguous provider-command reconciliation, webhook/revalidation
+   retry and the migration rollback before marking the content foundation
+   complete.
 6. Rehearse the accepted-risk expiry checks and production provider launch
    gates recorded in the exact ASVS register.
-7. Begin the final public studio design after the fixed-staging foundation
-   gate, while preserving the separately accepted invitation-only customer
-   identity architecture for Google and verified email/password access.
+7. Begin the final public studio design only after the fixed-staging content
+   gate, while preserving the separate employee, public and invitation-only
+   customer security realms.
 8. Add production recovery gates in the milestone order documented in
    `docs/plans/roadmap-2026-07-24.md`.

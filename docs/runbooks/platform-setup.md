@@ -221,7 +221,9 @@ team-wide variables.
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and an exact
   `TURNSTILE_EXPECTED_HOSTNAME`;
 - a narrowly scoped revalidation secret;
-- public Blob credentials only when required.
+- `SANITY_PROJECT_ID` and `SANITY_DATASET`;
+- `SANITY_API_READ_TOKEN` only in an exact protected environment that supports
+  private draft previews. It is server-only and never `NEXT_PUBLIC_*`.
 
 `shapewebs-admin` may receive:
 
@@ -237,21 +239,46 @@ team-wide variables.
   `CRON_SECRET`;
 - a staging-only `SYNTHETIC_RETENTION_SECRET`, scoped to the fixed preview
   branch and never configured in Production;
-- private/public Blob credentials scoped to their stores;
+- `SANITY_PROJECT_ID`, `SANITY_DATASET`, separate Viewer/Editor tokens and the
+  webhook signing secret;
+- private Blob credentials scoped to the confidential-file store;
 - the server-to-server publish/revalidation secret.
 
 Never expose Better Auth secrets, Google secrets, private storage credentials,
 admin database credentials, or migration credentials to `apps/web`.
 
-## 8. Media and email
+## 8. Public content, media and email
 
-- Use separate Vercel Blob stores or equivalent capability boundaries for
-  public published media and private draft/customer files.
+- Use Sanity only for structured public website content and public website
+  images. Use private Vercel Blob only for confidential employee/customer
+  files.
 - Restrict uploads by role, MIME type, extension, and size.
 - Generate random server-owned object keys and trusted metadata.
 - Persist form submissions before sending Resend notifications.
 - Treat email as notification, not the system of record.
 - Add Turnstile only to public forms and keep it fail closed in production.
+
+The staging Sanity contract is:
+
+1. one Shapewebs organization and one `Shapewebs Content` project;
+2. one public `staging` dataset and no production dataset until the production
+   launch gate;
+3. one Viewer robot token for server-side draft preview and one Editor token
+   for admin mutations;
+4. exact localhost Studio CORS for the recovery Studio only;
+5. an exact signed webhook to `/api/webhooks/sanity`, filtered to published
+   `blogPost`, `author`, and `category` documents;
+6. a bounded projection containing document ID/type, delta operation and the
+   coalesced pre/post locale and slug required to invalidate delete events;
+7. a dedicated Vercel protection-bypass value sent only in the provider's
+   custom request header; and
+8. tokens and webhook secrets stored in the macOS Keychain and exact Vercel
+   branch environments, never in Studio config, source, logs or shell history.
+
+Every public image is normalized and decoded server-side before upload. Sanity
+asset URLs may be rendered only from the configured project/dataset and exact
+`cdn.sanity.io` CSP/image allowlist. Private files must never be copied into
+Sanity.
 
 Resend reports `shapewebs.com` verified in `eu-west-1`, with sending enabled,
 receiving disabled, and open/click tracking disabled. Google Workspace handles

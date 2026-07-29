@@ -11,6 +11,9 @@
         "tests/load/*.js",
       ],
     },
+    "apps/studio": {
+      "ignoreDependencies": ["@babel/core"],
+    },
     "workers/outbox-scheduler": {
       "entry": ["tests/**/*.test.ts"],
     },

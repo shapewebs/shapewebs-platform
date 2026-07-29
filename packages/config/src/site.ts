@@ -34,6 +34,7 @@ export const siteConfig = {
 
 export const workspaceTranspilePackages = [
   "@shapewebs/config",
+  "@shapewebs/content-platform",
   "@shapewebs/content-schema",
   "@shapewebs/database",
   "@shapewebs/i18n",
