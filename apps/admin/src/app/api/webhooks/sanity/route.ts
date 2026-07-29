@@ -116,7 +116,9 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "invalid_webhook" }, 400);
   }
 
-  const revalidationRequests = getSanityWebhookRevalidationRequests(event);
+  const revalidationRequests = getSanityWebhookRevalidationRequests(event, {
+    vercelOidcToken: request.headers.get("x-vercel-oidc-token") ?? undefined,
+  });
 
   if (!revalidationRequests) {
     return jsonResponse({ error: "invalid_webhook" }, 400);

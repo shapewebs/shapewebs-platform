@@ -121,7 +121,15 @@ export function parseSanityDeliveryHeaders(
 
 export function getSanityWebhookRevalidationRequests(
   event: SanityWebhookPayload,
+  options: {
+    vercelOidcToken?: string;
+  } = {},
 ) {
+  const workloadIdentity =
+    options.vercelOidcToken === undefined
+      ? {}
+      : { vercelOidcToken: options.vercelOidcToken };
+
   if (event._type === "blogPost") {
     const hasCurrentRoute = Boolean(event.locale && event.slug);
     const hasPreviousRoute = Boolean(
@@ -169,6 +177,7 @@ export function getSanityWebhookRevalidationRequests(
       documentId: event._id,
       localeCode,
       paths: [...paths],
+      ...workloadIdentity,
     }));
   }
 
@@ -178,12 +187,14 @@ export function getSanityWebhookRevalidationRequests(
       documentId: event._id,
       localeCode: "en" as const,
       paths: ["/blog"],
+      ...workloadIdentity,
     },
     {
       contentType: "post" as const,
       documentId: event._id,
       localeCode: "da-DK" as const,
       paths: ["/da-DK/blog"],
+      ...workloadIdentity,
     },
   ];
 }
