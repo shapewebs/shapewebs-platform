@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "sanity build .sanity/build --yes --minify --no-source-maps",
+    "build": "node scripts/run-offline-sanity-command.mjs build",
     "dev": "sanity dev --host localhost --port 3333",
-    "schema:validate": "sanity schema validate --level warning",
+    "schema:validate": "node scripts/run-offline-sanity-command.mjs schema-validate",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
