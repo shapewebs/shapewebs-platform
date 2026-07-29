@@ -3,8 +3,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["SANITY_DATASET", "SANITY_PROJECT_ID"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "dist/**", ".turbo/**"]
+      "outputs": [".next/**", "dist/**", ".turbo/**"],
+      "passThroughEnv": [
+        "SANITY_API_READ_TOKEN",
+        "SANITY_API_WRITE_TOKEN",
+        "SANITY_WEBHOOK_SECRET"
+      ]
     },
     "dev": {
       "cache": false,
