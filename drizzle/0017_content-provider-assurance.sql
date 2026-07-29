@@ -135,6 +135,7 @@ CREATE POLICY "web runtime reads exact Sanity preview grant" ON "app"."sanity_co
         and (
           (
             "app"."sanity_content_preview_grants"."token_hash" = nullif(current_setting('app.preview_token_hash', true), '')
+            and "app"."sanity_content_preview_grants"."consumed_at" is null
             and "app"."sanity_content_preview_grants"."created_at" > now() - interval '5 minutes'
           )
           or (
@@ -153,6 +154,19 @@ CREATE POLICY "web runtime consumes fresh Sanity preview grant" ON "app"."sanity
         and "app"."sanity_content_preview_grants"."expires_at" > now());--> statement-breakpoint
 ALTER POLICY "admin runtime inserts provider webhook events" ON "app"."provider_webhook_events" TO shapewebs_admin_runtime WITH CHECK ("app"."provider_webhook_events"."organization_id" = nullif(current_setting('app.organization_id', true), '')::uuid
         and "app"."provider_webhook_events"."provider" in ('resend', 'sanity'));--> statement-breakpoint
+ALTER POLICY "web runtime reads exact preview grant" ON "app"."content_preview_grants" TO shapewebs_web_runtime USING ("app"."content_preview_grants"."organization_id" = nullif(current_setting('app.organization_id', true), '')::uuid
+        and "app"."content_preview_grants"."expires_at" > now()
+        and (
+          (
+            "app"."content_preview_grants"."token_hash" = nullif(current_setting('app.preview_token_hash', true), '')
+            and "app"."content_preview_grants"."consumed_at" is null
+            and "app"."content_preview_grants"."created_at" > now() - interval '5 minutes'
+          )
+          or (
+            "app"."content_preview_grants"."session_token_hash" = nullif(current_setting('app.preview_token_hash', true), '')
+            and "app"."content_preview_grants"."consumed_at" is not null
+          )
+        ));--> statement-breakpoint
 ALTER TABLE "app"."content_provider_commands" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "app"."sanity_content_preview_grants" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
 REVOKE ALL PRIVILEGES

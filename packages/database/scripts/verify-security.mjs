@@ -2399,6 +2399,17 @@ async function verifyPublicAndWebBoundaries() {
     "a consumed URL activation token must not read preview content",
   );
 
+  const activationGrantAfterConsumption = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`select document_id from app.content_preview_grants`,
+  ]);
+  assert.deepEqual(
+    activationGrantAfterConsumption[2],
+    [],
+    "a consumed URL activation token must not retain preview-grant access",
+  );
+
   await expectDenied(
     admin.transaction([
       admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,

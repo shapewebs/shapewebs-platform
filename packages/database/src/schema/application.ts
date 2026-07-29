@@ -1012,6 +1012,7 @@ export const contentPreviewGrants = appSchema.table(
         and (
           (
             ${table.tokenHash} = ${currentPreviewTokenHash}
+            and ${table.consumedAt} is null
             and ${table.createdAt} > now() - interval '5 minutes'
           )
           or (
@@ -1141,6 +1142,7 @@ export const sanityContentPreviewGrants = appSchema.table(
         and (
           (
             ${table.tokenHash} = ${currentPreviewTokenHash}
+            and ${table.consumedAt} is null
             and ${table.createdAt} > now() - interval '5 minutes'
           )
           or (
