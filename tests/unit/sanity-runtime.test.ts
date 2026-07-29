@@ -383,6 +383,96 @@ describe("Sanity repository contracts", () => {
     });
   });
 
+  it("normalizes nullable optional Sanity projection fields at the provider boundary", async () => {
+    const systemFields = {
+      _createdAt: "2026-07-29T08:00:00.000Z",
+      _rev: "revision1",
+      _updatedAt: "2026-07-29T08:00:00.000Z",
+    };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce([
+        {
+          ...systemFields,
+          _id: "author-lukas",
+          _type: "author",
+          bio: null,
+          name: "Lukas Thomsen",
+          portrait: null,
+          slug: {
+            _type: "slug",
+            current: "lukas-thomsen",
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          ...systemFields,
+          _id: "category-assurance",
+          _type: "category",
+          description: null,
+          slug: {
+            _type: "slug",
+            current: "assurance",
+          },
+          title: "Assurance",
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          ...systemFields,
+          ...blogPostInput,
+          _id: "drafts.blog-post-nullables",
+          _type: "blogPost",
+          coverImage: {
+            ...image,
+            caption: null,
+            crop: null,
+            hotspot: null,
+          },
+          publishedAt: null,
+          seo: {
+            ...blogPostInput.seo,
+            description: null,
+            image: null,
+            title: null,
+          },
+        },
+      ]);
+    const client = {
+      fetch,
+    } as unknown as Parameters<
+      typeof createSanityDraftContentRepository
+    >[0]["client"];
+    const repository = createSanityDraftContentRepository({
+      client,
+      environment: {
+        apiVersion: "2026-07-01",
+        dataset: "staging",
+        projectId: "abc12345",
+      },
+    });
+
+    const [authors, categories, editorState] = await Promise.all([
+      repository.listAuthors({ limit: 20 }),
+      repository.listCategories({ limit: 20 }),
+      repository.getBlogPostEditorState({
+        documentId: "blog-post-nullables",
+      }),
+    ]);
+
+    expect(authors[0]).not.toHaveProperty("bio");
+    expect(authors[0]).not.toHaveProperty("portrait");
+    expect(categories[0]).not.toHaveProperty("description");
+    expect(editorState?.draft).not.toHaveProperty("publishedAt");
+    expect(editorState?.draft.coverImage).not.toHaveProperty("caption");
+    expect(editorState?.draft.coverImage).not.toHaveProperty("crop");
+    expect(editorState?.draft.coverImage).not.toHaveProperty("hotspot");
+    expect(editorState?.draft.seo).not.toHaveProperty("description");
+    expect(editorState?.draft.seo).not.toHaveProperty("image");
+    expect(editorState?.draft.seo).not.toHaveProperty("title");
+  });
+
   it("parses published query results before returning DTOs", async () => {
     const result = {
       _createdAt: "2026-07-29T08:00:00.000Z",

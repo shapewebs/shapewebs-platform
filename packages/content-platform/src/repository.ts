@@ -168,6 +168,28 @@ export type SanityBlogPostEditorialSummary = {
   publishedRevision?: string;
 };
 
+function normalizeSanityProjection(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeSanityProjection(item));
+  }
+
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, nestedValue]) =>
+      nestedValue === null
+        ? []
+        : [[key, normalizeSanityProjection(nestedValue)]],
+    ),
+  );
+}
+
+function parseSanityProjection<T>(schema: z.ZodType<T>, value: unknown): T {
+  return schema.parse(normalizeSanityProjection(value));
+}
+
 function requireCanonicalAssetUrl(
   asset: SanityImageAsset,
   environment: SanityPublishedEnvironment,
@@ -276,7 +298,9 @@ export function createSanityPublishedContentRepository(input: {
         },
       );
 
-      return result === null ? null : sanityBlogPostSchema.parse(result);
+      return result === null
+        ? null
+        : parseSanityProjection(sanityBlogPostSchema, result);
     },
     async listBlogPosts(options: {
       abortSignal?: AbortSignal;
@@ -302,7 +326,9 @@ export function createSanityPublishedContentRepository(input: {
         throw new Error("The Sanity blog post list response is invalid.");
       }
 
-      return result.map((item) => sanityBlogPostSummarySchema.parse(item));
+      return result.map((item) =>
+        parseSanityProjection(sanityBlogPostSummarySchema, item),
+      );
     },
   };
 }
@@ -338,7 +364,9 @@ export function createSanityDraftContentRepository(input: {
         throw new Error("The Sanity blog post editor response is invalid.");
       }
 
-      const documents = result.map((item) => sanityBlogPostSchema.parse(item));
+      const documents = result.map((item) =>
+        parseSanityProjection(sanityBlogPostSchema, item),
+      );
       const draft = documents.find((document) => document._id === draftId);
       const published = documents.find(
         (document) => document._id === documentId,
@@ -388,7 +416,7 @@ export function createSanityDraftContentRepository(input: {
       }
 
       return result.map((item) => {
-        const author = sanityAuthorSchema.parse(item);
+        const author = parseSanityProjection(sanityAuthorSchema, item);
 
         return {
           ...author,
@@ -431,7 +459,7 @@ export function createSanityDraftContentRepository(input: {
       const grouped = new Map<string, SanityBlogPostEditorialSummary>();
 
       for (const item of result) {
-        const post = sanityBlogPostSummarySchema.parse(item);
+        const post = parseSanityProjection(sanityBlogPostSummarySchema, item);
         const documentId = createPublishedId(post._id);
         const current = grouped.get(documentId);
         const isDraft = post._id.startsWith("drafts.");
@@ -483,7 +511,7 @@ export function createSanityDraftContentRepository(input: {
       }
 
       return result.map((item) => {
-        const post = sanityBlogPostSummarySchema.parse(item);
+        const post = parseSanityProjection(sanityBlogPostSummarySchema, item);
 
         return {
           ...post,
@@ -513,7 +541,7 @@ export function createSanityDraftContentRepository(input: {
       }
 
       return result.map((item) => {
-        const category = sanityCategorySchema.parse(item);
+        const category = parseSanityProjection(sanityCategorySchema, item);
 
         return {
           ...category,
@@ -543,7 +571,7 @@ export function createSanityDraftContentRepository(input: {
       }
 
       return result
-        .map((item) => sanityImageAssetSchema.parse(item))
+        .map((item) => parseSanityProjection(sanityImageAssetSchema, item))
         .map((asset) => requireCanonicalAssetUrl(asset, input.environment));
     },
   };
@@ -702,7 +730,7 @@ export function createSanityWriteRepository(input: {
           timeout: 15_000,
         },
       );
-      const asset = sanityImageAssetSchema.parse(result);
+      const asset = parseSanityProjection(sanityImageAssetSchema, result);
 
       return requireCanonicalAssetUrl(asset, input.environment);
     },
