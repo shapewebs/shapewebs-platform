@@ -122,6 +122,8 @@ Planned customer-specific threats and controls are:
 - Public content reads never return drafts.
 - A preview grant can reveal only the exact saved Sanity revision, route,
   locale and slug for which it was issued.
+- Preview activation is atomically bound to one server-generated session hash;
+  the consumed URL token alone cannot read the grant or draft afterward.
 - Sanity is never used for confidential employee/customer files; every asset
   uploaded there is treated as public website media.
 - A compromised web runtime cannot read auth, audit, private or cross-tenant

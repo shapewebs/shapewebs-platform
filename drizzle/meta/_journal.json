@@ -127,6 +127,13 @@
       "when": 1785351598436,
       "tag": "0017_content-provider-assurance",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785354973618,
+      "tag": "0018_preview-session-transition",
+      "breakpoints": true
     }
   ]
 }

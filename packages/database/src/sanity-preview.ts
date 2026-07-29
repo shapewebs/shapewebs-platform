@@ -183,6 +183,9 @@ export async function consumeSanityContentPreviewGrant(
   const database = createDatabase(databaseUrl);
   const results = await database.batch([
     ...webContextQueries(database, organizationId, tokenHash),
+    database.execute(
+      sql`select set_config('app.preview_session_token_hash', ${sessionTokenHash}, true)`,
+    ),
     database
       .update(sanityContentPreviewGrants)
       .set({ consumedAt: sql`now()`, sessionTokenHash })
@@ -194,17 +197,34 @@ export async function consumeSanityContentPreviewGrant(
           sql`${sanityContentPreviewGrants.expiresAt} > now()`,
           sql`${sanityContentPreviewGrants.createdAt} > now() - interval '5 minutes'`,
         ),
-      )
-      .returning({
+      ),
+    database.execute(
+      sql`select set_config('app.preview_token_hash', ${sessionTokenHash}, true)`,
+    ),
+    database.execute(
+      sql`select set_config('app.preview_session_token_hash', '', true)`,
+    ),
+    database
+      .select({
         documentId: sanityContentPreviewGrants.documentId,
         expiresAt: sanityContentPreviewGrants.expiresAt,
         localeCode: sanityContentPreviewGrants.locale,
         path: sanityContentPreviewGrants.path,
         revisionId: sanityContentPreviewGrants.revisionId,
         slug: sanityContentPreviewGrants.slug,
-      }),
+      })
+      .from(sanityContentPreviewGrants)
+      .where(
+        and(
+          eq(sanityContentPreviewGrants.organizationId, organizationId),
+          eq(sanityContentPreviewGrants.sessionTokenHash, sessionTokenHash),
+          sql`${sanityContentPreviewGrants.consumedAt} is not null`,
+          sql`${sanityContentPreviewGrants.expiresAt} > now()`,
+        ),
+      )
+      .limit(1),
   ]);
-  const grant = results[2][0];
+  const grant = results[6][0];
 
   if (!grant || (grant.localeCode !== "en" && grant.localeCode !== "da-DK")) {
     return null;

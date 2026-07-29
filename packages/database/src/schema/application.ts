@@ -96,6 +96,7 @@ const currentOrganizationId = sql`nullif(current_setting('app.organization_id', 
 const currentUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const currentMembershipRole = sql`nullif(current_setting('app.membership_role', true), '')`;
 const currentPreviewTokenHash = sql`nullif(current_setting('app.preview_token_hash', true), '')`;
+const currentPreviewSessionTokenHash = sql`nullif(current_setting('app.preview_session_token_hash', true), '')`;
 const isOwner = sql`${currentMembershipRole} = 'owner'`;
 const isEditorOrOwner = sql`${currentMembershipRole} in ('owner', 'editor')`;
 const projectBelongsToCurrentOrganization = (projectId: unknown) =>
@@ -1012,8 +1013,14 @@ export const contentPreviewGrants = appSchema.table(
         and (
           (
             ${table.tokenHash} = ${currentPreviewTokenHash}
-            and ${table.consumedAt} is null
             and ${table.createdAt} > now() - interval '5 minutes'
+            and (
+              ${table.consumedAt} is null
+              or (
+                ${table.consumedAt} is not null
+                and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
+              )
+            )
           )
           or (
             ${table.sessionTokenHash} = ${currentPreviewTokenHash}
@@ -1032,7 +1039,7 @@ export const contentPreviewGrants = appSchema.table(
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}
         and ${table.tokenHash} = ${currentPreviewTokenHash}
         and ${table.consumedAt} is not null
-        and ${table.sessionTokenHash} is not null
+        and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
         and ${table.expiresAt} > now()`,
     }),
   ],
@@ -1142,8 +1149,14 @@ export const sanityContentPreviewGrants = appSchema.table(
         and (
           (
             ${table.tokenHash} = ${currentPreviewTokenHash}
-            and ${table.consumedAt} is null
             and ${table.createdAt} > now() - interval '5 minutes'
+            and (
+              ${table.consumedAt} is null
+              or (
+                ${table.consumedAt} is not null
+                and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
+              )
+            )
           )
           or (
             ${table.sessionTokenHash} = ${currentPreviewTokenHash}
@@ -1162,7 +1175,7 @@ export const sanityContentPreviewGrants = appSchema.table(
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}
         and ${table.tokenHash} = ${currentPreviewTokenHash}
         and ${table.consumedAt} is not null
-        and ${table.sessionTokenHash} is not null
+        and ${table.sessionTokenHash} = ${currentPreviewSessionTokenHash}
         and ${table.expiresAt} > now()`,
     }),
   ],

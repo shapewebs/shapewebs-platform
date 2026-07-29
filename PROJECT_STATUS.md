@@ -168,7 +168,10 @@ provider-recovery surface, not the employee CMS.
 - Private previews use a one-time activation token and a separate host-only,
   HttpOnly session token. The public app renders only the exact saved Sanity
   revision, locale, slug and route named by the grant; a later edit or publish
-  invalidates that preview.
+  invalidates that preview. Migration `0018_preview-session-transition` binds
+  activation to the exact server-generated session hash inside one transaction,
+  clears the transition context before the bounded read and leaves the consumed
+  activation token unable to read either the grant or its draft.
 - The signed webhook endpoint checks the exact project/dataset headers,
   verifies the raw-body signature, deduplicates the at-least-once delivery in
   Neon, and retries safe public revalidation on duplicate provider delivery.

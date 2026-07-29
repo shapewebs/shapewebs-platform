@@ -90,8 +90,10 @@ const ids = {
 };
 const previewTokenHash = randomBytes(32).toString("hex");
 const previewSessionTokenHash = randomBytes(32).toString("hex");
+const replayPreviewSessionTokenHash = randomBytes(32).toString("hex");
 const sanityPreviewTokenHash = randomBytes(32).toString("hex");
 const sanityPreviewSessionTokenHash = randomBytes(32).toString("hex");
+const replaySanityPreviewSessionTokenHash = randomBytes(32).toString("hex");
 const onboarding = {
   credentialFinalPasswordHash: `final-password-hash-${randomBytes(32).toString("hex")}`,
   credentialInitialPasswordHash: `initial-password-hash-${randomBytes(32).toString("hex")}`,
@@ -2338,15 +2340,20 @@ async function verifyPublicAndWebBoundaries() {
   const consumedPreview = await web.transaction([
     web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
     web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', ${previewSessionTokenHash}, true)`,
     web`update app.content_preview_grants
       set
         consumed_at = now(),
         session_token_hash = ${previewSessionTokenHash}
       where token_hash = ${previewTokenHash}
-        and consumed_at is null
-      returning document_id, revision_id`,
+        and consumed_at is null`,
+    web`select set_config('app.preview_token_hash', ${previewSessionTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', '', true)`,
+    web`select document_id, revision_id
+      from app.content_preview_grants
+      where session_token_hash = ${previewSessionTokenHash}`,
   ]);
-  assert.deepEqual(consumedPreview[2], [
+  assert.deepEqual(consumedPreview[6], [
     {
       document_id: ids.draftDocument,
       revision_id: ids.draftRevisionTwo,
@@ -2356,14 +2363,21 @@ async function verifyPublicAndWebBoundaries() {
   const replayedPreview = await web.transaction([
     web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
     web`select set_config('app.preview_token_hash', ${previewTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', ${replayPreviewSessionTokenHash}, true)`,
     web`update app.content_preview_grants
-      set consumed_at = now()
+      set
+        consumed_at = now(),
+        session_token_hash = ${replayPreviewSessionTokenHash}
       where token_hash = ${previewTokenHash}
-        and consumed_at is null
-      returning document_id`,
+        and consumed_at is null`,
+    web`select set_config('app.preview_token_hash', ${replayPreviewSessionTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', '', true)`,
+    web`select document_id
+      from app.content_preview_grants
+      where session_token_hash = ${replayPreviewSessionTokenHash}`,
   ]);
   assert.deepEqual(
-    replayedPreview[2],
+    replayedPreview[6],
     [],
     "a preview grant must be consumed at most once",
   );
@@ -2490,15 +2504,20 @@ async function verifyPublicAndWebBoundaries() {
   const consumedSanityPreview = await web.transaction([
     web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
     web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', ${sanityPreviewSessionTokenHash}, true)`,
     web`update app.sanity_content_preview_grants
       set
         consumed_at = now(),
         session_token_hash = ${sanityPreviewSessionTokenHash}
       where token_hash = ${sanityPreviewTokenHash}
-        and consumed_at is null
-      returning document_id, revision_id`,
+        and consumed_at is null`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewSessionTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', '', true)`,
+    web`select document_id, revision_id
+      from app.sanity_content_preview_grants
+      where session_token_hash = ${sanityPreviewSessionTokenHash}`,
   ]);
-  assert.deepEqual(consumedSanityPreview[2], [
+  assert.deepEqual(consumedSanityPreview[6], [
     {
       document_id: "blog-post-security-test",
       revision_id: "sanityRevisionOne",
@@ -2508,14 +2527,21 @@ async function verifyPublicAndWebBoundaries() {
   const replayedSanityPreview = await web.transaction([
     web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
     web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', ${replaySanityPreviewSessionTokenHash}, true)`,
     web`update app.sanity_content_preview_grants
-      set consumed_at = now()
+      set
+        consumed_at = now(),
+        session_token_hash = ${replaySanityPreviewSessionTokenHash}
       where token_hash = ${sanityPreviewTokenHash}
-        and consumed_at is null
-      returning document_id`,
+        and consumed_at is null`,
+    web`select set_config('app.preview_token_hash', ${replaySanityPreviewSessionTokenHash}, true)`,
+    web`select set_config('app.preview_session_token_hash', '', true)`,
+    web`select document_id
+      from app.sanity_content_preview_grants
+      where session_token_hash = ${replaySanityPreviewSessionTokenHash}`,
   ]);
   assert.deepEqual(
-    replayedSanityPreview[2],
+    replayedSanityPreview[6],
     [],
     "a Sanity preview grant must be consumed at most once",
   );
