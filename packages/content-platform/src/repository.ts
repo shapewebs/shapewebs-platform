@@ -179,7 +179,7 @@ function normalizeSanityProjection(value: unknown): unknown {
 
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, nestedValue]) =>
-      nestedValue === null
+      nestedValue === null || nestedValue === undefined
         ? []
         : [[key, normalizeSanityProjection(nestedValue)]],
     ),
@@ -730,7 +730,26 @@ export function createSanityWriteRepository(input: {
           timeout: 15_000,
         },
       );
-      const asset = parseSanityProjection(sanityImageAssetSchema, result);
+      const asset = parseSanityProjection(sanityImageAssetSchema, {
+        _createdAt: result._createdAt,
+        _id: result._id,
+        _rev: result._rev,
+        _type: result._type,
+        _updatedAt: result._updatedAt,
+        metadata: {
+          blurHash: result.metadata.blurHash,
+          dimensions: {
+            aspectRatio: result.metadata.dimensions.aspectRatio,
+            height: result.metadata.dimensions.height,
+            width: result.metadata.dimensions.width,
+          },
+          lqip: result.metadata.lqip,
+        },
+        mimeType: result.mimeType,
+        originalFilename: result.originalFilename,
+        size: result.size,
+        url: result.url,
+      });
 
       return requireCanonicalAssetUrl(asset, input.environment);
     },
