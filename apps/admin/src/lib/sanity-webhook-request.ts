@@ -1,6 +1,7 @@
 import type { SanityWebhookPayload } from "@shapewebs/content-schema";
 
 const safeProviderHeaderPattern = /^[A-Za-z0-9._:-]+$/u;
+const safeQuotedIdempotencyKeyPattern = /^"[A-Za-z0-9._:-]+"$/u;
 
 function readProviderHeader(
   headers: Headers,
@@ -16,6 +17,96 @@ function readProviderHeader(
     : null;
 }
 
+function readIdempotencyKey(headers: Headers): string | null {
+  const value = headers.get("idempotency-key");
+
+  if (!value || value.length > 180) {
+    return null;
+  }
+
+  if (safeProviderHeaderPattern.test(value)) {
+    return value;
+  }
+
+  return safeQuotedIdempotencyKeyPattern.test(value)
+    ? value.slice(1, -1)
+    : null;
+}
+
+export function validateSanityDeliveryHeaders(
+  headers: Headers,
+  expected: {
+    dataset: string;
+    projectId: string;
+  },
+) {
+  const eventId = readIdempotencyKey(headers);
+  const webhookId = readProviderHeader(headers, "sanity-webhook-id");
+  const transactionId = readProviderHeader(headers, "sanity-transaction-id");
+  const transactionTimeValue = headers.get("sanity-transaction-time");
+
+  if (!eventId) {
+    return {
+      reasonCode: "idempotency_key_invalid",
+      status: "invalid",
+    } as const;
+  }
+
+  if (!webhookId) {
+    return {
+      reasonCode: "webhook_id_invalid",
+      status: "invalid",
+    } as const;
+  }
+
+  if (!transactionId) {
+    return {
+      reasonCode: "transaction_id_invalid",
+      status: "invalid",
+    } as const;
+  }
+
+  if (!transactionTimeValue || transactionTimeValue.length > 80) {
+    return {
+      reasonCode: "transaction_time_invalid",
+      status: "invalid",
+    } as const;
+  }
+
+  if (headers.get("sanity-project-id") !== expected.projectId) {
+    return {
+      reasonCode: "project_id_mismatch",
+      status: "invalid",
+    } as const;
+  }
+
+  if (headers.get("sanity-dataset") !== expected.dataset) {
+    return {
+      reasonCode: "dataset_mismatch",
+      status: "invalid",
+    } as const;
+  }
+
+  const occurredAt = new Date(transactionTimeValue);
+
+  if (Number.isNaN(occurredAt.getTime())) {
+    return {
+      reasonCode: "transaction_time_invalid",
+      status: "invalid",
+    } as const;
+  }
+
+  return {
+    delivery: {
+      eventId,
+      occurredAt,
+      transactionId,
+      webhookId,
+    },
+    status: "valid",
+  } as const;
+}
+
 export function parseSanityDeliveryHeaders(
   headers: Headers,
   expected: {
@@ -23,33 +114,9 @@ export function parseSanityDeliveryHeaders(
     projectId: string;
   },
 ) {
-  const eventId = readProviderHeader(headers, "idempotency-key");
-  const webhookId = readProviderHeader(headers, "sanity-webhook-id");
-  const transactionId = readProviderHeader(headers, "sanity-transaction-id");
-  const transactionTimeValue = headers.get("sanity-transaction-time");
+  const validation = validateSanityDeliveryHeaders(headers, expected);
 
-  if (
-    !eventId ||
-    !webhookId ||
-    !transactionId ||
-    !transactionTimeValue ||
-    transactionTimeValue.length > 80 ||
-    headers.get("sanity-project-id") !== expected.projectId ||
-    headers.get("sanity-dataset") !== expected.dataset
-  ) {
-    return null;
-  }
-
-  const occurredAt = new Date(transactionTimeValue);
-
-  return Number.isNaN(occurredAt.getTime())
-    ? null
-    : {
-        eventId,
-        occurredAt,
-        transactionId,
-        webhookId,
-      };
+  return validation.status === "valid" ? validation.delivery : null;
 }
 
 export function getSanityWebhookRevalidationRequests(

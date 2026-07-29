@@ -16,7 +16,7 @@ import { triggerPublicContentRevalidation } from "@/lib/public-revalidation";
 import { getAdminSanityRuntime } from "@/lib/sanity";
 import {
   getSanityWebhookRevalidationRequests,
-  parseSanityDeliveryHeaders,
+  validateSanityDeliveryHeaders,
 } from "@/lib/sanity-webhook-request";
 
 export const dynamic = "force-dynamic";
@@ -66,18 +66,18 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "invalid_webhook" }, 415);
   }
 
-  const delivery = parseSanityDeliveryHeaders(request.headers, {
+  const deliveryValidation = validateSanityDeliveryHeaders(request.headers, {
     dataset: sanity.webhookEnvironment.dataset,
     projectId: sanity.webhookEnvironment.projectId,
   });
 
-  if (!delivery) {
+  if (deliveryValidation.status === "invalid") {
     logger.log({
       eventCode: "shapewebs.webhook.sanity",
       level: "warn",
       metadata: {
         dependency: "content",
-        reasonCode: "provider_headers_invalid",
+        reasonCode: `provider_header_${deliveryValidation.reasonCode}`,
       },
       requestId,
       result: "denied",
@@ -85,6 +85,7 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "invalid_webhook" }, 400);
   }
 
+  const delivery = deliveryValidation.delivery;
   const { eventId, occurredAt, transactionId } = delivery;
 
   const rawBody = await readBoundedText(request, maximumSanityWebhookBodyBytes);
