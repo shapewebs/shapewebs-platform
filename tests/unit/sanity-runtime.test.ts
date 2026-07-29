@@ -332,6 +332,87 @@ describe("Sanity repository contracts", () => {
     expect(fetch.mock.calls[0]?.[1]).toEqual({ limit: 20 });
   });
 
+  it("projects raw Sanity upload responses into a minimal strict asset DTO", async () => {
+    const upload = vi.fn().mockResolvedValue({
+      _createdAt: "2026-07-29T08:00:00.000Z",
+      _id: `image-${"b".repeat(40)}-1200x800-webp`,
+      _rev: "revision1",
+      _type: "sanity.imageAsset",
+      _updatedAt: "2026-07-29T08:00:00.000Z",
+      assetId: "provider-only-asset-id",
+      extension: "webp",
+      metadata: {
+        blurHash: undefined,
+        dimensions: {
+          aspectRatio: 1.5,
+          height: 800,
+          providerOnlyDimension: true,
+          width: 1200,
+        },
+        lqip: null,
+        palette: {
+          providerOnlyPalette: true,
+        },
+      },
+      mimeType: "image/webp",
+      originalFilename: "cover.webp",
+      path: "images/abc12345/staging/provider-only-path.webp",
+      sha1hash: "b".repeat(40),
+      size: 120_000,
+      url: `https://cdn.sanity.io/images/abc12345/staging/${"b".repeat(
+        40,
+      )}-1200x800.webp`,
+    });
+    const client = {
+      assets: {
+        upload,
+      },
+    } as unknown as Parameters<typeof createSanityWriteRepository>[0]["client"];
+    const repository = createSanityWriteRepository({
+      client,
+      environment: {
+        apiVersion: "2026-07-01",
+        dataset: "staging",
+        projectId: "abc12345",
+      },
+    });
+
+    const asset = await repository.uploadImage({
+      bytes: new Uint8Array([1, 2, 3]),
+      filename: "cover.webp",
+    });
+
+    expect(asset).toEqual({
+      _createdAt: "2026-07-29T08:00:00.000Z",
+      _id: `image-${"b".repeat(40)}-1200x800-webp`,
+      _rev: "revision1",
+      _type: "sanity.imageAsset",
+      _updatedAt: "2026-07-29T08:00:00.000Z",
+      metadata: {
+        dimensions: {
+          aspectRatio: 1.5,
+          height: 800,
+          width: 1200,
+        },
+      },
+      mimeType: "image/webp",
+      originalFilename: "cover.webp",
+      size: 120_000,
+      url: `https://cdn.sanity.io/images/abc12345/staging/${"b".repeat(
+        40,
+      )}-1200x800.webp`,
+    });
+    expect(upload).toHaveBeenCalledWith(
+      "image",
+      expect.any(Buffer),
+      expect.objectContaining({
+        contentType: "image/webp",
+        filename: "cover.webp",
+        timeout: 15_000,
+      }),
+    );
+  });
+
   it("selects the draft deterministically and retains the published revision", async () => {
     const published = {
       _createdAt: "2026-07-29T08:00:00.000Z",
