@@ -107,6 +107,36 @@ describe("Sanity webhook request contract", () => {
     ).toHaveLength(2);
   });
 
+  it("forwards the request-scoped Vercel identity for protected revalidation", () => {
+    expect(
+      getSanityWebhookRevalidationRequests(
+        {
+          _id: "author-lukas",
+          _type: "author",
+          operation: "update",
+        },
+        {
+          vercelOidcToken: "header.payload.signature",
+        },
+      ),
+    ).toEqual([
+      {
+        contentType: "post",
+        documentId: "author-lukas",
+        localeCode: "en",
+        paths: ["/blog"],
+        vercelOidcToken: "header.payload.signature",
+      },
+      {
+        contentType: "post",
+        documentId: "author-lukas",
+        localeCode: "da-DK",
+        paths: ["/da-DK/blog"],
+        vercelOidcToken: "header.payload.signature",
+      },
+    ]);
+  });
+
   it("rejects incomplete blog projections", () => {
     expect(
       getSanityWebhookRevalidationRequests({
