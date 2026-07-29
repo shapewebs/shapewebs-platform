@@ -4,6 +4,7 @@ import { sanityWebhookPayloadSchema } from "../../packages/content-schema/src";
 import {
   getSanityWebhookRevalidationRequests,
   parseSanityDeliveryHeaders,
+  validateSanityDeliveryHeaders,
 } from "../../apps/admin/src/lib/sanity-webhook-request";
 
 const expected = {
@@ -33,16 +34,43 @@ describe("Sanity webhook request contract", () => {
     });
   });
 
+  it("normalizes the quoted Structured Field form used by Idempotency-Key", () => {
+    expect(
+      parseSanityDeliveryHeaders(
+        validHeaders({ "idempotency-key": '"delivery-123"' }),
+        expected,
+      ),
+    ).toEqual({
+      eventId: "delivery-123",
+      occurredAt: new Date("2026-07-29T10:00:00.000Z"),
+      transactionId: "transaction-123",
+      webhookId: "webhook-123",
+    });
+  });
+
   it("rejects cross-project, malformed, or injected headers", () => {
     for (const headers of [
       validHeaders({ "sanity-project-id": "other123" }),
       validHeaders({ "sanity-dataset": "production" }),
       validHeaders({ "sanity-transaction-time": "not-a-date" }),
       validHeaders({ "idempotency-key": "delivery injected" }),
+      validHeaders({ "idempotency-key": '"delivery\\-injected"' }),
       validHeaders({ "sanity-transaction-id": "" }),
     ]) {
       expect(parseSanityDeliveryHeaders(headers, expected)).toBeNull();
     }
+  });
+
+  it("returns a safe, value-free diagnostic reason for invalid headers", () => {
+    expect(
+      validateSanityDeliveryHeaders(
+        validHeaders({ "sanity-dataset": "production" }),
+        expected,
+      ),
+    ).toEqual({
+      reasonCode: "dataset_mismatch",
+      status: "invalid",
+    });
   });
 
   it("maps blog and referenced-document events to exact public paths", () => {
