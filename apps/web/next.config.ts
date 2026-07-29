@@ -5,6 +5,15 @@ import {
 } from "@shapewebs/config";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+        protocol: "https",
+      },
+    ],
+  },
   poweredByHeader: false,
   transpilePackages: [...workspaceTranspilePackages],
   async headers() {

@@ -11,8 +11,10 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@portabletext/editor": "7.10.13",
     "@shapewebs/auth": "workspace:*",
     "@shapewebs/config": "workspace:*",
+    "@shapewebs/content-platform": "workspace:*",
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/database": "workspace:*",
     "@shapewebs/email": "workspace:*",

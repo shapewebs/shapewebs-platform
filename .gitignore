@@ -50,6 +50,9 @@ yarn-error.log*
 # supabase local state
 supabase/.temp/
 
+# sanity local build/runtime state
+**/.sanity/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

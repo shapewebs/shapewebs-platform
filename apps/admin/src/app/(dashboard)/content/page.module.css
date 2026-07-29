@@ -126,3 +126,8 @@
     grid-template-columns: 1fr;
   }
 }
+.sw-content-actions-r4m8q2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

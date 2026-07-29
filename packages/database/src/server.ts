@@ -20,6 +20,15 @@ export {
   type UnpublishPageContentInput,
 } from "./content-editor";
 export {
+  completeContentProviderCommand,
+  createContentProviderCommandFingerprint,
+  markContentProviderCommandUncertain,
+  recordSanityWebhook,
+  reserveContentProviderCommand,
+  type ContentProviderCommandAction,
+  type ContentProviderCommandReservation,
+} from "./content-provider-commands";
+export {
   buildContentRevalidationTags,
   consumeContentPreviewGrant,
   createContentPreviewGrant,
@@ -96,6 +105,14 @@ export {
   type PrivateMediaUploadState,
   type ReservePrivateMediaUploadInput,
 } from "./media";
+export {
+  consumeSanityContentPreviewGrant,
+  createSanityContentPreviewGrant,
+  getSanityContentPreviewSelection,
+  type ConsumedSanityContentPreviewGrant,
+  type SanityContentPreviewGrant,
+  type SanityContentPreviewSelection,
+} from "./sanity-preview";
 export {
   acceptCustomerGoogleInvitation,
   authorizeCustomerSession,

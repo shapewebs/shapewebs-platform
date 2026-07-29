@@ -39,6 +39,7 @@ export function proxy(request: NextRequest) {
       ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
       : undefined;
   const csp = buildAdminContentSecurityPolicy(nonce, {
+    allowPublicContentImages: true,
     formActionOrigins: publicSiteOrigin ? [publicSiteOrigin] : [],
   });
   const requestHeaders = new Headers(request.headers);

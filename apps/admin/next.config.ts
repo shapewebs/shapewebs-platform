@@ -16,7 +16,17 @@ const sharpLinuxRuntimeFiles = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+        protocol: "https",
+      },
+    ],
+  },
   outputFileTracingIncludes: {
+    "/api/admin/content/media": [...sharpLinuxRuntimeFiles],
     "/api/admin/media": [...sharpLinuxRuntimeFiles],
     "/api/jobs/media-cleanup": [...sharpLinuxRuntimeFiles],
   },

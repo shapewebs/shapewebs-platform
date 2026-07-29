@@ -1,4 +1,5 @@
 import { pingDatabase } from "@shapewebs/database/server";
+import { pingSanityContent } from "@shapewebs/content-platform/server";
 import {
   createStructuredLogger,
   evaluateReadiness,
@@ -6,6 +7,7 @@ import {
 } from "@shapewebs/observability";
 
 import { hasAdminAuthConfig } from "./auth-environment";
+import { getAdminSanityRuntime, hasAdminSanityIntent } from "./sanity";
 
 const logger = createStructuredLogger({
   deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
@@ -17,6 +19,7 @@ export async function getAdminReadiness() {
   const startedAt = performance.now();
   const databaseUrl = process.env.DATABASE_URL;
   const authenticationConfigured = hasAdminAuthConfig();
+  const sanityIntended = hasAdminSanityIntent();
   const result = await evaluateReadiness([
     {
       name: "authentication",
@@ -31,6 +34,25 @@ export async function getAdminReadiness() {
           {
             name: "database",
             check: () => pingDatabase(databaseUrl),
+          } as const,
+        ]
+      : []),
+    ...(sanityIntended
+      ? [
+          {
+            name: "content",
+            check: async () => {
+              const runtime = getAdminSanityRuntime();
+
+              if (!runtime) {
+                throw new Error("Content is unavailable.");
+              }
+
+              await pingSanityContent(
+                runtime.draftClient,
+                AbortSignal.timeout(3_000),
+              );
+            },
           } as const,
         ]
       : []),

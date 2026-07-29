@@ -80,6 +80,8 @@ const ids = {
   workflowDocument: randomUUID(),
   workflowRevision: randomUUID(),
   previewGrant: randomUUID(),
+  sanityPreviewGrant: randomUUID(),
+  contentProviderCommand: randomUUID(),
   auditEvent: randomUUID(),
   adminAuthEmail: randomUUID(),
   privateMediaA: randomUUID(),
@@ -88,6 +90,8 @@ const ids = {
 };
 const previewTokenHash = randomBytes(32).toString("hex");
 const previewSessionTokenHash = randomBytes(32).toString("hex");
+const sanityPreviewTokenHash = randomBytes(32).toString("hex");
+const sanityPreviewSessionTokenHash = randomBytes(32).toString("hex");
 const onboarding = {
   credentialFinalPasswordHash: `final-password-hash-${randomBytes(32).toString("hex")}`,
   credentialInitialPasswordHash: `initial-password-hash-${randomBytes(32).toString("hex")}`,
@@ -485,6 +489,30 @@ async function seed() {
         now() + interval '30 minutes',
         ${ids.adminUser}
       )`,
+    fixtureAdmin`insert into app.sanity_content_preview_grants (
+        id,
+        organization_id,
+        document_id,
+        revision_id,
+        locale,
+        slug,
+        path,
+        token_hash,
+        expires_at,
+        created_by_user_id
+      )
+      values (
+        ${ids.sanityPreviewGrant},
+        ${ids.organizationA},
+        'blog-post-security-test',
+        'sanityRevisionOne',
+        'en',
+        'security-test',
+        '/blog/security-test',
+        ${sanityPreviewTokenHash},
+        now() + interval '30 minutes',
+        ${ids.adminUser}
+      )`,
     fixtureAdmin`update app.content_documents
       set
         page_kind = case when kind = 'page' then 'standard' else null end
@@ -572,6 +600,8 @@ async function cleanup() {
     fixtureAdmin`delete from audit.events
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.provider_webhook_events
+      where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
+    fixtureAdmin`delete from app.content_provider_commands
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.outbox_events
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
@@ -2398,6 +2428,202 @@ async function verifyPublicAndWebBoundaries() {
   );
 
   await expectDenied(
+    publicReader`select token_hash from app.sanity_content_preview_grants`,
+    "public Sanity preview-grant read",
+  );
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'owner', true)`,
+      admin`select token_hash from app.sanity_content_preview_grants`,
+    ]),
+    "admin Sanity preview-token-hash read",
+  );
+  await expectDenied(
+    web`insert into app.sanity_content_preview_grants (
+      organization_id,
+      document_id,
+      revision_id,
+      locale,
+      slug,
+      path,
+      token_hash,
+      expires_at,
+      created_by_user_id
+    ) values (
+      ${ids.organizationA},
+      'blog-post-web-forbidden',
+      'sanityRevisionForbidden',
+      'en',
+      'web-forbidden',
+      '/blog/web-forbidden',
+      ${randomBytes(32).toString("hex")},
+      now() + interval '30 minutes',
+      ${ids.adminUser}
+    )`,
+    "web Sanity preview-grant creation",
+  );
+
+  const wrongTenantSanityPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationB}, true)`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`select document_id from app.sanity_content_preview_grants`,
+  ]);
+  assert.deepEqual(
+    wrongTenantSanityPreview[2],
+    [],
+    "a Sanity preview token must not cross organization boundaries",
+  );
+
+  const consumedSanityPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`update app.sanity_content_preview_grants
+      set
+        consumed_at = now(),
+        session_token_hash = ${sanityPreviewSessionTokenHash}
+      where token_hash = ${sanityPreviewTokenHash}
+        and consumed_at is null
+      returning document_id, revision_id`,
+  ]);
+  assert.deepEqual(consumedSanityPreview[2], [
+    {
+      document_id: "blog-post-security-test",
+      revision_id: "sanityRevisionOne",
+    },
+  ]);
+
+  const replayedSanityPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`update app.sanity_content_preview_grants
+      set consumed_at = now()
+      where token_hash = ${sanityPreviewTokenHash}
+        and consumed_at is null
+      returning document_id`,
+  ]);
+  assert.deepEqual(
+    replayedSanityPreview[2],
+    [],
+    "a Sanity preview grant must be consumed at most once",
+  );
+
+  const exactSanityPreview = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewSessionTokenHash}, true)`,
+    web`select document_id, revision_id, locale, slug, path
+      from app.sanity_content_preview_grants`,
+  ]);
+  assert.deepEqual(exactSanityPreview[2], [
+    {
+      document_id: "blog-post-security-test",
+      revision_id: "sanityRevisionOne",
+      locale: "en",
+      slug: "security-test",
+      path: "/blog/security-test",
+    },
+  ]);
+
+  const activationTokenAfterSanityConsumption = await web.transaction([
+    web`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+    web`select set_config('app.preview_token_hash', ${sanityPreviewTokenHash}, true)`,
+    web`select document_id from app.sanity_content_preview_grants`,
+  ]);
+  assert.deepEqual(
+    activationTokenAfterSanityConsumption[2],
+    [],
+    "a consumed Sanity activation token must not retain preview access",
+  );
+
+  const reservedProviderCommand = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`insert into app.content_provider_commands (
+      id,
+      organization_id,
+      actor_user_id,
+      session_id,
+      action,
+      target_id,
+      request_fingerprint
+    ) values (
+      ${ids.contentProviderCommand},
+      ${ids.organizationA},
+      ${ids.adminUser},
+      ${ids.activeAdminSession},
+      'blog_post.save',
+      'blog-post-security-test',
+      ${"a".repeat(64)}
+    ) returning id, status`,
+  });
+  assert.deepEqual(reservedProviderCommand, [
+    {
+      id: ids.contentProviderCommand,
+      status: "reserved",
+    },
+  ]);
+
+  const crossTenantProviderCommands = await withAdminContext({
+    organizationId: ids.organizationB,
+    userId: ids.adminUser,
+    membershipRole: "owner",
+    query: admin`select id from app.content_provider_commands
+      where id = ${ids.contentProviderCommand}`,
+  });
+  assert.deepEqual(
+    crossTenantProviderCommands,
+    [],
+    "content provider commands must be tenant isolated",
+  );
+
+  const otherEditorProviderCommands = await withAdminContext({
+    organizationId: ids.organizationA,
+    userId: ids.otherUser,
+    membershipRole: "editor",
+    query: admin`select id from app.content_provider_commands
+      where id = ${ids.contentProviderCommand}`,
+  });
+  assert.deepEqual(
+    otherEditorProviderCommands,
+    [],
+    "editors must not read another actor's provider commands",
+  );
+
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'owner', true)`,
+      admin`update app.content_provider_commands
+        set target_id = 'tampered'
+        where id = ${ids.contentProviderCommand}`,
+    ]),
+    "provider-command immutable-column update",
+  );
+  await expectDenied(
+    admin.transaction([
+      admin`select set_config('app.organization_id', ${ids.organizationA}, true)`,
+      admin`select set_config('app.user_id', ${ids.adminUser}, true)`,
+      admin`select set_config('app.membership_role', 'owner', true)`,
+      admin`delete from app.content_provider_commands
+        where id = ${ids.contentProviderCommand}`,
+    ]),
+    "provider-command deletion",
+  );
+
+  for (const [label, client] of [
+    ["public", publicReader],
+    ["web", web],
+  ]) {
+    await expectDenied(
+      client`select request_fingerprint from app.content_provider_commands`,
+      `${label} content-provider command read`,
+    );
+  }
+
+  await expectDenied(
     publicReader`select id from auth.user`,
     "public auth-schema read",
   );
@@ -2860,7 +3086,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, private-media isolation, public-ready media projection, restricted media metadata, locale-specific publication pointers, exact public revisions, single-use tenant-bound preview grants, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, private-media isolation, public-ready media projection, restricted media metadata, locale-specific publication pointers, exact public revisions, single-use tenant-bound Neon and Sanity preview grants, tenant-isolated provider commands, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

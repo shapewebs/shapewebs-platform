@@ -1,0 +1,26 @@
+{
+  "name": "@shapewebs/content-studio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "sanity build .sanity/build --yes --minify --no-source-maps",
+    "dev": "sanity dev --host localhost --port 3333",
+    "schema:validate": "sanity schema validate --level warning",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sanity/vision": "6.7.0",
+    "@shapewebs/content-schema": "workspace:*",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sanity": "6.7.0",
+    "styled-components": "6.4.4"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

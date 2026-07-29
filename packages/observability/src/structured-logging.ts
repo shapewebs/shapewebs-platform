@@ -11,7 +11,8 @@ type StructuredEventResult = "success" | "failure" | "denied" | "degraded";
 type SafeMetadata = {
   attempt?: number;
   count?: number;
-  dependency?: "database" | "email" | "captcha" | "storage" | "unknown";
+  dependency?:
+    "captcha" | "content" | "database" | "email" | "storage" | "unknown";
   httpStatus?: number;
   operation?: string;
   reasonCode?: string;
@@ -166,7 +167,8 @@ export function createStructuredLogger(options: StructuredLoggerOptions) {
 
 export type ReadinessCheck = {
   check: () => Promise<void>;
-  name: "authentication" | "captcha" | "database" | "email" | "storage";
+  name:
+    "authentication" | "captcha" | "content" | "database" | "email" | "storage";
 };
 
 export type ReadinessResult = {

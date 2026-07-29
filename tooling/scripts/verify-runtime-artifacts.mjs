@@ -5,6 +5,9 @@ import { resolve } from "node:path";
 const mediaTracePath = resolve(
   "apps/admin/.next/server/app/api/admin/media/route.js.nft.json",
 );
+const publicContentMediaTracePath = resolve(
+  "apps/admin/.next/server/app/api/admin/content/media/route.js.nft.json",
+);
 const cleanupTracePath = resolve(
   "apps/admin/.next/server/app/api/jobs/media-cleanup/route.js.nft.json",
 );
@@ -28,9 +31,11 @@ function assertSharpLinuxRuntime(files, route) {
 }
 
 const mediaFiles = await readTrace(mediaTracePath);
+const publicContentMediaFiles = await readTrace(publicContentMediaTracePath);
 const cleanupFiles = await readTrace(cleanupTracePath);
 
 assertSharpLinuxRuntime(mediaFiles, "/api/admin/media");
+assertSharpLinuxRuntime(publicContentMediaFiles, "/api/admin/content/media");
 assertSharpLinuxRuntime(cleanupFiles, "/api/jobs/media-cleanup");
 
 console.log(

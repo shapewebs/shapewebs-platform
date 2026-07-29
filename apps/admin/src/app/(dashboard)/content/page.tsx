@@ -46,9 +46,17 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
           </p>
         </div>
 
-        <Link className={styles.primaryActionV3m9q2} href="/content/pages/new">
-          New page
-        </Link>
+        <div className={styles["sw-content-actions-r4m8q2"]}>
+          <Link className={styles.primaryActionV3m9q2} href="/content/blog">
+            Blog posts
+          </Link>
+          <Link
+            className={styles.primaryActionV3m9q2}
+            href="/content/pages/new"
+          >
+            New page
+          </Link>
+        </div>
       </header>
 
       <form className={styles.filtersQ4m8p3} method="get">

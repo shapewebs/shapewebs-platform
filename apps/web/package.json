@@ -11,15 +11,17 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@portabletext/react": "7.0.1",
     "@shapewebs/config": "workspace:*",
+    "@shapewebs/content-platform": "workspace:*",
     "@shapewebs/content-schema": "workspace:*",
     "@shapewebs/database": "workspace:*",
     "@shapewebs/i18n": "workspace:*",
     "@shapewebs/observability": "workspace:*",
     "@shapewebs/ui": "workspace:*",
     "@shapewebs/validation": "workspace:*",
-    "@vercel/speed-insights": "2.0.0",
     "@vercel/otel": "2.1.3",
+    "@vercel/speed-insights": "2.0.0",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8"
