@@ -4,21 +4,22 @@
 
 - Date: 30 July 2026
 - Branch: protected `staging` at
-  `0499de514f780207533d30d098406d92d604e2b1`; documentation reconciliation is
-  isolated on `codex/foundation-status-reconciliation`
+  `8b62a0d0bff5b0cb30d01b17df83ed28310fa808`; the first public front-face
+  implementation is isolated on `codex/public-frontface-foundation`
 - Pull requests: foundation and migration pull requests `#15` through `#45`
   are merged; the Sanity publishing foundation and its deployment corrections
   `#46` through `#51`, unpublish lifecycle repair `#52`, and public-route/ZAP
-  robustness repair `#53` are also merged into protected `staging`
+  robustness repair `#53` and foundation evidence reconciliation `#54` are
+  also merged into protected `staging`
 - Status: staging foundation complete for employee authentication, Neon
   operations, Sanity public content/media, private Vercel Blob, lead/email
-  reliability, monitoring, and release assurance; production launch remains
-  deliberately gated
+  reliability, monitoring, and release assurance; the public studio design
+  phase is active, while production launch remains deliberately gated
 - Production baseline: commit
   `33affde883340d9db1d53d89ffd0c49d73fb531f`
 
 Production remains on the known-good baseline. Pull requests `#15` through
-`#53` are merged into protected `staging`. Migrations `0000` through `0018`
+`#54` are merged into protected `staging`. Migrations `0000` through `0018`
 are applied to the persistent synthetic staging database; the journal contains
 19 entries and its live six-identity security verification passes. Google
 OAuth, password login, shared TOTP step-up and protected employee navigation
@@ -28,10 +29,11 @@ The real Sanity journey has passed create, normalized image upload, save,
 one-time exact-revision preview, fresh-TOTP publish, exact public read,
 supported provider unpublish, signed webhook acceptance, durable receipt,
 public cache revalidation to `404`, ambiguous-command reconciliation, and
-reference-safe final cleanup. Post-merge staging run
-[`30518895512`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30518895512)
-passed k6 and ZAP against `0499de5`. No content slice has been connected to
-production data or promoted to the production domains.
+reference-safe final cleanup. Post-evidence staging run
+[`30521601429`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30521601429)
+required the exact `8b62a0d` deployments, then passed k6 and ZAP. No content
+slice has been connected to production data or promoted to the production
+domains.
 
 Sanity project `42f6331k` has one public `staging` dataset, separate Viewer and
 Editor robot tokens, exact localhost Studio CORS, and no production dataset.
@@ -630,6 +632,26 @@ Evidence is recorded in:
 - `docs/audits/sanity-content-lifecycle-verification-2026-07-30.md`;
 - `docs/audits/foundation-design-readiness-2026-07-30.md`.
 
+Pull request `#54` reconciled that evidence and the current roadmap, passed
+every required protected check, and merged into staging at `8b62a0d`. Both
+Vercel applications reached `READY` for that exact verified commit.
+Post-merge run
+[`30521601429`](https://github.com/shapewebs/shapewebs-platform/actions/runs/30521601429)
+then required those exact fixed deployments and passed k6, the passive ZAP
+baseline, and redacted artifact upload. Production `main` remained unchanged
+at `33affde8`.
+
+The first Milestone 6 public-design implementation now lives on
+`codex/public-frontface-foundation`. It introduces a static, server-rendered
+Shapewebs homepage and dark marketing shell with no new client state,
+third-party browser request, image payload, or marketing script. The design
+uses CSS-only artwork and preserves Next.js navigation while disabling
+unnecessary eager route prefetch. Three production Lighthouse runs score
+99/100/100/100 for performance/accessibility/best-practices/SEO, with zero
+layout shift, zero third-party requests, 137,102 script bytes and 178,070 total
+transfer bytes. Desktop, contact, and opened-mobile-navigation Axe journeys
+all pass.
+
 ## External launch gates
 
 These are intentionally not guessed or provisioned:
@@ -706,14 +728,14 @@ plan.
 
 ## Next implementation slices
 
-1. Publish this evidence reconciliation through the protected staging pull
-   request sequence and confirm the documentation-only change leaves all
-   canonical gates green.
-2. Review the current completion audit and explicitly separate design-start
-   readiness from production-launch gates. The public front-face design may
-   begin after the staging foundation is accepted; production remains blocked.
-3. Begin the public studio discovery and design phase while preserving the
-   separate employee, public, and invitation-only customer security realms.
+1. Complete the first public front-face pull request through the protected
+   staging sequence and repeat the fixed-domain k6/ZAP assurance run.
+2. Inventory real project evidence, screenshots, outcomes, testimonials,
+   service details, commercial positioning, and approved studio biography.
+   Never invent client work to fill the design.
+3. Extend the approved public visual system through Work, Case Study, Services,
+   Process, About, Contact, Journal, and legal surfaces while keeping published
+   website content and public media in Sanity.
 4. Keep the retained pre-`0017` Neon rollback branch only until its recorded
    expiry/rollback decision; do not treat it as a production backup.
 5. Rehearse accepted-risk expiry checks and the remaining production provider,

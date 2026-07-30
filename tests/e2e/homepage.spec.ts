@@ -8,7 +8,7 @@ test("homepage is semantic, static, and free of third-party requests", async ({
   expect(response?.status()).toBe(200);
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Distinctive websites, engineered for speed.",
+    "Websites that feel alive.",
   );
   await expect(
     page.locator("main").getByRole("link", {

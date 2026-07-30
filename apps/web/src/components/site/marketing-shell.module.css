@@ -1,9 +1,26 @@
 .sw-marketing-shell-g6p2v8 {
+  --sw-ui-color-bg-primary: 8 9 10;
+  --sw-ui-color-bg-secondary: 16 17 19;
+  --sw-ui-color-bg-tertiary: 28 28 31;
+  --sw-ui-color-bg-quaternary: 35 35 38;
+  --sw-ui-color-bg-quinary: 40 40 44;
+  --sw-ui-color-primary-inverted: 247 248 250;
+  --sw-ui-color-secondary-inverted: 236 241 245;
+  --sw-ui-color-border-primary: 35 37 42;
+  --sw-ui-color-border-secondary: 52 52 58;
+  --sw-ui-color-border-tertiary: 62 62 68;
+  --sw-ui-color-text-primary: 247 248 250;
+  --sw-ui-color-text-secondary: 208 214 216;
+  --sw-ui-color-text-tertiary: 138 143 152;
+  --sw-ui-color-link-primary: 106 168 255;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
   padding-top: 64px;
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  background: rgb(var(--sw-ui-color-bg-primary) / 1);
+  color-scheme: dark;
 }
 
 .sw-marketing-main-h3k8n1 {
@@ -12,8 +29,8 @@
   flex-direction: column;
   width: 100%;
   max-width: 100%;
-  padding-top: 64px;
-  padding-bottom: 64px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .sw-preview-banner-r7m2q5 {

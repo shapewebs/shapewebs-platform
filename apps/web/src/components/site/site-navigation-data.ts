@@ -42,7 +42,7 @@ export const siteFooterGroups: SiteFooterGroup[] = [
     title: "Enquiries",
     items: [
       { href: "/contact", label: "Start a project" },
-      { href: "mailto:lukas@shapewebs.com", label: "lukas@shapewebs.com" },
+      { href: "mailto:info@shapewebs.com", label: "info@shapewebs.com" },
     ],
   },
 ];
