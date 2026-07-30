@@ -1,26 +1,26 @@
 .sw-button-root-a1m7q4 {
-  --sw-button-gap: var(--sw-ui-space-2);
-  --sw-button-height: 40px;
-  --sw-button-icon-size: var(--sw-ui-icon-size-default);
-  --sw-button-padding: 0 var(--sw-ui-space-4);
+  --button-gap: var(--ui-space-2);
+  --button-height: 40px;
+  --button-icon-size: var(--ui-icon-size-default);
+  --button-padding: 0 var(--ui-space-4);
   position: relative;
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
-  height: var(--sw-button-height);
+  height: var(--button-height);
   min-height: 44px;
   margin: 0;
   align-items: center;
   justify-content: center;
-  gap: var(--sw-button-gap);
-  padding: var(--sw-button-padding);
+  gap: var(--button-gap);
+  padding: var(--button-padding);
   border: 1px solid transparent;
-  border-radius: var(--sw-ui-radius-sm);
+  border-radius: var(--ui-radius-sm);
   color: inherit;
   background: transparent;
   font: inherit;
-  font-size: var(--sw-ui-font-size-regular);
-  font-weight: var(--sw-ui-font-weight-medium);
+  font-size: var(--ui-font-size-regular);
+  font-weight: var(--ui-font-weight-medium);
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
@@ -28,12 +28,12 @@
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    background-color 160ms var(--sw-ui-ease-out-quad),
-    border-color 160ms var(--sw-ui-ease-out-quad),
-    box-shadow 160ms var(--sw-ui-ease-out-quad),
-    color 160ms var(--sw-ui-ease-out-quad),
-    opacity 160ms var(--sw-ui-ease-out-quad),
-    transform 160ms var(--sw-ui-ease-out-quad);
+    background-color 160ms var(--ui-ease-out-quad),
+    border-color 160ms var(--ui-ease-out-quad),
+    box-shadow 160ms var(--ui-ease-out-quad),
+    color 160ms var(--ui-ease-out-quad),
+    opacity 160ms var(--ui-ease-out-quad),
+    transform 160ms var(--ui-ease-out-quad);
 }
 
 .sw-button-root-a1m7q4:hover:not(:disabled, [aria-disabled="true"]) {
@@ -45,7 +45,7 @@
 }
 
 .sw-button-root-a1m7q4:focus-visible {
-  outline: 3px solid rgb(var(--sw-ui-color-focus-ring) / 0.42);
+  outline: 3px solid rgb(var(--ui-color-focus-ring) / 0.42);
   outline-offset: 3px;
 }
 
@@ -58,82 +58,82 @@
 
 .sw-button-root-a1m7q4 > svg,
 .sw-button-content-b2n8r5 > svg {
-  width: var(--sw-button-icon-size);
-  height: var(--sw-button-icon-size);
+  width: var(--button-icon-size);
+  height: var(--button-icon-size);
   flex: 0 0 auto;
 }
 
 .sw-button-small-c3p9s6 {
-  --sw-button-gap: var(--sw-ui-space-1);
-  --sw-button-height: 44px;
-  --sw-button-padding: 0 var(--sw-ui-space-3);
-  border-radius: var(--sw-ui-radius-xs);
-  font-size: var(--sw-ui-font-size-small);
+  --button-gap: var(--ui-space-1);
+  --button-height: 44px;
+  --button-padding: 0 var(--ui-space-3);
+  border-radius: var(--ui-radius-xs);
+  font-size: var(--ui-font-size-small);
 }
 
 .sw-button-medium-d4q1t7 {
-  --sw-button-height: 44px;
+  --button-height: 44px;
 }
 
 .sw-button-large-e5r2v8 {
-  --sw-button-height: 48px;
-  --sw-button-padding: 0 var(--sw-ui-space-5);
-  border-radius: var(--sw-ui-radius-md);
-  font-size: var(--sw-ui-font-size-regular-plus);
+  --button-height: 48px;
+  --button-padding: 0 var(--ui-space-5);
+  border-radius: var(--ui-radius-md);
+  font-size: var(--ui-font-size-regular-plus);
 }
 
 .sw-button-primary-f6s3w9 {
-  border-color: rgb(var(--sw-ui-color-primary-inverted) / 1);
-  color: rgb(var(--sw-ui-color-bg-primary) / 1);
-  background: rgb(var(--sw-ui-color-primary-inverted) / 1);
-  box-shadow: var(--sw-ui-shadow-stack-low);
+  border-color: rgb(var(--ui-color-primary-inverted) / 1);
+  color: rgb(var(--ui-color-bg-primary) / 1);
+  background: rgb(var(--ui-color-primary-inverted) / 1);
+  box-shadow: var(--ui-shadow-stack-low);
 }
 
 .sw-button-primary-f6s3w9:hover:not(:disabled, [aria-disabled="true"]) {
-  border-color: rgb(var(--sw-ui-color-secondary-inverted) / 1);
-  background: rgb(var(--sw-ui-color-secondary-inverted) / 1);
+  border-color: rgb(var(--ui-color-secondary-inverted) / 1);
+  background: rgb(var(--ui-color-secondary-inverted) / 1);
 }
 
 .sw-button-secondary-g7t4x1 {
-  border-color: rgb(var(--sw-ui-color-border-secondary) / 1);
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
-  background: rgb(var(--sw-ui-color-bg-secondary) / 1);
-  box-shadow: var(--sw-ui-shadow-stack-low);
+  border-color: rgb(var(--ui-color-border-secondary) / 1);
+  color: rgb(var(--ui-color-text-primary) / 1);
+  background: rgb(var(--ui-color-bg-secondary) / 1);
+  box-shadow: var(--ui-shadow-stack-low);
 }
 
 .sw-button-secondary-g7t4x1:hover:not(:disabled, [aria-disabled="true"]) {
-  border-color: rgb(var(--sw-ui-color-border-tertiary) / 1);
-  background: rgb(var(--sw-ui-color-bg-tertiary) / 1);
+  border-color: rgb(var(--ui-color-border-tertiary) / 1);
+  background: rgb(var(--ui-color-bg-tertiary) / 1);
 }
 
 .sw-button-tertiary-h8v5y2 {
   min-height: 44px;
-  padding-inline: var(--sw-ui-space-2);
-  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  padding-inline: var(--ui-space-2);
+  color: rgb(var(--ui-color-text-secondary) / 1);
 }
 
 .sw-button-tertiary-h8v5y2:hover:not(:disabled, [aria-disabled="true"]) {
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  color: rgb(var(--ui-color-text-primary) / 1);
 }
 
 .sw-button-ghost-j9w6z3 {
-  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  color: rgb(var(--ui-color-text-secondary) / 1);
 }
 
 .sw-button-ghost-j9w6z3:hover:not(:disabled, [aria-disabled="true"]) {
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
-  background: rgb(var(--sw-ui-color-button-translucent));
+  color: rgb(var(--ui-color-text-primary) / 1);
+  background: rgb(var(--ui-color-button-translucent));
 }
 
 .sw-button-danger-k1x7a4 {
-  border-color: rgb(var(--sw-ui-color-feedback-danger) / 0.55);
-  color: rgb(var(--sw-ui-color-feedback-danger) / 1);
-  background: rgb(var(--sw-ui-color-feedback-danger) / 0.08);
+  border-color: rgb(var(--ui-color-feedback-danger) / 0.55);
+  color: rgb(var(--ui-color-feedback-danger) / 1);
+  background: rgb(var(--ui-color-feedback-danger) / 0.08);
 }
 
 .sw-button-danger-k1x7a4:hover:not(:disabled, [aria-disabled="true"]) {
-  border-color: rgb(var(--sw-ui-color-feedback-danger) / 0.75);
-  background: rgb(var(--sw-ui-color-feedback-danger) / 0.14);
+  border-color: rgb(var(--ui-color-feedback-danger) / 0.75);
+  background: rgb(var(--ui-color-feedback-danger) / 0.14);
 }
 
 .sw-button-content-b2n8r5 {

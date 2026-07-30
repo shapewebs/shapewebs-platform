@@ -3,7 +3,7 @@
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sw-ui-space-3);
+  gap: var(--ui-space-3);
 }
 
 .sw-buttongroup-start-c4p9s6 {

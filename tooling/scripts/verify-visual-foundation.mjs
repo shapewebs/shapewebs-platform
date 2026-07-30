@@ -41,17 +41,17 @@ function listFiles(directory, predicate = () => true) {
 
 const themeFile = "packages/ui/src/styles/system-theme.css";
 const requiredThemeTokens = [
-  "--sw-ui-font-sans",
-  "--sw-ui-space-1",
-  "--sw-ui-space-10",
-  "--sw-ui-radius-xs",
-  "--sw-ui-radius-xl",
-  "--sw-ui-content-copy",
-  "--sw-ui-content-wide",
-  "--sw-ui-color-bg-primary",
-  "--sw-ui-color-text-primary",
-  "--sw-ui-color-focus-ring",
-  "--sw-ui-shadow-raised",
+  "--ui-font-sans",
+  "--ui-space-1",
+  "--ui-space-10",
+  "--ui-radius-xs",
+  "--ui-radius-xl",
+  "--ui-content-copy",
+  "--ui-content-width",
+  "--ui-color-bg-primary",
+  "--ui-color-text-primary",
+  "--ui-color-focus-ring",
+  "--ui-shadow-raised",
 ];
 
 assertIncludes(
@@ -72,6 +72,12 @@ for (const token of requiredThemeTokens) {
     `Missing required foundation token ${token}`,
   );
 }
+
+assertIncludes(
+  themeFile,
+  "--ui-content-width: 1344px;",
+  "The shared content width must remain 1344px",
+);
 
 assertIncludes(
   "apps/web/src/app/layout.tsx",
@@ -185,7 +191,7 @@ for (const pathname of applicationSourceFiles) {
   for (const pattern of prohibitedCompatibilityReferences) {
     assert(
       !pattern.test(source),
-      `Application source must use semantic --sw-ui-* tokens directly (${pathname})`,
+      `Application source must use semantic --ui-* tokens directly (${pathname})`,
     );
   }
 
@@ -203,8 +209,21 @@ const sharedUiCss = listFiles("packages/ui/src", (pathname) =>
 const applicationCss = applicationSourceFiles.filter((pathname) =>
   pathname.endsWith(".module.css"),
 );
+const tokenCss = [
+  ...listFiles("apps/web/src", (pathname) => pathname.endsWith(".css")),
+  ...listFiles("apps/admin/src", (pathname) => pathname.endsWith(".css")),
+  ...listFiles("apps/portal/src", (pathname) => pathname.endsWith(".css")),
+  ...listFiles("packages/ui/src", (pathname) => pathname.endsWith(".css")),
+];
 const customClassPattern = /\.([A-Za-z_][A-Za-z0-9_-]*)/g;
 const shapewebsClassPattern = /^sw-[a-z0-9]+-[a-z0-9]+-[a-z0-9]{6}$/;
+
+for (const pathname of tokenCss) {
+  assert(
+    !read(pathname).includes(["--", "sw-"].join("")),
+    `CSS custom properties must not use the removed Shapewebs prefix (${pathname})`,
+  );
+}
 
 for (const pathname of [...applicationCss, ...sharedUiCss]) {
   const source = read(pathname);

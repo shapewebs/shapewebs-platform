@@ -1,11 +1,11 @@
 .sw-session-root-q8m2v4 {
   display: grid;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
 }
 
 .sw-session-header-n3k7p1 {
   display: grid;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
 }
 
 .sw-session-header-n3k7p1 h2,
@@ -16,8 +16,8 @@
 }
 
 .sw-session-header-n3k7p1 h2 {
-  font-size: var(--sw-ui-font-size-large);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  font-size: var(--ui-font-size-large);
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.015em;
   line-height: 1.3;
 }
@@ -25,33 +25,33 @@
 .sw-session-header-n3k7p1 p,
 .sw-session-details-z7p4n2 > p,
 .sw-session-empty-b7p2m5 {
-  color: rgb(var(--sw-ui-color-text-secondary));
-  font-size: var(--sw-ui-font-size-regular);
+  color: rgb(var(--ui-color-text-secondary));
+  font-size: var(--ui-font-size-regular);
   line-height: 1.55;
 }
 
 .sw-session-eyebrow-t6m1q9 {
-  color: rgb(var(--sw-ui-color-text-tertiary));
-  font-size: var(--sw-ui-font-size-small);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  color: rgb(var(--ui-color-text-tertiary));
+  font-size: var(--ui-font-size-small);
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .sw-session-error-r4n8k2 {
-  background: rgb(var(--sw-ui-color-feedback-danger) / 0.08);
-  border: 1px solid rgb(var(--sw-ui-color-feedback-danger) / 0.5);
-  border-radius: var(--sw-ui-radius-sm);
-  color: rgb(var(--sw-ui-color-feedback-danger));
-  font-size: var(--sw-ui-font-size-regular);
+  background: rgb(var(--ui-color-feedback-danger) / 0.08);
+  border: 1px solid rgb(var(--ui-color-feedback-danger) / 0.5);
+  border-radius: var(--ui-radius-sm);
+  color: rgb(var(--ui-color-feedback-danger));
+  font-size: var(--ui-font-size-regular);
   line-height: 1.5;
   margin: 0;
-  padding: var(--sw-ui-space-3);
+  padding: var(--ui-space-3);
 }
 
 .sw-session-list-f2q9m6 {
   display: grid;
-  gap: var(--sw-ui-space-3);
+  gap: var(--ui-space-3);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -59,18 +59,18 @@
 
 .sw-session-item-k5m3v8 {
   align-items: start;
-  background: rgb(var(--sw-ui-color-bg-primary));
-  border: 1px solid rgb(var(--sw-ui-color-border-primary));
-  border-radius: var(--sw-ui-radius-sm);
+  background: rgb(var(--ui-color-bg-primary));
+  border: 1px solid rgb(var(--ui-color-border-primary));
+  border-radius: var(--ui-radius-sm);
   display: flex;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
   justify-content: space-between;
-  padding: var(--sw-ui-space-4);
+  padding: var(--ui-space-4);
 }
 
 .sw-session-details-z7p4n2 {
   display: grid;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
   min-width: 0;
 }
 
@@ -82,40 +82,40 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
 }
 
 .sw-session-title-h9m2q5 span {
-  background: rgb(var(--sw-ui-color-bg-tertiary));
-  border: 1px solid rgb(var(--sw-ui-color-border-primary));
-  border-radius: var(--sw-ui-radius-rounded);
-  color: rgb(var(--sw-ui-color-text-secondary));
-  font-size: var(--sw-ui-font-size-small);
-  padding: var(--sw-ui-space-1) var(--sw-ui-space-2);
+  background: rgb(var(--ui-color-bg-tertiary));
+  border: 1px solid rgb(var(--ui-color-border-primary));
+  border-radius: var(--ui-radius-rounded);
+  color: rgb(var(--ui-color-text-secondary));
+  font-size: var(--ui-font-size-small);
+  padding: var(--ui-space-1) var(--ui-space-2);
 }
 
 .sw-session-metadata-d3n8p7 {
   display: grid;
-  gap: var(--sw-ui-space-2) var(--sw-ui-space-5);
+  gap: var(--ui-space-2) var(--ui-space-5);
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: var(--sw-ui-space-1) 0 0;
+  margin: var(--ui-space-1) 0 0;
 }
 
 .sw-session-metadata-d3n8p7 div {
   display: grid;
-  gap: var(--sw-ui-space-1);
+  gap: var(--ui-space-1);
 }
 
 .sw-session-metadata-d3n8p7 dt {
-  color: rgb(var(--sw-ui-color-text-tertiary));
-  font-size: var(--sw-ui-font-size-small);
+  color: rgb(var(--ui-color-text-tertiary));
+  font-size: var(--ui-font-size-small);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .sw-session-metadata-d3n8p7 dd {
-  color: rgb(var(--sw-ui-color-text-secondary));
-  font-size: var(--sw-ui-font-size-regular);
+  color: rgb(var(--ui-color-text-secondary));
+  font-size: var(--ui-font-size-regular);
   margin: 0;
 }
 

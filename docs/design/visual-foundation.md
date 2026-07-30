@@ -100,7 +100,7 @@ Component CSS Modules own component presentation. Page CSS Modules own only
 composition unique to that page. Pages may not introduce a parallel palette,
 button system, type scale, or shadow language.
 
-Tokens use the `--sw-ui-*` namespace. New code must use semantic roles rather
+Tokens use the `--ui-*` namespace. New code must use semantic roles rather
 than raw palette values:
 
 - `bg-primary` through `bg-quinary`;

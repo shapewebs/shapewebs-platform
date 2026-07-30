@@ -1,6 +1,6 @@
 .sw-media-heading-r6p2v8 {
   display: grid;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
 }
 
 .sw-media-heading-r6p2v8 h2,
@@ -9,8 +9,8 @@
 }
 
 .sw-media-heading-r6p2v8 h2 {
-  font-size: var(--sw-ui-font-size-large-plus);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  font-size: var(--ui-font-size-large-plus);
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.02em;
   line-height: 1.25;
 }
@@ -18,73 +18,73 @@
 .sw-media-heading-r6p2v8 p,
 .sw-media-notice-v2m8q6,
 .sw-media-feedback-j3q7m4 {
-  color: rgb(var(--sw-ui-color-text-secondary));
-  font-size: var(--sw-ui-font-size-regular);
+  color: rgb(var(--ui-color-text-secondary));
+  font-size: var(--ui-font-size-regular);
   line-height: 1.6;
   max-width: 68ch;
 }
 
 .sw-media-panel-q5n9p2 {
   display: grid;
-  gap: var(--sw-ui-space-5);
+  gap: var(--ui-space-5);
 }
 
 .sw-media-library-f4q1m8 {
   display: grid;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
 }
 
 .sw-media-form-b7n2q5 {
   display: grid;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
   justify-items: start;
 }
 
 .sw-media-fields-n4v8q1 {
   display: grid;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
 }
 
 .sw-media-field-p8m3k2 {
   display: grid;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
 }
 
 .sw-media-field-p8m3k2 span {
-  font-size: var(--sw-ui-font-size-regular);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  font-size: var(--ui-font-size-regular);
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 .sw-media-field-p8m3k2 input,
 .sw-media-field-p8m3k2 select {
-  background: rgb(var(--sw-ui-color-bg-primary));
-  border: 1px solid rgb(var(--sw-ui-color-border-secondary));
-  border-radius: var(--sw-ui-radius-sm);
+  background: rgb(var(--ui-color-bg-primary));
+  border: 1px solid rgb(var(--ui-color-border-secondary));
+  border-radius: var(--ui-radius-sm);
   color: inherit;
   font: inherit;
   min-height: 44px;
-  padding: var(--sw-ui-space-2) var(--sw-ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-3);
   transition:
-    border-color 140ms var(--sw-ui-ease-out-quad),
-    box-shadow 140ms var(--sw-ui-ease-out-quad);
+    border-color 140ms var(--ui-ease-out-quad),
+    box-shadow 140ms var(--ui-ease-out-quad);
 }
 
 .sw-media-field-p8m3k2 input:focus-visible,
 .sw-media-field-p8m3k2 select:focus-visible {
-  border-color: rgb(var(--sw-ui-color-focus-ring));
-  box-shadow: 0 0 0 3px rgb(var(--sw-ui-color-focus-ring) / 0.18);
+  border-color: rgb(var(--ui-color-focus-ring));
+  box-shadow: 0 0 0 3px rgb(var(--ui-color-focus-ring) / 0.18);
   outline: none;
 }
 
 .sw-media-field-p8m3k2 input[type="file"] {
-  padding: var(--sw-ui-space-2);
+  padding: var(--ui-space-2);
 }
 
 .sw-media-field-p8m3k2 small {
-  color: rgb(var(--sw-ui-color-text-tertiary));
-  font-size: var(--sw-ui-font-size-small);
+  color: rgb(var(--ui-color-text-tertiary));
+  font-size: var(--ui-font-size-small);
   line-height: 1.45;
 }
 
@@ -94,45 +94,45 @@
 }
 
 .sw-media-notice-v2m8q6 {
-  border-left: 2px solid rgb(var(--sw-ui-color-feedback-accent));
+  border-left: 2px solid rgb(var(--ui-color-feedback-accent));
   margin: 0;
-  padding-left: var(--sw-ui-space-3);
+  padding-left: var(--ui-space-3);
 }
 
 .sw-media-list-a7q3m6 {
   display: grid;
-  gap: var(--sw-ui-space-3);
+  gap: var(--ui-space-3);
 }
 
 .sw-media-item-c2m8p4 {
   display: grid;
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
 }
 
 .sw-media-item-c2m8p4 > div {
   display: grid;
-  gap: var(--sw-ui-space-1);
+  gap: var(--ui-space-1);
 }
 
 .sw-media-item-c2m8p4 > div span {
-  color: rgb(var(--sw-ui-color-text-secondary));
+  color: rgb(var(--ui-color-text-secondary));
 }
 
 .sw-media-item-c2m8p4 dl {
   display: grid;
-  gap: var(--sw-ui-space-3);
+  gap: var(--ui-space-3);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
 }
 
 .sw-media-item-c2m8p4 dl div {
   display: grid;
-  gap: var(--sw-ui-space-1);
+  gap: var(--ui-space-1);
 }
 
 .sw-media-item-c2m8p4 dt {
-  color: rgb(var(--sw-ui-color-text-tertiary));
-  font-size: var(--sw-ui-font-size-small);
+  color: rgb(var(--ui-color-text-tertiary));
+  font-size: var(--ui-font-size-small);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

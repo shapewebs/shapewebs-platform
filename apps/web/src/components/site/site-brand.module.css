@@ -2,14 +2,14 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  gap: var(--sw-ui-space-3);
-  border-radius: var(--sw-ui-radius-sm);
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  gap: var(--ui-space-3);
+  border-radius: var(--ui-radius-sm);
+  color: rgb(var(--ui-color-text-primary) / 1);
   text-decoration: none;
 }
 
 .sw-brand-link-a8m3q6:focus-visible {
-  outline: 3px solid rgb(var(--sw-ui-color-focus-ring) / 0.42);
+  outline: 3px solid rgb(var(--ui-color-focus-ring) / 0.42);
   outline-offset: 3px;
 }
 

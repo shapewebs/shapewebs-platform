@@ -2,7 +2,7 @@
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: var(--sw-ui-space-3);
+  gap: var(--ui-space-3);
   color: inherit;
 }
 
@@ -15,8 +15,8 @@
 
 .sw-brand-name-d4q9t3 {
   overflow: hidden;
-  font-size: var(--sw-ui-font-size-regular-plus);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  font-size: var(--ui-font-size-regular-plus);
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.025em;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -1,18 +1,18 @@
 .sw-submissions-list-c8p4s1 {
   overflow: hidden;
-  border: 1px solid rgb(var(--sw-ui-color-border-primary) / 1);
-  border-radius: var(--sw-ui-radius-md);
-  background: rgb(var(--sw-ui-color-bg-secondary) / 1);
+  border: 1px solid rgb(var(--ui-color-border-primary) / 1);
+  border-radius: var(--ui-radius-md);
+  background: rgb(var(--ui-color-bg-secondary) / 1);
 }
 
 .sw-submissions-row-d9q5t2 {
   display: grid;
-  gap: var(--sw-ui-space-4);
-  padding: var(--sw-ui-space-5);
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-5);
 }
 
 .sw-submissions-row-d9q5t2 + .sw-submissions-row-d9q5t2 {
-  border-top: 1px solid rgb(var(--sw-ui-color-border-primary) / 1);
+  border-top: 1px solid rgb(var(--ui-color-border-primary) / 1);
 }
 
 .sw-submissions-primary-e1r6v3 {
@@ -21,19 +21,19 @@
 }
 
 .sw-submissions-primary-e1r6v3 strong {
-  font-size: var(--sw-ui-font-size-regular-plus);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  font-size: var(--ui-font-size-regular-plus);
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 .sw-submissions-primary-e1r6v3 span,
 .sw-submissions-message-g3t8x5 {
-  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  color: rgb(var(--ui-color-text-secondary) / 1);
 }
 
 .sw-submissions-meta-f2s7w4 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--sw-ui-space-4);
+  gap: var(--ui-space-4);
   margin: 0;
 }
 
@@ -43,20 +43,20 @@
 }
 
 .sw-submissions-meta-f2s7w4 dt {
-  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
-  font-size: var(--sw-ui-font-size-small);
+  color: rgb(var(--ui-color-text-tertiary) / 1);
+  font-size: var(--ui-font-size-small);
 }
 
 .sw-submissions-meta-f2s7w4 dd {
   margin: 0;
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
-  font-size: var(--sw-ui-font-size-small-plus);
+  color: rgb(var(--ui-color-text-primary) / 1);
+  font-size: var(--ui-font-size-small-plus);
 }
 
 .sw-submissions-message-g3t8x5 {
   max-width: 72ch;
   margin: 0;
-  font-size: var(--sw-ui-font-size-regular);
+  font-size: var(--ui-font-size-regular);
   line-height: 1.6;
 }
 

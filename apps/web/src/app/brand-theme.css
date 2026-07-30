@@ -1,9 +1,9 @@
 :root {
-  --sw-ui-system-max-width: var(--sw-ui-content-default);
-  --sw-ui-nav-logo-height: 16px;
+  --ui-system-max-width: var(--ui-content-default);
+  --ui-nav-logo-height: 16px;
 }
 
 html,
 body {
-  background: rgb(var(--sw-ui-color-bg-primary) / 1);
+  background: rgb(var(--ui-color-bg-primary) / 1);
 }

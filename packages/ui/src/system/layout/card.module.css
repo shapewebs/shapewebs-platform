@@ -1,10 +1,10 @@
 .sw-card-root-w1g7k4 {
   display: grid;
   min-width: 0;
-  padding: var(--sw-ui-space-5);
-  border: 1px solid rgb(var(--sw-ui-color-border-primary) / 1);
-  border-radius: var(--sw-ui-radius-md);
-  background: rgb(var(--sw-ui-color-bg-secondary) / 1);
+  padding: var(--ui-space-5);
+  border: 1px solid rgb(var(--ui-color-border-primary) / 1);
+  border-radius: var(--ui-radius-md);
+  background: rgb(var(--ui-color-bg-secondary) / 1);
 }
 
 .sw-card-quiet-x2h8m5 {
@@ -12,7 +12,7 @@
 }
 
 .sw-card-raised-y3j9n6 {
-  box-shadow: var(--sw-ui-shadow-raised);
+  box-shadow: var(--ui-shadow-raised);
 }
 
 @media (forced-colors: active) {

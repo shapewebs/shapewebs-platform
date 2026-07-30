@@ -2,8 +2,8 @@
   display: flex;
   min-height: 100vh;
   flex-direction: column;
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
-  background: rgb(var(--sw-ui-color-bg-primary) / 1);
+  color: rgb(var(--ui-color-text-primary) / 1);
+  background: rgb(var(--ui-color-bg-primary) / 1);
 }
 
 .sw-public-main-h2v7y9 {

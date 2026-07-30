@@ -1,13 +1,13 @@
 .sw-settings-grid-a6m2q8 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sw-ui-space-4);
-  margin-bottom: var(--sw-ui-space-6);
+  gap: var(--ui-space-4);
+  margin-bottom: var(--ui-space-6);
 }
 
 .sw-settings-card-b7n3r9 {
   align-content: start;
-  gap: var(--sw-ui-space-2);
+  gap: var(--ui-space-2);
 }
 
 .sw-settings-card-b7n3r9 h2,
@@ -16,14 +16,14 @@
 }
 
 .sw-settings-card-b7n3r9 h2 {
-  margin-bottom: var(--sw-ui-space-2);
-  font-size: var(--sw-ui-font-size-regular-plus);
-  font-weight: var(--sw-ui-font-weight-semibold);
+  margin-bottom: var(--ui-space-2);
+  font-size: var(--ui-font-size-regular-plus);
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 .sw-settings-card-b7n3r9 p {
-  color: rgb(var(--sw-ui-color-text-secondary) / 1);
-  font-size: var(--sw-ui-font-size-small-plus);
+  color: rgb(var(--ui-color-text-secondary) / 1);
+  font-size: var(--ui-font-size-small-plus);
   line-height: 1.55;
 }
 
