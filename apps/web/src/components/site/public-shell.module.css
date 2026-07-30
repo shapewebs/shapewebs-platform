@@ -1,0 +1,12 @@
+.sw-public-shell-g1t6x8 {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  background: rgb(var(--sw-ui-color-bg-primary) / 1);
+}
+
+.sw-public-main-h2v7y9 {
+  width: 100%;
+  flex: 1 1 auto;
+}

@@ -1,19 +1,14 @@
 import { cookies } from "next/headers";
-import { siteConfig, type ContentType } from "@shapewebs/config";
+import type { ContentType } from "@shapewebs/config";
 import {
   buildContentRevalidationTags,
   getPreviewContentByToken,
-  getPublishedContentBySlug,
-  getPublishedPageByKind,
-  listPublishedContent,
   type PublishedDocument,
-  type PublicLocaleCode,
 } from "@shapewebs/database/server";
 import {
   contentRouteMatchesDocument,
   type ResolvedContentRoute,
 } from "./content-routing";
-import { buildPageMetadata, getAbsoluteSiteUrl } from "./metadata";
 import { getPreviewCookiePolicy } from "./preview-cookie";
 
 export function getPublicSiteOrigin() {
@@ -44,66 +39,6 @@ export function getContentDatabaseConfiguration() {
   }
 
   return { databaseUrl, organizationId };
-}
-
-function joinPath(localeCode: string, pathname: string) {
-  if (localeCode === siteConfig.defaultLocale) {
-    return pathname;
-  }
-
-  return `/${localeCode}${pathname === "/" ? "" : pathname}`;
-}
-
-export function getDocumentPath(document: PublishedDocument) {
-  switch (document.contentType) {
-    case "page":
-      return document.pageKind === "home" || document.slug === "home"
-        ? "/"
-        : `/${document.slug}`;
-    case "post":
-      return `/blog/${document.slug}`;
-    case "project":
-      return `/projects/${document.slug}`;
-    case "service":
-      return `/services/${document.slug}`;
-    case "legal":
-      return `/legal/${document.slug}`;
-    case "method":
-      return `/${document.slug}`;
-    default:
-      return `/${document.slug}`;
-  }
-}
-
-export function buildDocumentMetadata(document: PublishedDocument) {
-  const pathname = getDocumentPath(document);
-  const localizedPath = joinPath(document.localeCode, pathname);
-  const canonical = getAbsoluteSiteUrl(localizedPath);
-
-  return {
-    ...buildPageMetadata({
-      title: document.seo.metaTitle ?? document.title,
-      description:
-        document.seo.metaDescription ??
-        document.summary ??
-        siteConfig.description,
-      path: localizedPath,
-      noIndex: !document.seo.robotsIndex,
-      type: document.contentType === "post" ? "article" : "website",
-    }),
-    alternates: {
-      canonical,
-      languages: {
-        en: getAbsoluteSiteUrl(pathname),
-        "da-DK": getAbsoluteSiteUrl(joinPath("da-DK", pathname)),
-        "x-default": getAbsoluteSiteUrl(pathname),
-      },
-    },
-    robots: {
-      index: document.seo.robotsIndex,
-      follow: true,
-    },
-  };
 }
 
 async function getPreviewToken() {
@@ -138,71 +73,6 @@ export async function getPrivatePreviewContent(
   return document && contentRouteMatchesDocument(route, document)
     ? document
     : null;
-}
-
-export async function getPublishedContentList(
-  contentType: ContentType,
-  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
-) {
-  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
-
-  return listPublishedContent(
-    databaseUrl,
-    organizationId,
-    contentType,
-    localeCode,
-  );
-}
-
-async function getResolvedHomepage(
-  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
-) {
-  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
-  return getPublishedPageByKind(
-    databaseUrl,
-    organizationId,
-    "home",
-    localeCode,
-  );
-}
-
-export async function getResolvedContentBySlug(
-  contentType: ContentType,
-  slug: string,
-  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
-) {
-  const { databaseUrl, organizationId } = getContentDatabaseConfiguration();
-  return getPublishedContentBySlug(databaseUrl, organizationId, {
-    contentType,
-    localeCode,
-    slug,
-  });
-}
-
-export async function getResolvedContentList(
-  contentType: ContentType,
-  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
-) {
-  return getPublishedContentList(contentType, localeCode);
-}
-
-export async function getResolvedGenericPage(
-  slug: string,
-  localeCode: PublicLocaleCode = siteConfig.defaultLocale,
-) {
-  const homepage = await getResolvedHomepage(localeCode);
-
-  if ((slug === "home" || slug === "") && homepage) {
-    return homepage;
-  }
-
-  const page = await getResolvedContentBySlug("page", slug, localeCode);
-
-  if (page) {
-    return page;
-  }
-
-  return getResolvedContentBySlug("method", slug, localeCode);
 }
 
 export function buildRevalidationPayload(input: {

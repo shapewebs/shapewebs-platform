@@ -3,6 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { Buttons } from "@shapewebs/ui";
+
 import styles from "./page.module.css";
 
 const feedback: Record<string, string> = {
@@ -106,13 +108,9 @@ export function MediaUploadForm() {
         </label>
       </div>
 
-      <button
-        className={styles["sw-media-submit-x6p1m9"]}
-        disabled={isPending}
-        type="submit"
-      >
+      <Buttons.Button pending={isPending} type="submit">
         {isPending ? "Verifying and uploading…" : "Upload private image"}
-      </button>
+      </Buttons.Button>
 
       <p
         aria-live="polite"

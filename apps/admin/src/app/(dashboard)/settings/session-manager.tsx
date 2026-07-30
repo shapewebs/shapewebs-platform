@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Buttons } from "@shapewebs/ui";
+import { Buttons, Layout } from "@shapewebs/ui";
 
 import styles from "./session-manager.module.css";
 
@@ -38,7 +38,7 @@ export function SessionManager({ sessions }: SessionManagerProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
-    <section className={styles["sw-session-root-q8m2v4"]}>
+    <Layout.Card className={styles["sw-session-root-q8m2v4"]}>
       <div className={styles["sw-session-header-n3k7p1"]}>
         <div>
           <p className={styles["sw-session-eyebrow-t6m1q9"]}>Security</p>
@@ -165,6 +165,7 @@ export function SessionManager({ sessions }: SessionManagerProps) {
                       router.refresh();
                     });
                   }}
+                  pending={isPending && pendingSessionId === session.id}
                   size="small"
                   type="button"
                 >
@@ -177,6 +178,6 @@ export function SessionManager({ sessions }: SessionManagerProps) {
           ))}
         </ul>
       )}
-    </section>
+    </Layout.Card>
   );
 }

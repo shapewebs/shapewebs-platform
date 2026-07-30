@@ -3,6 +3,9 @@ import {
   getOrganizationSettingsSnapshot,
   listOrganizationAdminSessions,
 } from "@shapewebs/database/server";
+import { Layout } from "@shapewebs/ui";
+
+import { AdminPage } from "@/components/admin-page";
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
 import styles from "./page.module.css";
@@ -35,56 +38,56 @@ export default async function SettingsPage() {
   }));
 
   return (
-    <main className={styles.rootQ3m8p1}>
-      <header className={styles.headerN9m2q4}>
-        <p className={styles.eyebrowM4q7p2}>Settings</p>
-        <h1>Platform settings snapshot</h1>
+    <AdminPage
+      description={
         <p>
           Locales, region profiles, consent rule sets, cookie policy versions,
           and feature flags are read from the owner-scoped Neon settings
           repository.
         </p>
-      </header>
-
-      <div className={styles.gridV7m3q1}>
-        <section className={styles.cardH2m8q5}>
+      }
+      eyebrow="System"
+      title="Platform settings"
+    >
+      <div className={styles["sw-settings-grid-a6m2q8"]}>
+        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
           <h2>Locales</h2>
           {settings.locales.map((locale) => (
             <p key={locale.code}>
               {locale.label} ({locale.code}) {locale.isDefault ? "Default" : ""}
             </p>
           ))}
-        </section>
+        </Layout.Card>
 
-        <section className={styles.cardH2m8q5}>
+        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
           <h2>Region profiles</h2>
           {settings.regionProfiles.map((profile) => (
             <p key={profile.code}>
               {profile.displayName} → {profile.ruleSetKey}
             </p>
           ))}
-        </section>
+        </Layout.Card>
 
-        <section className={styles.cardH2m8q5}>
+        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
           <h2>Consent rule sets</h2>
           {settings.consentRuleSets.map((ruleSet) => (
             <p key={ruleSet.key}>
               {ruleSet.key} ({ruleSet.defaultMode})
             </p>
           ))}
-        </section>
+        </Layout.Card>
 
-        <section className={styles.cardH2m8q5}>
+        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
           <h2>Feature flags</h2>
           {settings.featureFlags.map((flag) => (
             <p key={flag.key}>
               {flag.key}: {flag.enabled ? "Enabled" : "Disabled"}
             </p>
           ))}
-        </section>
+        </Layout.Card>
       </div>
 
       {!runtime.setupMode ? <SessionManager sessions={sessionItems} /> : null}
-    </main>
+    </AdminPage>
   );
 }

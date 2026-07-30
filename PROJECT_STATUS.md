@@ -4,13 +4,14 @@
 
 - Date: 30 July 2026
 - Branch: protected `staging` at
-  `8b62a0d0bff5b0cb30d01b17df83ed28310fa808`; the first public front-face
-  implementation is isolated on `codex/public-frontface-foundation`
+  `eea5f3abe12daf05f4ceddd82a7022ad9db630fc`; the visual-system reset is
+  isolated on `codex/visual-foundation`
 - Pull requests: foundation and migration pull requests `#15` through `#45`
   are merged; the Sanity publishing foundation and its deployment corrections
   `#46` through `#51`, unpublish lifecycle repair `#52`, and public-route/ZAP
-  robustness repair `#53` and foundation evidence reconciliation `#54` are
-  also merged into protected `staging`
+  robustness repair `#53`, foundation evidence reconciliation `#54`, and the
+  superseded first homepage implementation `#55` are also merged into
+  protected `staging`
 - Status: staging foundation complete for employee authentication, Neon
   operations, Sanity public content/media, private Vercel Blob, lead/email
   reliability, monitoring, and release assurance; the public studio design
@@ -19,7 +20,7 @@
   `33affde883340d9db1d53d89ffd0c49d73fb531f`
 
 Production remains on the known-good baseline. Pull requests `#15` through
-`#54` are merged into protected `staging`. Migrations `0000` through `0018`
+`#55` are merged into protected `staging`. Migrations `0000` through `0018`
 are applied to the persistent synthetic staging database; the journal contains
 19 entries and its live six-identity security verification passes. Google
 OAuth, password login, shared TOTP step-up and protected employee navigation
@@ -42,6 +43,37 @@ remains the source of truth for identities, authorization, audit, idempotency,
 preview grants and company/customer operations; private Vercel Blob remains
 the boundary for confidential files. The checked-in Studio is a
 provider-recovery surface, not the employee CMS.
+
+## Active visual-foundation branch
+
+The unmerged `codex/visual-foundation` branch deliberately supersedes the
+first homepage composition from pull request `#55`. The public application is
+now a controlled design canvas:
+
+- `/` has an empty body and retains only a rebuilt header and footer.
+- Every other public marketing page is removed. Private CMS preview and
+  integration Route Handlers remain isolated infrastructure.
+- Crawling remains enabled and the sitemap contains only the canonical
+  homepage, preserving the SEO release budget while public body content is
+  intentionally absent.
+- Shared semantic tokens define separate dark `showcase` and light `studio`
+  themes. Header, footer and both application shells consume shared brand,
+  button and layout primitives.
+- The admin login, dashboard, navigation, content lists and editors, media,
+  submissions, settings, security and audit surfaces share one composition
+  model. Existing authentication, authorization and fail-closed behavior is
+  unchanged.
+- `pnpm visual:foundation:check` protects the exact route reset, theme
+  selection, required tokens, component use, application token boundary and
+  all 99 application/shared CSS Module class contracts.
+
+This branch has passed zero-warning lint, strict workspace TypeScript,
+render-level UI tests, local public/admin browser verification and a responsive
+dashboard check. The canonical repository gate, all six Turbopack/webpack
+application builds, 13 Playwright journeys and Lighthouse budgets also pass;
+the latest lab run scored 99 performance and 100 accessibility, best practices
+and SEO. It is not deployed or merged yet. Preview-only k6/ZAP and protected
+GitHub/Vercel checks remain required before merge to protected staging.
 
 ## Implemented on protected staging
 

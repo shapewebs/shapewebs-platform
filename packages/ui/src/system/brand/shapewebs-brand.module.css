@@ -1,0 +1,27 @@
+.sw-brand-root-a1m6q9 {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--sw-ui-space-3);
+  color: inherit;
+}
+
+.sw-brand-mark-c3p8s2 {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+
+.sw-brand-name-d4q9t3 {
+  overflow: hidden;
+  font-size: var(--sw-ui-font-size-regular-plus);
+  font-weight: var(--sw-ui-font-weight-semibold);
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sw-brand-compact-b2n7r1 {
+  justify-content: center;
+}

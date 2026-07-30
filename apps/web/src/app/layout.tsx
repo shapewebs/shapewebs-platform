@@ -6,14 +6,8 @@ import "@shapewebs/ui/styles/base.css";
 import "./brand-theme.css";
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    {
-      media: "(prefers-color-scheme: light)",
-      color: siteConfig.themeColorLight,
-    },
-    { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColorDark },
-  ],
+  colorScheme: "dark",
+  themeColor: siteConfig.themeColorDark,
 };
 
 export const metadata: Metadata = {
@@ -83,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html data-sw-theme="showcase" lang="en">
       <body>
         {children}
         {process.env.VERCEL === "1" ? <SpeedInsights /> : null}

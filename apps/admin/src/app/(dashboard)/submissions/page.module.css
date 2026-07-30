@@ -1,51 +1,73 @@
-.rootW6m2q3 {
-  padding: 40px 24px 56px;
-  width: min(100%, 1080px);
-  margin: 0 auto;
+.sw-submissions-list-c8p4s1 {
+  overflow: hidden;
+  border: 1px solid rgb(var(--sw-ui-color-border-primary) / 1);
+  border-radius: var(--sw-ui-radius-md);
+  background: rgb(var(--sw-ui-color-bg-secondary) / 1);
+}
+
+.sw-submissions-row-d9q5t2 {
   display: grid;
-  gap: 18px;
+  gap: var(--sw-ui-space-4);
+  padding: var(--sw-ui-space-5);
 }
 
-.headerN5m2q8 {
+.sw-submissions-row-d9q5t2 + .sw-submissions-row-d9q5t2 {
+  border-top: 1px solid rgb(var(--sw-ui-color-border-primary) / 1);
+}
+
+.sw-submissions-primary-e1r6v3 {
   display: grid;
-  gap: 10px;
+  gap: 2px;
 }
 
-.headerN5m2q8 h1 {
-  font-size: clamp(1.75rem, 1.25rem + 1.6vw, 2.5rem);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.08;
+.sw-submissions-primary-e1r6v3 strong {
+  font-size: var(--sw-ui-font-size-regular-plus);
+  font-weight: var(--sw-ui-font-weight-semibold);
 }
 
-.headerN5m2q8 p,
-.rowF7m3q4 p,
-.rowF7m3q4 span {
-  color: rgba(var(--color-text-secondary), 1);
+.sw-submissions-primary-e1r6v3 span,
+.sw-submissions-message-g3t8x5 {
+  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+}
+
+.sw-submissions-meta-f2s7w4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sw-ui-space-4);
+  margin: 0;
+}
+
+.sw-submissions-meta-f2s7w4 div {
+  display: grid;
+  gap: 2px;
+}
+
+.sw-submissions-meta-f2s7w4 dt {
+  color: rgb(var(--sw-ui-color-text-tertiary) / 1);
+  font-size: var(--sw-ui-font-size-small);
+}
+
+.sw-submissions-meta-f2s7w4 dd {
+  margin: 0;
+  color: rgb(var(--sw-ui-color-text-primary) / 1);
+  font-size: var(--sw-ui-font-size-small-plus);
+}
+
+.sw-submissions-message-g3t8x5 {
+  max-width: 72ch;
+  margin: 0;
+  font-size: var(--sw-ui-font-size-regular);
   line-height: 1.6;
 }
 
-.eyebrowQ4m7p1 {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(var(--color-text-tertiary), 1);
+@media (max-width: 720px) {
+  .sw-submissions-meta-f2s7w4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.tableM4p8q2 {
-  border: 1px solid rgba(var(--color-border-primary), 1);
-}
-
-.rowF7m3q4 {
-  display: grid;
-  gap: 8px;
-  padding: 16px;
-}
-
-.rowF7m3q4 + .rowF7m3q4 {
-  border-top: 1px solid rgba(var(--color-border-primary), 1);
-}
-
-.primaryT5m1q9 {
-  display: grid;
-  gap: 4px;
+@media (max-width: 460px) {
+  .sw-submissions-meta-f2s7w4 {
+    grid-template-columns: 1fr;
+  }
 }

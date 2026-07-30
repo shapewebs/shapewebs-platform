@@ -16,7 +16,9 @@ import {
 } from "@portabletext/editor";
 import { EventListenerPlugin } from "@portabletext/editor/plugins";
 import type { SanityBlogPost } from "@shapewebs/content-schema";
+import { Buttons } from "@shapewebs/ui";
 
+import { AdminPage } from "@/components/admin-page";
 import { PreviewSavedRevisionForm } from "../../_components/preview-saved-revision-form";
 import styles from "./blog-editor-form.module.css";
 
@@ -312,51 +314,67 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
     <div className={styles["sw-blog-toolbar-q4m8p3"]}>
       <div className={styles["sw-blog-toolrow-f3m8v2"]}>
         {(["normal", "h2", "h3", "h4", "blockquote"] as const).map((style) => (
-          <button key={style} onClick={() => toggleStyle(style)} type="button">
+          <Buttons.Button
+            key={style}
+            kind="ghost"
+            onClick={() => toggleStyle(style)}
+            size="small"
+            type="button"
+          >
             {style}
-          </button>
+          </Buttons.Button>
         ))}
         {(["strong", "em", "underline", "strike-through", "code"] as const).map(
           (decorator) => (
-            <button
+            <Buttons.Button
               key={decorator}
+              kind="ghost"
               onClick={() => toggleDecorator(decorator)}
+              size="small"
               type="button"
             >
               {decorator}
-            </button>
+            </Buttons.Button>
           ),
         )}
-        <button
+        <Buttons.Button
+          kind="ghost"
           onClick={() => {
             editor.send({ listItem: "bullet", type: "list item.toggle" });
             refocus();
           }}
+          size="small"
           type="button"
         >
           Bullets
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => {
             editor.send({ listItem: "number", type: "list item.toggle" });
             refocus();
           }}
+          size="small"
           type="button"
         >
           Numbered
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => editor.send({ type: "history.undo" })}
+          size="small"
           type="button"
         >
           Undo
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => editor.send({ type: "history.redo" })}
+          size="small"
           type="button"
         >
           Redo
-        </button>
+        </Buttons.Button>
       </div>
 
       <div className={styles["sw-blog-toolrow-f3m8v2"]}>
@@ -366,9 +384,14 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
           placeholder="/contact or https://…"
           value={href}
         />
-        <button onClick={applyLink} type="button">
+        <Buttons.Button
+          kind="secondary"
+          onClick={applyLink}
+          size="small"
+          type="button"
+        >
           Apply link to selection
-        </button>
+        </Buttons.Button>
       </div>
 
       <div className={styles["sw-blog-imageinsert-n4v8q1"]}>
@@ -423,13 +446,15 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
           />
           <span>Decorative image</span>
         </label>
-        <button
+        <Buttons.Button
           disabled={assets.length === 0}
+          kind="secondary"
           onClick={insertImage}
+          size="small"
           type="button"
         >
           Insert selected image
-        </button>
+        </Buttons.Button>
       </div>
     </div>
   );
@@ -497,9 +522,15 @@ function PublicMediaUploadControl({
           type="file"
         />
       </label>
-      <button disabled={isPending} onClick={upload} type="button">
+      <Buttons.Button
+        kind="secondary"
+        onClick={upload}
+        pending={isPending}
+        size="small"
+        type="button"
+      >
         {isPending ? "Verifying and uploading…" : "Upload to public library"}
-      </button>
+      </Buttons.Button>
       <p aria-live="polite" role="status">
         {message}
       </p>
@@ -533,25 +564,25 @@ export function BlogEditorForm({
   const selectedCoverId = post?.coverImage.asset._ref ?? assets[0]?.id ?? "";
 
   return (
-    <main className={styles["sw-blog-root-p4m8q2"]}>
-      <header className={styles["sw-blog-header-b7m2p5"]}>
-        <div>
-          <p className={styles["sw-blog-eyebrow-d8m3q1"]}>Blog editor</p>
-          <h1>{post?.title ?? "New blog post"}</h1>
+    <AdminPage
+      description={
+        <>
           <p>
             Structured website content is saved in Sanity. Every mutation is
             re-authorized here; publishing also requires a recent TOTP step-up.
           </p>
-        </div>
-        {documentId ? (
-          <div className={styles["sw-blog-meta-r6m2q4"]}>
-            <span>Document: {documentId}</span>
-            <span>Draft revision: {expectedRevision}</span>
-            <span>Published: {publishedRevision ? "yes" : "not yet"}</span>
-          </div>
-        ) : null}
-      </header>
-
+          {documentId ? (
+            <div className={styles["sw-blog-meta-r6m2q4"]}>
+              <span>Document: {documentId}</span>
+              <span>Draft revision: {expectedRevision}</span>
+              <span>Published: {publishedRevision ? "yes" : "not yet"}</span>
+            </div>
+          ) : null}
+        </>
+      }
+      eyebrow="Blog editor"
+      title={post?.title ?? "New blog post"}
+    >
       {notice ? (
         <p className={styles["sw-blog-notice-k6m1q7"]}>{notice}</p>
       ) : null}
@@ -760,12 +791,12 @@ export function BlogEditorForm({
         </section>
 
         <div className={styles["sw-blog-actions-m8q2r6"]}>
-          <button
+          <Buttons.Button
             disabled={assets.length === 0 || authors.length === 0}
             type="submit"
           >
             Save draft
-          </button>
+          </Buttons.Button>
         </div>
       </form>
 
@@ -796,7 +827,9 @@ export function BlogEditorForm({
                 minutes. Unsaved editor changes are never published.
               </p>
             </div>
-            <button type="submit">Publish saved revision</button>
+            <Buttons.Button type="submit">
+              Publish saved revision
+            </Buttons.Button>
           </form>
         </>
       ) : null}
@@ -820,9 +853,11 @@ export function BlogEditorForm({
               This destructive action requires a recent TOTP step-up.
             </p>
           </div>
-          <button type="submit">Unpublish article</button>
+          <Buttons.Button kind="danger" type="submit">
+            Unpublish article
+          </Buttons.Button>
         </form>
       ) : null}
-    </main>
+    </AdminPage>
   );
 }

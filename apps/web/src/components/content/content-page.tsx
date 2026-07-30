@@ -1,5 +1,6 @@
-import Link from "next/link";
 import type { PublishedDocument } from "@shapewebs/database/server";
+import { Layout, Navigation } from "@shapewebs/ui";
+
 import { ContentRenderer } from "./content-renderer";
 import styles from "./content-page.module.css";
 
@@ -9,24 +10,26 @@ type ContentPageProps = {
 
 export function ContentPage({ document }: ContentPageProps) {
   return (
-    <section className={styles.pageF6m2q4}>
-      <div className={styles.containerP4m8q1}>
-        <header className={styles.headerN8m3q2}>
-          <p className={styles.kickerT7m1p4}>{document.contentType}</p>
+    <section className={styles["sw-contentpage-root-a4m9q2"]}>
+      <Layout.Container className={styles["sw-contentpage-container-b5n1r3"]}>
+        <header className={styles["sw-contentpage-header-c6p2s4"]}>
+          <p className={styles["sw-contentpage-kicker-d7q3t5"]}>
+            {document.contentType}
+          </p>
           <h1>{document.title}</h1>
           {document.summary ? (
-            <p className={styles.summaryM4p2q8}>{document.summary}</p>
+            <p className={styles["sw-contentpage-summary-e8r4v6"]}>
+              {document.summary}
+            </p>
           ) : null}
         </header>
 
         <ContentRenderer document={document.content} />
 
-        <footer className={styles.footerQ8m1r5}>
-          <Link className={styles.backLinkV2m6q4} href="/contact">
-            Start a project conversation
-          </Link>
+        <footer className={styles["sw-contentpage-footer-f9s5w7"]}>
+          <Navigation.Link href="/">Return to homepage</Navigation.Link>
         </footer>
-      </div>
+      </Layout.Container>
     </section>
   );
 }

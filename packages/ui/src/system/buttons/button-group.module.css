@@ -1,6 +1,26 @@
-.root {
+.sw-buttongroup-root-a2m7q4 {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  gap: var(--sw-ui-space-3);
+}
+
+.sw-buttongroup-start-c4p9s6 {
+  justify-content: flex-start;
+}
+
+.sw-buttongroup-end-b3n8r5 {
+  justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .sw-buttongroup-root-a2m7q4 {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sw-buttongroup-root-a2m7q4 > * {
+    width: 100%;
+  }
 }

@@ -1,75 +1,105 @@
-.root {
-  --spinner-size: 1.5rem;
+.sw-spinner-root-d9q5t2 {
+  --sw-spinner-size: 24px;
   display: inline-flex;
+  position: relative;
+  width: var(--sw-spinner-size);
+  height: var(--sw-spinner-size);
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: var(--spinner-size);
-  height: var(--spinner-size);
   color: currentColor;
-  flex: 0 0 auto;
 }
 
-.icon {
+.sw-spinner-icon-e1r6v3 {
   width: 100%;
   height: 100%;
-  animation: spinner-rotate 0.85s linear infinite;
+  animation: sw-spinner-rotate 720ms linear infinite;
+  fill: none;
   transform-origin: center;
 }
 
-.sizeSm {
-  --spinner-size: 1rem;
+.sw-spinner-small-z5k1p7 {
+  --sw-spinner-size: 16px;
 }
 
-.sizeMd {
-  --spinner-size: 1.5rem;
+.sw-spinner-medium-c8p4s1 {
+  --sw-spinner-size: 24px;
 }
 
-.sizeLg {
-  --spinner-size: 2rem;
+.sw-spinner-large-a6m2q8 {
+  --sw-spinner-size: 32px;
 }
 
-.sizeXl {
-  --spinner-size: 2.75rem;
+.sw-spinner-xlarge-b7n3r9 {
+  --sw-spinner-size: 44px;
 }
 
-.colorCurrent {
+.sw-spinner-current-t9e5h2 {
   color: currentColor;
 }
 
-.colorAccent {
+.sw-spinner-accent-v1f6j3 {
   color: rgb(var(--sw-ui-color-feedback-accent) / 1);
 }
 
-.colorSuccess {
+.sw-spinner-success-w2g7k4 {
   color: rgb(var(--sw-ui-color-feedback-success) / 1);
 }
 
-.colorWarning {
+.sw-spinner-warning-x3h8m5 {
   color: rgb(var(--sw-ui-color-feedback-warning) / 1);
 }
 
-.colorDanger {
+.sw-spinner-danger-y4j9n6 {
   color: rgb(var(--sw-ui-color-feedback-danger) / 1);
 }
 
-.srOnly {
+.sw-spinner-track-f2s7w4 {
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.2;
+}
+
+.sw-spinner-arc-g3t8x5 {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.sw-spinner-label-h4v9y6 {
   position: absolute;
   width: 1px;
   height: 1px;
-  padding: 0;
   margin: -1px;
+  padding: 0;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip: rect(0 0 0 0);
   white-space: nowrap;
-  border: 0;
+  clip-path: inset(50%);
 }
 
-@keyframes spinner-rotate {
+@keyframes sw-spinner-rotate {
   from {
     transform: rotate(0deg);
   }
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-spinner-icon-e1r6v3 {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .sw-spinner-track-f2s7w4 {
+    stroke: GrayText;
+  }
+
+  .sw-spinner-arc-g3t8x5 {
+    stroke: CanvasText;
   }
 }

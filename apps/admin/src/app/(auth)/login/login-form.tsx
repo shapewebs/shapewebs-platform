@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { adminAuthClient } from "@shapewebs/auth/client";
-import { Buttons } from "@shapewebs/ui";
+import { Buttons, Navigation } from "@shapewebs/ui";
 
 import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 
@@ -76,24 +75,24 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
   }
 
   return (
-    <div className={styles.formB8q1n7}>
+    <div className={styles["sw-auth-stack-m6y2b4"]}>
       {statusMessage ? (
-        <p className={styles.noticeStateV7m3k2}>{statusMessage}</p>
+        <p className={styles["sw-auth-notice-p5a1d7"]}>{statusMessage}</p>
       ) : errorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+        <p className={styles["sw-auth-error-q6b2e8"]} role="alert">
           {errorMessage}
         </p>
       ) : routeErrorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+        <p className={styles["sw-auth-error-q6b2e8"]} role="alert">
           {routeErrorMessage}
         </p>
       ) : null}
 
       <form
-        className={styles["sw-auth-form-h8q2v5"]}
+        className={styles["sw-auth-form-n7z3c5"]}
         onSubmit={signInWithPassword}
       >
-        <label className={styles.fieldM4k7v3}>
+        <label className={styles["sw-auth-field-r7c3f9"]}>
           <span>Email</span>
           <input
             autoComplete="email"
@@ -105,7 +104,7 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
             value={email}
           />
         </label>
-        <label className={styles.fieldM4k7v3}>
+        <label className={styles["sw-auth-field-r7c3f9"]}>
           <span>Password</span>
           <input
             autoComplete="current-password"
@@ -164,13 +163,17 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
         {isPending ? "Opening Google..." : "Continue with Google"}
       </Buttons.Button>
 
-      <p className={styles.noticeStateV7m3k2}>
+      <p className={styles["sw-auth-notice-p5a1d7"]}>
         Both methods open the same employee account. Every admin login still
         requires your authenticator code.
       </p>
       <div className={styles["sw-auth-links-r6m2k9"]}>
-        <Link href="/forgot-password">Forgot or want to add a password?</Link>
-        <Link href="/activate">Activate an allowlisted employee account</Link>
+        <Navigation.Link href="/forgot-password">
+          Forgot or want to add a password?
+        </Navigation.Link>
+        <Navigation.Link href="/activate">
+          Activate an allowlisted employee account
+        </Navigation.Link>
       </div>
     </div>
   );

@@ -44,8 +44,9 @@
     "test:workers": "pnpm --filter @shapewebs/outbox-scheduler test:runtime",
     "test:zap:baseline": "node tooling/scripts/run-zap-baseline.mjs",
     "typecheck": "turbo run typecheck",
-    "verify": "pnpm format:check && pnpm lint && pnpm lint:docs && pnpm typecheck && pnpm studio:schema:validate && pnpm monitoring:checkly:validate && pnpm security:asvs:check && pnpm security:dependency-patches:check && pnpm test:workers && pnpm test:coverage && pnpm check:boundaries && pnpm check:deps && pnpm check:cycles && pnpm check:generated && pnpm audit",
+    "verify": "pnpm format:check && pnpm lint && pnpm lint:docs && pnpm visual:foundation:check && pnpm typecheck && pnpm studio:schema:validate && pnpm monitoring:checkly:validate && pnpm security:asvs:check && pnpm security:dependency-patches:check && pnpm test:workers && pnpm test:coverage && pnpm check:boundaries && pnpm check:deps && pnpm check:cycles && pnpm check:generated && pnpm audit",
     "verify:release": "pnpm verify && pnpm build:workers && pnpm studio:build && pnpm build:turbopack && pnpm build:webpack && pnpm check:runtime-artifacts && pnpm test:e2e && pnpm test:performance && pnpm test:load:smoke && pnpm test:zap:baseline && pnpm security:asvs:gate",
+    "visual:foundation:check": "node tooling/scripts/verify-visual-foundation.mjs",
     "clean": "pnpm clean:artifacts",
     "clean:artifacts": "node tooling/scripts/clean-artifacts.mjs"
   },
@@ -56,6 +57,7 @@
     "@sanity/webhook": "4.0.4",
     "@types/node": "^20",
     "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@vitest/coverage-v8": "4.1.10",
     "brace-expansion": "5.0.8",
     "checkly": "8.17.1",
@@ -66,6 +68,8 @@
     "knip": "6.29.0",
     "markdownlint-cli2": "0.23.1",
     "prettier": "3.9.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "turbo": "2.10.6",
     "typescript": "^5",
     "vitest": "4.1.10"

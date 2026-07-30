@@ -1,4 +1,12 @@
 export { Card } from "./card";
+export type { CardProps } from "./card";
+export { Cluster } from "./cluster";
+export type { ClusterProps } from "./cluster";
+export { Container } from "./container";
+export type { ContainerProps } from "./container";
 export { Separator } from "./separator";
+export { Stack } from "./stack";
+export type { StackProps } from "./stack";
 export { Surface } from "./surface";
+export type { SurfaceProps } from "./surface";
 export { Toolbar } from "./toolbar";

@@ -12,8 +12,9 @@ export function LogoutButton() {
 
   return (
     <Buttons.Button
-      className={styles.logoutButtonU7m3q1}
+      className={styles["sw-adminshell-logout-r9c5f7"]}
       kind="ghost"
+      pending={isPending}
       onClick={() => {
         startTransition(async () => {
           await adminAuthClient.signOut();
@@ -25,7 +26,7 @@ export function LogoutButton() {
       size="small"
       type="button"
     >
-      {isPending ? "Signing out..." : "Sign out"}
+      Sign out
     </Buttons.Button>
   );
 }

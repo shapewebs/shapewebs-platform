@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
-import { Buttons } from "@shapewebs/ui";
+import { Buttons, Navigation } from "@shapewebs/ui";
 
 import styles from "../login/page.module.css";
 
@@ -32,16 +31,16 @@ export function ForgotPasswordForm({
   }
 
   return (
-    <form className={styles.formB8q1n7} onSubmit={submit}>
+    <form className={styles["sw-auth-stack-m6y2b4"]} onSubmit={submit}>
       {completed ? (
-        <p className={styles.noticeStateV7m3k2}>
+        <p className={styles["sw-auth-notice-p5a1d7"]}>
           If this is an eligible employee account, a single-use link will arrive
           shortly. The response is intentionally identical for unknown
           addresses.
         </p>
       ) : (
         <>
-          <label className={styles.fieldM4k7v3}>
+          <label className={styles["sw-auth-field-r7c3f9"]}>
             <span>Work email</span>
             <input
               autoComplete="email"
@@ -63,7 +62,7 @@ export function ForgotPasswordForm({
           </Buttons.Button>
         </>
       )}
-      <Link href="/login">Return to sign in</Link>
+      <Navigation.Link href="/login">Return to sign in</Navigation.Link>
     </form>
   );
 }

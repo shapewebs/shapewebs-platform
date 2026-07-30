@@ -23,9 +23,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html data-sw-theme="studio" lang="en">
       <body>
-        <div className={styles.shellT9k4m2}>{children}</div>
+        <div className={styles["sw-admin-root-a2m7q4"]}>{children}</div>
       </body>
     </html>
   );

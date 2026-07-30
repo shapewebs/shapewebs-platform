@@ -1,61 +1,61 @@
-.rootN6m2q8 {
+.sw-renderer-root-a4m9q2 {
   display: grid;
-  gap: 28px;
+  gap: var(--sw-ui-space-6);
 }
 
-.heroT2m9q3,
-.sectionM8q2p5 {
+.sw-renderer-hero-b5n1r3,
+.sw-renderer-section-c6p2s4 {
   display: grid;
-  gap: 14px;
+  gap: var(--sw-ui-space-4);
 }
 
-.heroT2m9q3 h2,
-.sectionM8q2p5 h2 {
-  font-size: clamp(1.6rem, 1.1rem + 1.6vw, 2.4rem);
+.sw-renderer-hero-b5n1r3 h2,
+.sw-renderer-section-c6p2s4 h2 {
+  font-size: var(--sw-ui-font-size-title-3);
+  font-weight: var(--sw-ui-font-weight-medium);
+  letter-spacing: -0.03em;
   line-height: 1.1;
-  font-weight: var(--font-weight-medium);
+  margin: 0;
 }
 
-.eyebrowK5m1q7 {
-  font-size: 12px;
-  letter-spacing: 0.08em;
+.sw-renderer-eyebrow-d7q3t5 {
+  color: rgb(var(--sw-ui-color-text-tertiary));
+  font-size: var(--sw-ui-font-size-small);
+  font-weight: var(--sw-ui-font-weight-semibold);
+  letter-spacing: 0.1em;
+  margin: 0;
   text-transform: uppercase;
-  color: rgba(var(--color-text-tertiary), 1);
 }
 
-.bodyP7m3q1,
-.paragraphB8m4q1,
-.captionR6m3q8 {
-  color: rgba(var(--color-text-secondary), 1);
+.sw-renderer-body-e8r4v6,
+.sw-renderer-paragraph-f9s5w7,
+.sw-renderer-caption-m5y1b3 {
+  color: rgb(var(--sw-ui-color-text-secondary));
+  font-size: var(--sw-ui-font-size-regular-plus);
   line-height: 1.7;
+  margin: 0;
 }
 
-.ctaLinkQ3m8r4 {
-  color: rgba(var(--color-text-primary), 1);
-  text-decoration: none;
-  font-size: 13px;
-}
-
-.ctaPanelV9m4q2,
-.faqItemH6m4q9,
-.imagePlaceholderC4m7p2 {
-  border: 1px solid rgba(var(--color-border-primary), 1);
-  padding: 18px;
-}
-
-.faqListX5m2q7 {
+.sw-renderer-ctapanel-g1t6x8,
+.sw-renderer-faqitem-j3w8z1 {
   display: grid;
-  gap: 12px;
+  gap: var(--sw-ui-space-3);
 }
 
-.faqItemH6m4q9 h3 {
-  font-size: 1rem;
-  font-weight: var(--font-weight-medium);
+.sw-renderer-faqlist-h2v7y9 {
+  display: grid;
+  gap: var(--sw-ui-space-3);
 }
 
-.imagePlaceholderC4m7p2 {
-  color: rgba(var(--color-text-secondary), 1);
+.sw-renderer-faqitem-j3w8z1 h3 {
+  font-size: var(--sw-ui-font-size-large);
+  font-weight: var(--sw-ui-font-weight-semibold);
+  margin: 0;
+}
+
+.sw-renderer-image-k4x9a2 {
+  color: rgb(var(--sw-ui-color-text-secondary));
+  display: grid;
   min-height: 180px;
-  display: grid;
   place-items: center;
 }

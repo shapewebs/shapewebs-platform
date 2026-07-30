@@ -1,5 +1,9 @@
 export { Button } from "./button";
 export type { ButtonProps } from "./button";
+export { ButtonAnchor } from "./button-anchor";
+export type { ButtonAnchorProps } from "./button-anchor";
+export { ButtonLink } from "./button-link";
+export type { ButtonLinkProps } from "./button-link";
 export { ButtonGroup } from "./button-group";
 export type { ButtonGroupProps } from "./button-group";
 export { CloseButton } from "./close-button";

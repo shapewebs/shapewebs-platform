@@ -1,4 +1,7 @@
 import styles from "./input-group.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const InputGroup = createStyledComponent("div", styles.root);
+export const InputGroup = createStyledComponent(
+  "div",
+  styles["sw-inputgroup-root-qeb1ri"],
+);

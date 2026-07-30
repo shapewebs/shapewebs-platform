@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
-import { Buttons } from "@shapewebs/ui";
+import { Buttons, Navigation } from "@shapewebs/ui";
 
 import styles from "../login/page.module.css";
 
@@ -56,24 +55,24 @@ export function ActivationForm({ isConfigured }: { isConfigured: boolean }) {
 
   if (completed) {
     return (
-      <div className={styles.formB8q1n7}>
-        <p className={styles.noticeStateV7m3k2}>
+      <div className={styles["sw-auth-stack-m6y2b4"]}>
+        <p className={styles["sw-auth-notice-p5a1d7"]}>
           If this address is allowlisted and can be activated, a single-use
           verification link will arrive shortly.
         </p>
-        <Link href="/login">Return to sign in</Link>
+        <Navigation.Link href="/login">Return to sign in</Navigation.Link>
       </div>
     );
   }
 
   return (
-    <form className={styles.formB8q1n7} onSubmit={submit}>
+    <form className={styles["sw-auth-stack-m6y2b4"]} onSubmit={submit}>
       {errorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+        <p className={styles["sw-auth-error-q6b2e8"]} role="alert">
           {errorMessage}
         </p>
       ) : null}
-      <label className={styles.fieldM4k7v3}>
+      <label className={styles["sw-auth-field-r7c3f9"]}>
         <span>Full name</span>
         <input
           autoComplete="name"
@@ -84,7 +83,7 @@ export function ActivationForm({ isConfigured }: { isConfigured: boolean }) {
           value={name}
         />
       </label>
-      <label className={styles.fieldM4k7v3}>
+      <label className={styles["sw-auth-field-r7c3f9"]}>
         <span>Allowlisted work email</span>
         <input
           autoComplete="email"
@@ -96,7 +95,7 @@ export function ActivationForm({ isConfigured }: { isConfigured: boolean }) {
           value={email}
         />
       </label>
-      <label className={styles.fieldM4k7v3}>
+      <label className={styles["sw-auth-field-r7c3f9"]}>
         <span>Password</span>
         <input
           autoComplete="new-password"
@@ -109,7 +108,7 @@ export function ActivationForm({ isConfigured }: { isConfigured: boolean }) {
           value={password}
         />
       </label>
-      <label className={styles.fieldM4k7v3}>
+      <label className={styles["sw-auth-field-r7c3f9"]}>
         <span>Repeat password</span>
         <input
           autoComplete="new-password"
@@ -130,11 +129,11 @@ export function ActivationForm({ isConfigured }: { isConfigured: boolean }) {
       >
         {isPending ? "Submitting..." : "Create password account"}
       </Buttons.Button>
-      <p className={styles.noticeStateV7m3k2}>
+      <p className={styles["sw-auth-notice-p5a1d7"]}>
         Already used Google? Sign in with Google and add a password from Account
         security instead.
       </p>
-      <Link href="/login">Return to sign in</Link>
+      <Navigation.Link href="/login">Return to sign in</Navigation.Link>
     </form>
   );
 }

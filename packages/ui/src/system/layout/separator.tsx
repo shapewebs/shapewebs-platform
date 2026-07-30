@@ -1,4 +1,7 @@
 import styles from "./separator.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const Separator = createStyledComponent("hr", styles.root);
+export const Separator = createStyledComponent(
+  "hr",
+  styles["sw-separator-root-8thbjk"],
+);

@@ -1,0 +1,27 @@
+.sw-container-root-z4k1p7 {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: clamp(var(--sw-ui-space-4), 4vw, var(--sw-ui-system-padding));
+}
+
+.sw-container-copy-a5m2q8 {
+  max-width: calc(
+    var(--sw-ui-content-copy) + (2 * var(--sw-ui-system-padding))
+  );
+}
+
+.sw-container-default-b6n3r9 {
+  max-width: calc(
+    var(--sw-ui-content-default) + (2 * var(--sw-ui-system-padding))
+  );
+}
+
+.sw-container-wide-c7p4s1 {
+  max-width: calc(
+    var(--sw-ui-content-wide) + (2 * var(--sw-ui-system-padding))
+  );
+}
+
+.sw-container-full-d8q5t2 {
+  max-width: none;
+}

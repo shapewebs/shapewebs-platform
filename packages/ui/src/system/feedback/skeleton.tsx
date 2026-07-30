@@ -1,4 +1,7 @@
 import styles from "./skeleton.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const Skeleton = createStyledComponent("div", styles.root);
+export const Skeleton = createStyledComponent(
+  "div",
+  styles["sw-skeleton-root-h29yex"],
+);

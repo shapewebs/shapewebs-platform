@@ -21,8 +21,8 @@
 }
 
 .sw-article-header-b7m2p5 > p:last-child {
-  color: rgba(var(--color-text-secondary), 1);
-  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.25rem);
+  color: rgb(var(--sw-ui-color-text-secondary));
+  font-size: var(--sw-ui-font-size-large);
   line-height: 1.65;
 }
 
@@ -52,8 +52,8 @@
 .sw-article-cover-n4v8q1 figcaption,
 .sw-article-image-q5n9p2 figcaption,
 .sw-article-imagewide-f4q1m8 figcaption {
-  color: rgba(var(--color-text-secondary), 1);
-  font-size: 0.85rem;
+  color: rgb(var(--sw-ui-color-text-secondary));
+  font-size: var(--sw-ui-font-size-small);
 }
 
 .sw-article-body-a7q3m6 {
@@ -88,7 +88,7 @@
 
 .sw-article-quote-r8q2m4,
 .sw-article-callout-v2m8q6 {
-  border-left: 3px solid rgba(var(--color-link-primary), 1);
+  border-left: 2px solid rgb(var(--sw-ui-color-feedback-accent));
   display: grid;
   gap: 8px;
   margin: 8px 0;
@@ -102,17 +102,17 @@
 }
 
 .sw-article-code-c2m8p4 pre {
-  background: rgba(var(--color-bg-secondary), 1);
-  border: 1px solid rgba(var(--color-border-primary), 1);
-  border-radius: 14px;
+  background: rgb(var(--sw-ui-color-bg-secondary));
+  border: 1px solid rgb(var(--sw-ui-color-border-primary));
+  border-radius: var(--sw-ui-radius-md);
   overflow-x: auto;
   padding: 18px;
 }
 
 .sw-article-cta-x6p1m9 {
-  background: rgba(var(--color-bg-secondary), 1);
-  border: 1px solid rgba(var(--color-border-primary), 1);
-  border-radius: 16px;
+  background: rgb(var(--sw-ui-color-bg-secondary));
+  border: 1px solid rgb(var(--sw-ui-color-border-primary));
+  border-radius: var(--sw-ui-radius-md);
   color: inherit;
   display: grid;
   gap: 4px;

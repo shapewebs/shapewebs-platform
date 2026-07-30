@@ -29,7 +29,7 @@ function mergeKeywords(keywords?: string[]) {
   return Array.from(new Set([...siteConfig.keywords, ...(keywords ?? [])]));
 }
 
-export function getAbsoluteSiteUrl(path = "/") {
+function getAbsoluteSiteUrl(path = "/") {
   return new URL(normalizePath(path), siteConfig.productionUrl).toString();
 }
 

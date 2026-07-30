@@ -1,4 +1,7 @@
 import styles from "./color-swatch-picker.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const ColorSwatchPicker = createStyledComponent("div", styles.root);
+export const ColorSwatchPicker = createStyledComponent(
+  "div",
+  styles["sw-colorswatchpicker-root-6ktcpi"],
+);

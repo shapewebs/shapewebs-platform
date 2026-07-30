@@ -1,4 +1,7 @@
 import styles from "./input-otp.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const InputOtp = createStyledComponent("div", styles.root);
+export const InputOtp = createStyledComponent(
+  "div",
+  styles["sw-inputotp-root-jhcyc0"],
+);

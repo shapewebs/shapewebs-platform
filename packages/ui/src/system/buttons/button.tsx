@@ -1,43 +1,26 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import styles from "./button.module.css";
-import { mergeClassNames } from "../_internal/merge-class-names";
+import {
+  buttonContentClassName,
+  getButtonClassName,
+  type ButtonKind,
+  type ButtonSize,
+} from "./button-styles";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  kind?: "primary" | "secondary" | "tertiary" | "ghost";
-  size?: "small" | "medium" | "large";
+  kind?: ButtonKind;
   leadingIcon?: ReactNode;
+  pending?: boolean;
+  size?: ButtonSize;
   trailingIcon?: ReactNode;
 };
-
-function getKindClass(kind: NonNullable<ButtonProps["kind"]>) {
-  switch (kind) {
-    case "secondary":
-      return styles.kindSecondary;
-    case "tertiary":
-      return styles.kindTertiary;
-    case "ghost":
-      return styles.kindGhost;
-    default:
-      return styles.kindPrimary;
-  }
-}
-
-function getSizeClass(size: NonNullable<ButtonProps["size"]>) {
-  switch (size) {
-    case "small":
-      return styles.sizeSmall;
-    case "large":
-      return styles.sizeLarge;
-    default:
-      return styles.sizeMedium;
-  }
-}
 
 export function Button({
   children,
   className,
+  disabled,
   kind = "primary",
   leadingIcon,
+  pending = false,
   size = "medium",
   trailingIcon,
   type = "button",
@@ -45,17 +28,14 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={mergeClassNames(
-        styles.root,
-        getKindClass(kind),
-        getSizeClass(size),
-        className,
-      )}
+      aria-busy={pending || undefined}
+      className={getButtonClassName(kind, size, className)}
       data-component-status="styled"
+      disabled={disabled || pending}
       type={type}
       {...props}
     >
-      <span className={styles.content}>
+      <span className={buttonContentClassName}>
         {leadingIcon}
         {children}
         {trailingIcon}

@@ -1,4 +1,7 @@
 import styles from "./error-message.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const ErrorMessage = createStyledComponent("p", styles.root);
+export const ErrorMessage = createStyledComponent(
+  "p",
+  styles["sw-errormessage-root-0zorb8"],
+);

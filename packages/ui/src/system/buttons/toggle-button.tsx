@@ -1,7 +1,8 @@
 import { useId } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
-import styles from "./toggle-button.module.css";
+
 import { mergeClassNames } from "../_internal/merge-class-names";
+import styles from "./toggle-button.module.css";
 
 export type ToggleButtonProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -21,18 +22,20 @@ export function ToggleButton({
 
   return (
     <label
-      className={mergeClassNames(styles.wrapper, className)}
+      className={mergeClassNames(styles["sw-toggle-root-f7s3w9"], className)}
       htmlFor={inputId}
     >
       <input
-        className={styles.input}
+        className={styles["sw-toggle-input-g8t4x1"]}
         data-component-status="styled"
         id={inputId}
         type="checkbox"
         {...props}
       />
-      <span className={styles.track} />
-      {label ? <span className={styles.label}>{label}</span> : null}
+      <span aria-hidden="true" className={styles["sw-toggle-track-h9v5y2"]} />
+      {label ? (
+        <span className={styles["sw-toggle-label-j1w6z3"]}>{label}</span>
+      ) : null}
     </label>
   );
 }

@@ -1,6 +1,11 @@
 export const componentRegistry = {
+  brand: {
+    ShapewebsBrand: "styled",
+  },
   buttons: {
     Button: "styled",
+    ButtonAnchor: "styled",
+    ButtonLink: "styled",
     ButtonGroup: "styled",
     CloseButton: "styled",
     ToggleButton: "styled",
@@ -63,9 +68,12 @@ export const componentRegistry = {
     TextArea: "scaffolded",
   },
   layout: {
-    Card: "scaffolded",
+    Card: "styled",
+    Cluster: "styled",
+    Container: "styled",
     Separator: "scaffolded",
-    Surface: "scaffolded",
+    Stack: "styled",
+    Surface: "styled",
     Toolbar: "scaffolded",
   },
   media: {

@@ -1,29 +1,32 @@
 import { expect, test } from "@playwright/test";
 
-test("homepage is semantic, static, and free of third-party requests", async ({
+test("homepage body is empty, themed, and free of third-party requests", async ({
   page,
 }) => {
   const response = await page.goto("/");
 
   expect(response?.status()).toBe(200);
   await expect(page.locator("main")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Websites that feel alive.",
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-sw-theme",
+    "showcase",
   );
+  await expect(page.locator("main")).toBeEmpty();
+  await expect(page.locator("main").getByRole("heading")).toHaveCount(0);
+  await expect(page.getByRole("banner")).toHaveCount(1);
+  await expect(page.getByRole("contentinfo")).toHaveCount(1);
   await expect(
-    page.locator("main").getByRole("link", {
-      name: "Start a project",
-      exact: true,
-    }),
-  ).toHaveAttribute("href", "/contact");
+    page.getByRole("link", { name: "Start a project" }),
+  ).toHaveAttribute("href", "mailto:info@shapewebs.com");
+  await expect(page.getByText("Websites that feel alive.")).toHaveCount(0);
 
   const layout = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
-    h1Count: document.querySelectorAll("h1").length,
+    mainChildCount: document.querySelector("main")?.childElementCount,
     scrollWidth: document.documentElement.scrollWidth,
   }));
 
-  expect(layout.h1Count).toBe(1);
+  expect(layout.mainChildCount).toBe(0);
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
 
   const externalOrigins = await page.evaluate(() => {
@@ -42,32 +45,21 @@ test("homepage is semantic, static, and free of third-party requests", async ({
   expect(externalOrigins).toEqual([]);
 });
 
-test("native mobile navigation is hidden when closed and usable when open", async ({
-  page,
-}) => {
-  await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/");
-
-  const navigation = page.getByRole("navigation", {
-    name: "Mobile navigation",
-  });
-  const menu = page.locator("details");
-
-  await expect(menu).not.toHaveAttribute("open", "");
-  await expect(navigation).not.toBeVisible();
-
-  await page.locator('summary[aria-label="Toggle menu"]').click();
-
-  await expect(menu).toHaveAttribute("open", "");
-  await expect(navigation).toBeVisible();
-  await expect(
-    navigation.getByRole("link", { name: "Start a project", exact: true }),
-  ).toHaveAttribute("href", "/contact");
-
-  const pageWidth = await page.evaluate(() => ({
-    client: document.documentElement.clientWidth,
-    scroll: document.documentElement.scrollWidth,
-  }));
-
-  expect(pageWidth.scroll).toBeLessThanOrEqual(pageWidth.client);
+test("removed public page routes return not found", async ({ request }) => {
+  for (const route of [
+    "/contact",
+    "/blog",
+    "/blog/example",
+    "/da-DK/blog",
+    "/work",
+    "/work/example",
+    "/projects",
+    "/projects/example",
+    "/services/example",
+    "/legal/privacy",
+    "/unregistered-page",
+  ]) {
+    const response = await request.get(route);
+    expect(response.status(), route).toBe(404);
+  }
 });

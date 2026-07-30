@@ -1,57 +1,51 @@
-.rootQ8n2m5 {
-  padding: 48px 24px 64px;
-  width: min(100%, 1200px);
-  margin: 0 auto;
-}
-
-.headerM3v7k1 {
+.sw-dashboard-section-a5m1q7 {
   display: grid;
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: var(--sw-ui-space-4);
 }
 
-.eyebrowN5q2t8 {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(var(--color-text-tertiary), 1);
+.sw-dashboard-heading-b6n2r8 {
+  margin: 0;
+  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  font-size: var(--sw-ui-font-size-small-plus);
+  font-weight: var(--sw-ui-font-weight-medium);
 }
 
-.titleB6p8k3 {
-  font-size: clamp(2rem, 1.35rem + 1.8vw, 3rem);
-  line-height: 1.05;
-  font-weight: var(--font-weight-medium);
+.sw-dashboard-grid-c7p3s9 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sw-ui-space-4);
 }
 
-.copyT4m9v1 {
-  max-width: 64ch;
-  color: rgba(var(--color-text-secondary), 1);
+.sw-dashboard-card-d8q4t1 {
+  min-height: 196px;
+  justify-content: space-between;
+  gap: var(--sw-ui-space-5);
+}
+
+.sw-dashboard-cardcopy-e9r5v2 {
+  display: grid;
+  gap: var(--sw-ui-space-2);
+}
+
+.sw-dashboard-cardcopy-e9r5v2 h3,
+.sw-dashboard-cardcopy-e9r5v2 p {
+  margin: 0;
+}
+
+.sw-dashboard-cardcopy-e9r5v2 h3 {
+  font-size: var(--sw-ui-font-size-large);
+  font-weight: var(--sw-ui-font-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.sw-dashboard-cardcopy-e9r5v2 p {
+  color: rgb(var(--sw-ui-color-text-secondary) / 1);
+  font-size: var(--sw-ui-font-size-regular);
   line-height: 1.6;
 }
 
-.gridL9p4r2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.cardG2m7k4 {
-  min-height: 160px;
-  border: 1px solid rgba(var(--color-border-primary), 1);
-  padding: 18px;
-  background: rgba(var(--color-bg-secondary), 1);
-  display: grid;
-  align-content: start;
-  gap: 8px;
-}
-
-.cardG2m7k4 h2 {
-  font-size: 15px;
-  font-weight: var(--font-weight-medium);
-}
-
-.cardG2m7k4 p {
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(var(--color-text-secondary), 1);
+@media (max-width: 720px) {
+  .sw-dashboard-grid-c7p3s9 {
+    grid-template-columns: 1fr;
+  }
 }
