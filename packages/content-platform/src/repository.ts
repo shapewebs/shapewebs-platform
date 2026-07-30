@@ -680,33 +680,21 @@ export function createSanityWriteRepository(input: {
     async unpublishBlogPost(options: {
       commandId: string;
       documentId: string;
-      expectedPublishedRevision: string;
-      publishedContent: unknown;
     }): Promise<{ transactionId: string }> {
       const commandId = commandIdSchema.parse(options.commandId);
       const publishedId = documentIdSchema.parse(options.documentId);
-      const expectedPublishedRevision = revisionSchema.parse(
-        options.expectedPublishedRevision,
-      );
-      const publishedContent = sanityBlogPostDraftInputSchema.parse(
-        options.publishedContent,
-      );
-      const result = await input.client
-        .transaction()
-        .createIfNotExists({
-          _id: createDraftId(publishedId as PublishedId),
-          _type: "blogPost",
-          ...publishedContent,
-        })
-        .patch(publishedId, {
-          ifRevisionID: expectedPublishedRevision,
-        })
-        .delete(publishedId)
-        .transactionId(commandId)
-        .commit({
-          returnDocuments: false,
+
+      const result = await input.client.action(
+        {
+          actionType: "sanity.action.document.unpublish",
+          draftId: createDraftId(publishedId as PublishedId),
+          publishedId,
+        },
+        {
           tag: "content.blog-post-unpublish",
-        });
+          transactionId: commandId,
+        },
+      );
 
       return {
         transactionId: result.transactionId,

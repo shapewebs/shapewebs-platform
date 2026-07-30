@@ -66,28 +66,6 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "invalid_webhook" }, 415);
   }
 
-  const deliveryValidation = validateSanityDeliveryHeaders(request.headers, {
-    dataset: sanity.webhookEnvironment.dataset,
-    projectId: sanity.webhookEnvironment.projectId,
-  });
-
-  if (deliveryValidation.status === "invalid") {
-    logger.log({
-      eventCode: "shapewebs.webhook.sanity",
-      level: "warn",
-      metadata: {
-        dependency: "content",
-        reasonCode: `provider_header_${deliveryValidation.reasonCode}`,
-      },
-      requestId,
-      result: "denied",
-    });
-    return jsonResponse({ error: "invalid_webhook" }, 400);
-  }
-
-  const delivery = deliveryValidation.delivery;
-  const { eventId, occurredAt, transactionId } = delivery;
-
   const rawBody = await readBoundedText(request, maximumSanityWebhookBodyBytes);
 
   if (rawBody.status !== "ok") {
@@ -115,6 +93,28 @@ export async function POST(request: Request) {
     });
     return jsonResponse({ error: "invalid_webhook" }, 400);
   }
+
+  const deliveryValidation = validateSanityDeliveryHeaders(request.headers, {
+    dataset: sanity.webhookEnvironment.dataset,
+    projectId: sanity.webhookEnvironment.projectId,
+  });
+
+  if (deliveryValidation.status === "invalid") {
+    logger.log({
+      eventCode: "shapewebs.webhook.sanity",
+      level: "warn",
+      metadata: {
+        dependency: "content",
+        reasonCode: `provider_header_${deliveryValidation.reasonCode}`,
+      },
+      requestId,
+      result: "denied",
+    });
+    return jsonResponse({ error: "invalid_webhook" }, 400);
+  }
+
+  const delivery = deliveryValidation.delivery;
+  const { eventId, occurredAt, transactionId } = delivery;
 
   const revalidationRequests = getSanityWebhookRevalidationRequests(event, {
     vercelOidcToken: request.headers.get("x-vercel-oidc-token") ?? undefined,

@@ -1,7 +1,9 @@
 import type { SanityWebhookPayload } from "@shapewebs/content-schema";
 
 const safeProviderHeaderPattern = /^[A-Za-z0-9._:-]+$/u;
-const safeQuotedIdempotencyKeyPattern = /^"[A-Za-z0-9._:-]+"$/u;
+const maximumProviderIdentifierLength = 180;
+const maximumStructuredFieldStringLength =
+  maximumProviderIdentifierLength * 2 + 2;
 
 function readProviderHeader(
   headers: Headers,
@@ -20,16 +22,56 @@ function readProviderHeader(
 function readIdempotencyKey(headers: Headers): string | null {
   const value = headers.get("idempotency-key");
 
-  if (!value || value.length > 180) {
+  if (!value || value.length > maximumStructuredFieldStringLength) {
     return null;
   }
 
-  if (safeProviderHeaderPattern.test(value)) {
+  if (
+    value.length <= maximumProviderIdentifierLength &&
+    safeProviderHeaderPattern.test(value)
+  ) {
     return value;
   }
 
-  return safeQuotedIdempotencyKeyPattern.test(value)
-    ? value.slice(1, -1)
+  if (!value.startsWith('"') || !value.endsWith('"')) {
+    return null;
+  }
+
+  let decoded = "";
+
+  for (let index = 1; index < value.length - 1; index += 1) {
+    const character = value.charAt(index);
+    const codePoint = value.charCodeAt(index);
+
+    if (character === "\\") {
+      const escaped = value.charAt(index + 1);
+
+      if (
+        index + 1 >= value.length - 1 ||
+        (escaped !== '"' && escaped !== "\\")
+      ) {
+        return null;
+      }
+
+      decoded += escaped;
+      index += 1;
+      continue;
+    }
+
+    const isStructuredFieldStringCharacter =
+      (codePoint >= 0x20 && codePoint <= 0x21) ||
+      (codePoint >= 0x23 && codePoint <= 0x5b) ||
+      (codePoint >= 0x5d && codePoint <= 0x7e);
+
+    if (!isStructuredFieldStringCharacter) {
+      return null;
+    }
+
+    decoded += character;
+  }
+
+  return decoded.length > 0 && decoded.length <= maximumProviderIdentifierLength
+    ? decoded
     : null;
 }
 
