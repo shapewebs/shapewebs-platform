@@ -269,7 +269,7 @@ export function createSanityPublishedContentRepository(input: {
       locale: "da-DK" | "en";
       slug: string;
     }): Promise<SanityBlogPost | null> {
-      const slug = z
+      const slugResult = z
         .string()
         .min(1)
         .max(120)
@@ -281,7 +281,13 @@ export function createSanityPublishedContentRepository(input: {
                 segment.length > 0 && slugSegmentPattern.test(segment),
             ),
         )
-        .parse(options.slug);
+        .safeParse(options.slug);
+
+      if (!slugResult.success) {
+        return null;
+      }
+
+      const slug = slugResult.data;
       const result = await input.client.fetch<unknown>(
         `*[
           _type == "blogPost" &&
