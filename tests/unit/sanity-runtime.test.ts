@@ -568,6 +568,31 @@ describe("Sanity repository contracts", () => {
       slug: "secure-sanity-integration",
     });
   });
+
+  it("treats malformed public slugs as missing content without querying Sanity", async () => {
+    const fetch = vi.fn();
+    const client = {
+      fetch,
+    } as unknown as Parameters<
+      typeof createSanityPublishedContentRepository
+    >[0]["client"];
+    const repository = createSanityPublishedContentRepository({
+      client,
+      environment: {
+        apiVersion: "2026-07-01",
+        dataset: "staging",
+        projectId: "abc12345",
+      },
+    });
+
+    await expect(
+      repository.getBlogPostBySlug({
+        locale: "en",
+        slug: "https%3A%2F%2Fcdn.sanity.io%2Fasset.webp&w=640&q=75",
+      }),
+    ).resolves.toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
 
 describe("Sanity webhook boundary", () => {

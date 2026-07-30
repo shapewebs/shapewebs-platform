@@ -48,9 +48,12 @@ without this commit-status wait.
 - ZAP runs from the digest-pinned `zaproxy/zap-stable` multi-platform image in
   `tooling/scripts/run-zap-baseline.mjs`.
 - Reviewed passive-rule dispositions live in `tooling/zap/baseline.conf`.
-  Findings may be reduced only to `INFO`, never hidden with `IGNORE`, and must
-  link to an owner, compensating controls and an expiry or review trigger in
-  `docs/security/asvs-matrix.md`.
+  Rule-wide findings may be reduced only to `INFO`, never hidden with `IGNORE`,
+  and must link to an owner, compensating controls and an expiry or review
+  trigger in `docs/security/asvs-matrix.md`. A provider-owned endpoint may use
+  ZAP's rule-and-URL-specific `OUTOFSCOPE` syntax only when the exact response
+  and compensating controls have been verified and documented; the same rule
+  must remain enforced for every application-controlled URL.
 - Generated JSON, Markdown, HTML, and k6 summary output stays under
   `test-results` and is removed by `pnpm clean:artifacts`.
 
