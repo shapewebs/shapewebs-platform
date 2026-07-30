@@ -258,9 +258,9 @@ export async function markContentProviderCommandUncertain(
   const database = createDatabase(databaseUrl);
   const context = contextQueries(database, authorization);
 
-  await database.batch([
+  const results = await database.batch([
     ...context,
-    database.execute(sql`
+    database.execute(sql<{ audited: boolean; marked: boolean }>`
       with marked as (
         update ${contentProviderCommands}
         set
@@ -274,33 +274,44 @@ export async function markContentProviderCommandUncertain(
           and "target_id" = ${input.targetId}
           and "status" = 'reserved'
         returning "id", "action", "target_id"
-      )
-      insert into ${auditEvents} (
-        "organization_id",
-        "actor_user_id",
-        "action",
-        "target_type",
-        "target_id",
-        "request_id",
-        "metadata"
+      ),
+      audited as (
+        insert into ${auditEvents} (
+          "organization_id",
+          "actor_user_id",
+          "action",
+          "target_type",
+          "target_id",
+          "request_id",
+          "metadata"
+        )
+        select
+          ${authorization.organizationId},
+          ${authorization.actor.id},
+          ${input.auditAction},
+          'sanity_blog_post',
+          marked."target_id",
+          ${input.requestId ?? null}::text,
+          jsonb_build_object(
+            'commandId', marked."id"::text,
+            'provider', 'sanity',
+            'providerAction', marked."action",
+            'reasonCode', ${input.failureCode}::text,
+            'result', 'failure'
+          )
+        from marked
+        returning "id"
       )
       select
-        ${authorization.organizationId},
-        ${authorization.actor.id},
-        ${input.auditAction},
-        'sanity_blog_post',
-        marked."target_id",
-        ${input.requestId ?? null}::text,
-        jsonb_build_object(
-          'commandId', marked."id"::text,
-          'provider', 'sanity',
-          'providerAction', marked."action",
-          'reasonCode', ${input.failureCode},
-          'result', 'failure'
-        )
-      from marked
+        exists (select 1 from marked) as "marked",
+        exists (select 1 from audited) as "audited"
     `),
   ]);
+  const result = results[3].rows[0];
+
+  if (!result?.marked || !result.audited) {
+    throw new Error("The uncertain content command could not be recorded.");
+  }
 }
 
 export async function recordSanityWebhook(

@@ -183,26 +183,11 @@ describe("Sanity repository contracts", () => {
     const action = vi
       .fn()
       .mockResolvedValue({ transactionId: "transaction-1" });
-    const transactionCommit = vi
-      .fn()
-      .mockResolvedValue({ transactionId: "transaction-2" });
-    const transaction = {
-      commit: transactionCommit,
-      createIfNotExists: vi.fn(),
-      delete: vi.fn(),
-      patch: vi.fn(),
-      transactionId: vi.fn(),
-    };
-    transaction.createIfNotExists.mockReturnValue(transaction);
-    transaction.delete.mockReturnValue(transaction);
-    transaction.patch.mockReturnValue(transaction);
-    transaction.transactionId.mockReturnValue(transaction);
     const client = {
       action,
       assets: {
         upload: vi.fn(),
       },
-      transaction: vi.fn().mockReturnValue(transaction),
     } as unknown as Parameters<typeof createSanityWriteRepository>[0]["client"];
     const repository = createSanityWriteRepository({
       client,
@@ -267,25 +252,16 @@ describe("Sanity repository contracts", () => {
     await repository.unpublishBlogPost({
       commandId: "10000000-0000-4000-8000-000000000004",
       documentId: created.documentId,
-      expectedPublishedRevision: "revision4",
-      publishedContent: blogPostInput,
     });
 
-    expect(transaction.createIfNotExists).toHaveBeenCalledWith({
-      _id: `drafts.${created.documentId}`,
-      _type: "blogPost",
-      ...blogPostInput,
+    expect(action.mock.calls[3]?.[0]).toEqual({
+      actionType: "sanity.action.document.unpublish",
+      draftId: `drafts.${created.documentId}`,
+      publishedId: created.documentId,
     });
-    expect(transaction.patch).toHaveBeenCalledWith(created.documentId, {
-      ifRevisionID: "revision4",
-    });
-    expect(transaction.delete).toHaveBeenCalledWith(created.documentId);
-    expect(transaction.transactionId).toHaveBeenCalledWith(
-      "10000000-0000-4000-8000-000000000004",
-    );
-    expect(transactionCommit).toHaveBeenCalledWith({
-      returnDocuments: false,
+    expect(action.mock.calls[3]?.[1]).toEqual({
       tag: "content.blog-post-unpublish",
+      transactionId: "10000000-0000-4000-8000-000000000004",
     });
   });
 

@@ -48,6 +48,29 @@ describe("Sanity webhook request contract", () => {
     });
   });
 
+  it("accepts the complete safe ASCII syntax of a Structured Field string", () => {
+    expect(
+      parseSanityDeliveryHeaders(
+        validHeaders({
+          "idempotency-key": '"delivery/42f6331k+staging=transaction%20one"',
+        }),
+        expected,
+      ),
+    ).toMatchObject({
+      eventId: "delivery/42f6331k+staging=transaction%20one",
+    });
+    expect(
+      parseSanityDeliveryHeaders(
+        validHeaders({
+          "idempotency-key": '"delivery \\"quoted\\" \\\\ key"',
+        }),
+        expected,
+      ),
+    ).toMatchObject({
+      eventId: 'delivery "quoted" \\ key',
+    });
+  });
+
   it("rejects cross-project, malformed, or injected headers", () => {
     for (const headers of [
       validHeaders({ "sanity-project-id": "other123" }),
@@ -55,6 +78,7 @@ describe("Sanity webhook request contract", () => {
       validHeaders({ "sanity-transaction-time": "not-a-date" }),
       validHeaders({ "idempotency-key": "delivery injected" }),
       validHeaders({ "idempotency-key": '"delivery\\-injected"' }),
+      validHeaders({ "idempotency-key": '"delivery";parameter=true' }),
       validHeaders({ "sanity-transaction-id": "" }),
     ]) {
       expect(parseSanityDeliveryHeaders(headers, expected)).toBeNull();

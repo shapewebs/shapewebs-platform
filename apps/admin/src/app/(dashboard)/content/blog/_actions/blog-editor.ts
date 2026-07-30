@@ -14,6 +14,10 @@ import {
   markContentProviderCommandUncertain,
   reserveContentProviderCommand,
 } from "@shapewebs/database/server";
+import {
+  createStructuredLogger,
+  resolveShapewebsEnvironment,
+} from "@shapewebs/observability";
 
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminDatabaseUrl } from "@/lib/better-auth";
@@ -33,6 +37,12 @@ export type PreviewSavedBlogState =
   | {
       status: "unavailable";
     };
+
+const logger = createStructuredLogger({
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+  environment: resolveShapewebsEnvironment(),
+  service: "shapewebs-admin",
+});
 
 function getSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -183,17 +193,31 @@ async function markCommandUncertain(input: {
     return;
   }
 
-  await markContentProviderCommandUncertain(
-    input.databaseUrl,
-    input.runtime.authorization,
-    {
-      auditAction: input.action,
-      commandId: input.commandId,
-      failureCode: "provider_outcome_unconfirmed",
+  try {
+    await markContentProviderCommandUncertain(
+      input.databaseUrl,
+      input.runtime.authorization,
+      {
+        auditAction: input.action,
+        commandId: input.commandId,
+        failureCode: "provider_outcome_unconfirmed",
+        requestId: input.requestId,
+        targetId: input.targetId,
+      },
+    );
+  } catch {
+    logger.log({
+      eventCode: "shapewebs.content.provider_command",
+      level: "error",
+      metadata: {
+        operation: input.action,
+        reasonCode: "failure_receipt_persistence_failed",
+        resourceType: "sanity_blog_post",
+      },
       requestId: input.requestId,
-      targetId: input.targetId,
-    },
-  ).catch(() => undefined);
+      result: "failure",
+    });
+  }
 }
 
 export async function saveBlogPostAction(formData: FormData) {
@@ -550,8 +574,6 @@ export async function unpublishBlogPostAction(formData: FormData) {
     const result = await sanity.writeRepository.unpublishBlogPost({
       commandId,
       documentId,
-      expectedPublishedRevision,
-      publishedContent: currentState.published,
     });
     providerTransactionId = result.transactionId;
   } catch {
