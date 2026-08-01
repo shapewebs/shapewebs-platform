@@ -1,0 +1,21 @@
+.container-root-y2z36l {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: clamp(var(--space-4), 4vw, var(--system-padding));
+}
+
+.container-copy-2zwjkw {
+  max-width: calc(var(--content-copy) + (2 * var(--system-padding)));
+}
+
+.container-default-glz8z0 {
+  max-width: calc(var(--content-default) + (2 * var(--system-padding)));
+}
+
+.container-wide-ksrwtj {
+  max-width: calc(var(--content-width) + (2 * var(--system-padding)));
+}
+
+.container-full-ns4ftp {
+  max-width: none;
+}

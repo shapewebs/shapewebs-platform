@@ -4,9 +4,23 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./brand": "./src/system/brand/index.ts",
+    "./button": "./src/system/buttons/button.tsx",
+    "./button-control": "./src/system/buttons/button-control.tsx",
+    "./button-link": "./src/system/buttons/button-link.tsx",
+    "./buttons": "./src/system/buttons/index.ts",
+    "./card": "./src/system/layout/card.tsx",
+    "./cluster": "./src/system/layout/cluster.tsx",
+    "./container": "./src/system/layout/container.tsx",
+    "./layout": "./src/system/layout/index.ts",
+    "./link": "./src/system/navigation/link.tsx",
     "./merge-class-names": "./src/merge-class-names.ts",
+    "./navigation": "./src/system/navigation/index.ts",
+    "./shapewebs-brand": "./src/system/brand/shapewebs-brand.tsx",
     "./styles/base.css": "./src/styles/base.css",
-    "./styles/system-theme.css": "./src/styles/system-theme.css"
+    "./styles/system-theme.css": "./src/styles/system-theme.css",
+    "./submenu-navigation": "./src/system/navigation/submenu-navigation.tsx",
+    "./surface": "./src/system/layout/surface.tsx"
   },
   "peerDependencies": {
     "next": "16.2.11",

@@ -1,0 +1,12 @@
+.accountturnstile-root-h7m2qk {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+.accountturnstile-status-v4n9pc {
+  margin: 0;
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  line-height: 1.45;
+}

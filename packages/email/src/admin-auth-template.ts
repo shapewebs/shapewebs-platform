@@ -28,15 +28,15 @@ export function getAdminAuthActionUrl(input: AdminAuthEmailInput): string {
 
 function heading(kind: AdminAuthEmailInput["kind"]): string {
   return kind === "email_verification"
-    ? "Verify your Shapewebs employee account"
-    : "Set your Shapewebs Admin password";
+    ? "Verify your Shapewebs account"
+    : "Set your Shapewebs password";
 }
 
 export function renderAdminAuthEmailHtml(input: AdminAuthEmailInput): string {
   const url = getAdminAuthActionUrl(input);
   return [
     `<h1>${heading(input.kind)}</h1>`,
-    "<p>This administrative link is single-use and expires after one hour.</p>",
+    "<p>This secure link is single-use and expires after one hour.</p>",
     `<p><a href="${escapeEmailHtml(url)}">Continue securely</a></p>`,
     "<p>If you did not expect this message, do not use the link and contact Shapewebs security.</p>",
   ].join("");
@@ -46,7 +46,7 @@ export function renderAdminAuthEmailText(input: AdminAuthEmailInput): string {
   return [
     heading(input.kind),
     "",
-    "This administrative link is single-use and expires after one hour:",
+    "This secure link is single-use and expires after one hour:",
     getAdminAuthActionUrl(input),
     "",
     "If you did not expect this message, do not use the link and contact Shapewebs security.",

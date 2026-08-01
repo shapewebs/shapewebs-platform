@@ -7,10 +7,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/preview", "/api/revalidate", "/preview"],
       },
     ],
     host: siteConfig.productionUrl,
-    sitemap: `${siteConfig.productionUrl}/sitemap.xml`,
   };
 }

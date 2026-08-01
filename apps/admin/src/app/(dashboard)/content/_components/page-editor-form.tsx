@@ -8,6 +8,7 @@ import {
   savePageEditorAction,
   unpublishPageAction,
 } from "../_actions/page-editor";
+import { AdminPage } from "@/components/admin-page";
 import { PreviewSavedRevisionForm } from "./preview-saved-revision-form";
 import styles from "./page-editor-form.module.css";
 
@@ -25,35 +26,39 @@ export function PageEditorForm({
   setupMode = false,
 }: PageEditorFormProps) {
   return (
-    <main className={styles.rootP4m8q2}>
-      <header className={styles.headerB7m2p5}>
-        <div>
-          <p className={styles.eyebrowD8m3q1}>Page editor</p>
-          <h1>{editorState.title || "Untitled page"}</h1>
+    <AdminPage
+      description={
+        <>
           <p>
             Manage structured metadata, localized slugs, content JSON, SEO
             fields, revision history, and preview from one editing surface.
           </p>
-        </div>
-
-        <div className={styles.metaGridR6m2q4}>
-          <span>Document: {editorState.documentId}</span>
-          <span>Locale: {editorState.localeCode}</span>
-          <span>State: {editorState.state}</span>
-          <span>Version: {editorState.version}</span>
-          <span>Source: {editorState.source}</span>
-        </div>
-      </header>
-
-      {notice ? <p className={styles.noticeK6m1q7}>{notice}</p> : null}
+          <div className={styles["pageeditor-meta-b6hyc8"]}>
+            <span>Document: {editorState.documentId || "New"}</span>
+            <span>Locale: {editorState.localeCode}</span>
+            <span>State: {editorState.state}</span>
+            <span>Version: {editorState.version}</span>
+            <span>Source: {editorState.source}</span>
+          </div>
+        </>
+      }
+      eyebrow="Page editor"
+      title={editorState.title || "Untitled page"}
+    >
+      {notice ? (
+        <p className={styles["pageeditor-notice-glmndg"]}>{notice}</p>
+      ) : null}
       {setupMode ? (
-        <p className={styles.noticeK6m1q7}>
+        <p className={styles["pageeditor-notice-glmndg"]}>
           Saving is disabled until Neon and administrative authentication are
           configured for this environment.
         </p>
       ) : null}
 
-      <form action={savePageEditorAction} className={styles.formN5m2p8}>
+      <form
+        action={savePageEditorAction}
+        className={styles["pageeditor-form-ceowmo"]}
+      >
         <input name="commandId" type="hidden" value={commandId} />
         <input
           name="expectedVersion"
@@ -68,11 +73,11 @@ export function PageEditorForm({
           />
         ) : null}
 
-        <section className={styles.sectionQ7m3n9}>
+        <section className={styles["pageeditor-section-smrq66"]}>
           <h2>Document</h2>
 
-          <div className={styles.fieldGridF3m8v2}>
-            <label className={styles.fieldY2m7q3}>
+          <div className={styles["pageeditor-fieldgrid-hsg83w"]}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Locale</span>
               <select defaultValue={editorState.localeCode} name="localeCode">
                 <option value="en">English</option>
@@ -80,7 +85,7 @@ export function PageEditorForm({
               </select>
             </label>
 
-            <label className={styles.fieldY2m7q3}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Page kind</span>
               <input
                 defaultValue={editorState.pageKind ?? "standard"}
@@ -89,19 +94,19 @@ export function PageEditorForm({
             </label>
           </div>
 
-          <div className={styles.fieldGridF3m8v2}>
-            <label className={styles.fieldY2m7q3}>
+          <div className={styles["pageeditor-fieldgrid-hsg83w"]}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Title</span>
               <input defaultValue={editorState.title} name="title" required />
             </label>
 
-            <label className={styles.fieldY2m7q3}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Slug</span>
               <input defaultValue={editorState.slug} name="slug" required />
             </label>
           </div>
 
-          <label className={styles.fieldY2m7q3}>
+          <label className={styles["pageeditor-field-c4rwwr"]}>
             <span>Summary</span>
             <textarea
               defaultValue={editorState.summary ?? ""}
@@ -111,11 +116,11 @@ export function PageEditorForm({
           </label>
         </section>
 
-        <section className={styles.sectionQ7m3n9}>
+        <section className={styles["pageeditor-section-smrq66"]}>
           <h2>SEO</h2>
 
-          <div className={styles.fieldGridF3m8v2}>
-            <label className={styles.fieldY2m7q3}>
+          <div className={styles["pageeditor-fieldgrid-hsg83w"]}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Meta title</span>
               <input
                 defaultValue={editorState.seo.metaTitle ?? ""}
@@ -123,7 +128,7 @@ export function PageEditorForm({
               />
             </label>
 
-            <label className={styles.fieldY2m7q3}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Canonical URL override</span>
               <input
                 defaultValue={editorState.seo.canonicalUrlOverride ?? ""}
@@ -132,7 +137,7 @@ export function PageEditorForm({
             </label>
           </div>
 
-          <label className={styles.fieldY2m7q3}>
+          <label className={styles["pageeditor-field-c4rwwr"]}>
             <span>Meta description</span>
             <textarea
               defaultValue={editorState.seo.metaDescription ?? ""}
@@ -141,7 +146,7 @@ export function PageEditorForm({
             />
           </label>
 
-          <label className={styles.checkboxG2m4n8}>
+          <label className={styles["pageeditor-check-5m8sqt"]}>
             <input
               defaultChecked={editorState.seo.robotsIndex}
               name="robotsIndex"
@@ -152,10 +157,10 @@ export function PageEditorForm({
           </label>
         </section>
 
-        <section className={styles.sectionQ7m3n9}>
+        <section className={styles["pageeditor-section-smrq66"]}>
           <h2>Content JSON</h2>
 
-          <label className={styles.fieldY2m7q3}>
+          <label className={styles["pageeditor-field-c4rwwr"]}>
             <span>Structured content document</span>
             <textarea
               defaultValue={JSON.stringify(editorState.content, null, 2)}
@@ -165,13 +170,13 @@ export function PageEditorForm({
             />
           </label>
 
-          <label className={styles.fieldY2m7q3}>
+          <label className={styles["pageeditor-field-c4rwwr"]}>
             <span>Change note</span>
             <input name="changeNote" placeholder="Short revision summary" />
           </label>
         </section>
 
-        <div className={styles.actionsM8q2r6}>
+        <div className={styles["pageeditor-actions-gka9y4"]}>
           <Buttons.Button
             disabled={setupMode}
             kind="secondary"
@@ -218,16 +223,19 @@ export function PageEditorForm({
       />
 
       {editorState.documentId && editorState.revisions.length > 0 ? (
-        <section className={styles.sectionQ7m3n9}>
+        <section className={styles["pageeditor-section-smrq66"]}>
           <h2>Publication recovery</h2>
-          <p className={styles.mutedW2m7n4}>
+          <p className={styles["pageeditor-muted-344mlf"]}>
             These commands immediately change the public site, preserve
             immutable revision history, and require a TOTP check from the
             preceding five minutes.
           </p>
 
           {editorState.publishedRevisionId ? (
-            <form action={unpublishPageAction} className={styles.formN5m2p8}>
+            <form
+              action={unpublishPageAction}
+              className={styles["pageeditor-form-ceowmo"]}
+            >
               <input name="commandId" type="hidden" value={randomUUID()} />
               <input
                 name="documentId"
@@ -244,11 +252,11 @@ export function PageEditorForm({
                 type="hidden"
                 value={editorState.localeCode}
               />
-              <p className={styles.mutedW2m7n4}>
+              <p className={styles["pageeditor-muted-344mlf"]}>
                 Unpublish the current {editorState.localeCode} page while
                 retaining its content and revision history.
               </p>
-              <label className={styles.checkboxG2m4n8}>
+              <label className={styles["pageeditor-check-5m8sqt"]}>
                 <input
                   name="confirmation"
                   required
@@ -259,7 +267,7 @@ export function PageEditorForm({
                   I understand this removes the page from public view.
                 </span>
               </label>
-              <div className={styles.actionsM8q2r6}>
+              <div className={styles["pageeditor-actions-gka9y4"]}>
                 <Buttons.Button
                   disabled={setupMode}
                   kind="secondary"
@@ -271,12 +279,15 @@ export function PageEditorForm({
               </div>
             </form>
           ) : (
-            <p className={styles.mutedW2m7n4}>
+            <p className={styles["pageeditor-muted-344mlf"]}>
               This locale is not currently published.
             </p>
           )}
 
-          <form action={rollbackPageAction} className={styles.formN5m2p8}>
+          <form
+            action={rollbackPageAction}
+            className={styles["pageeditor-form-ceowmo"]}
+          >
             <input name="commandId" type="hidden" value={randomUUID()} />
             <input
               name="documentId"
@@ -293,7 +304,7 @@ export function PageEditorForm({
               type="hidden"
               value={editorState.localeCode}
             />
-            <label className={styles.fieldY2m7q3}>
+            <label className={styles["pageeditor-field-c4rwwr"]}>
               <span>Revision to restore and publish</span>
               <select name="revisionId" required>
                 {editorState.revisions.map((revision) => (
@@ -304,7 +315,7 @@ export function PageEditorForm({
                 ))}
               </select>
             </label>
-            <label className={styles.checkboxG2m4n8}>
+            <label className={styles["pageeditor-check-5m8sqt"]}>
               <input
                 name="confirmation"
                 required
@@ -316,7 +327,7 @@ export function PageEditorForm({
                 revision.
               </span>
             </label>
-            <div className={styles.actionsM8q2r6}>
+            <div className={styles["pageeditor-actions-gka9y4"]}>
               <Buttons.Button
                 disabled={setupMode}
                 kind="secondary"
@@ -330,16 +341,18 @@ export function PageEditorForm({
         </section>
       ) : null}
 
-      <section className={styles.sectionQ7m3n9}>
+      <section className={styles["pageeditor-section-smrq66"]}>
         <h2>Revision history</h2>
 
-        <div className={styles.revisionsS9m4q1}>
+        <div className={styles["pageeditor-revisions-zkmdqv"]}>
           {editorState.revisions.length === 0 ? (
-            <p className={styles.mutedW2m7n4}>No revisions yet.</p>
+            <p className={styles["pageeditor-muted-344mlf"]}>
+              No revisions yet.
+            </p>
           ) : (
             editorState.revisions.map((revision) => (
               <article
-                className={styles.revisionCardC5m2q8}
+                className={styles["pageeditor-revision-hbxyee"]}
                 key={revision.revisionId}
               >
                 <strong>Revision {revision.revisionNumber}</strong>
@@ -351,6 +364,6 @@ export function PageEditorForm({
           )}
         </div>
       </section>
-    </main>
+    </AdminPage>
   );
 }

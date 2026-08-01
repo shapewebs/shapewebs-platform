@@ -1,8 +1,8 @@
 import { escapeEmailHtml } from "./lead-template";
 
 export type CustomerAuthEmailInput = {
+  accountBaseUrl: string;
   kind: "email_verification" | "invitation" | "password_reset";
-  portalBaseUrl: string;
   token: string;
 };
 
@@ -12,21 +12,21 @@ export function getCustomerAuthActionUrl(
   if (input.kind === "invitation") {
     return new URL(
       `/invite/${encodeURIComponent(input.token)}`,
-      input.portalBaseUrl,
+      input.accountBaseUrl,
     ).toString();
   }
 
   if (input.kind === "email_verification") {
     return new URL(
       `/verify/${encodeURIComponent(input.token)}`,
-      input.portalBaseUrl,
+      input.accountBaseUrl,
     ).toString();
   }
 
-  const resetCallback = new URL("/reset-password", input.portalBaseUrl);
+  const resetCallback = new URL("/reset-password", input.accountBaseUrl);
   const url = new URL(
     `/api/auth/reset-password/${encodeURIComponent(input.token)}`,
-    input.portalBaseUrl,
+    input.accountBaseUrl,
   );
   url.searchParams.set("callbackURL", resetCallback.toString());
   return url.toString();

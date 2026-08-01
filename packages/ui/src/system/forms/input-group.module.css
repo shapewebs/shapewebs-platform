@@ -1,2 +1,56 @@
-.root {
+.inputgroup-root-ip0v6o {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid rgb(var(--color-border-secondary) / 1);
+  border-radius: var(--radius-sm);
+  background: rgb(var(--color-bg-secondary) / 1);
+  box-shadow: var(--shadow-stack-low);
+  transition:
+    border-color 140ms var(--ease-out-quad),
+    box-shadow 140ms var(--ease-out-quad);
+}
+
+.inputgroup-root-ip0v6o:hover {
+  border-color: rgb(var(--color-border-tertiary) / 1);
+}
+
+.inputgroup-root-ip0v6o:focus-within {
+  border-color: rgb(var(--color-focus-ring) / 0.82);
+  box-shadow: 0 0 0 3px rgb(var(--color-focus-ring) / 0.16);
+}
+
+.inputgroup-root-ip0v6o[data-invalid="true"] {
+  border-color: rgb(var(--color-feedback-danger) / 0.7);
+}
+
+.inputgroup-root-ip0v6o > :where(input, textarea, select) {
+  flex: 1 1 auto;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.inputgroup-root-ip0v6o > :where(input, textarea, select):focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inputgroup-root-ip0v6o {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .inputgroup-root-ip0v6o {
+    border-color: FieldText;
+    box-shadow: none;
+  }
+
+  .inputgroup-root-ip0v6o:focus-within {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }

@@ -1,6 +1,6 @@
 # ADR 0004: isolated customer identity with explicit account linking
 
-- Status: accepted
+- Status: superseded by ADR 0006
 - Date: 26 July 2026
 - Decision owners: Shapewebs
 - Supersedes: the future-portal placement described in the original foundation

@@ -1,0 +1,6 @@
+.field-root-dao8sh {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: var(--space-2);
+}

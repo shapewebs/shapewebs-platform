@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,7 +19,7 @@ const expectedProjectName =
 const expectedRegion = process.env.NEON_EXPECTED_REGION ?? "aws-eu-central-1";
 const expectedOrganizationId = process.env.NEON_EXPECTED_ORGANIZATION_ID;
 const neonctl = process.env.NEONCTL_BIN ?? "neonctl";
-const portalRuntimePassword = process.env.NEON_PORTAL_RUNTIME_PASSWORD;
+const customerRuntimePassword = process.env.NEON_CUSTOMER_RUNTIME_PASSWORD;
 
 if (!projectId) {
   throw new Error("NEON_NONPRODUCTION_PROJECT_ID is required.");
@@ -22,12 +29,12 @@ if (!expectedOrganizationId) {
   throw new Error("NEON_EXPECTED_ORGANIZATION_ID is required.");
 }
 
-if (!portalRuntimePassword) {
-  throw new Error("NEON_PORTAL_RUNTIME_PASSWORD is required.");
+if (!customerRuntimePassword) {
+  throw new Error("NEON_CUSTOMER_RUNTIME_PASSWORD is required.");
 }
 
-if (!/^[A-Za-z0-9_-]{43}$/.test(portalRuntimePassword)) {
-  throw new Error("NEON_PORTAL_RUNTIME_PASSWORD has an invalid format.");
+if (!/^[A-Za-z0-9_-]{43}$/.test(customerRuntimePassword)) {
+  throw new Error("NEON_CUSTOMER_RUNTIME_PASSWORD has an invalid format.");
 }
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -36,6 +43,10 @@ const repositoryRoot = resolve(packageDirectory, "..", "..");
 const fixtureScript = join(scriptDirectory, "lifecycle-fixture.mjs");
 const rollbackScript = join(scriptDirectory, "verify-migration-rollback.mjs");
 const securityScript = join(scriptDirectory, "verify-security.mjs");
+const unifiedIdentityScript = join(
+  scriptDirectory,
+  "verify-unified-identity-migration.mjs",
+);
 const temporaryDirectory = mkdtempSync(
   join(tmpdir(), "shapewebs-neon-lifecycle-"),
 );
@@ -47,13 +58,26 @@ const restoredExportPath = join(
 const suffix = randomUUID().replaceAll("-", "").slice(0, 10);
 const sourceBranchName = `codex-lifecycle-source-${suffix}`;
 const restoreBranchName = `codex-lifecycle-restore-${suffix}`;
+const identityBranchName = `codex-identity-source-${suffix}`;
+const conflictBranchName = `codex-identity-conflict-${suffix}`;
 const databaseName = `shapewebs_lifecycle_${suffix}`;
 const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 
 let sourceBranchId;
 let restoreBranchId;
+let identityBranchId;
+let conflictBranchId;
 let parentBranchId;
 let primaryFailure;
+
+const preUnifiedMigrationsDirectory = join(
+  temporaryDirectory,
+  "pre-unified-migrations",
+);
+const preUnifiedConfigPath = join(
+  temporaryDirectory,
+  "drizzle.pre-unified.config.ts",
+);
 
 class CommandExecutionError extends Error {
   constructor(command, args, result) {
@@ -80,6 +104,14 @@ function run(command, args, options = {}) {
   }
 
   if (result.status !== 0) {
+    if (options.capture) {
+      if (result.stdout) {
+        process.stderr.write(result.stdout);
+      }
+      if (result.stderr) {
+        process.stderr.write(result.stderr);
+      }
+    }
     throw new CommandExecutionError(command, args, result);
   }
 
@@ -224,15 +256,15 @@ function connectionString(branchId, roleName, pooled = false) {
 
 function connectionsFor(branchId) {
   const adminUrl = connectionString(branchId, "shapewebs_admin_runtime", true);
-  const portalUrl = new URL(adminUrl);
-  portalUrl.username = "shapewebs_portal_runtime";
-  portalUrl.password = portalRuntimePassword;
+  const customerUrl = new URL(adminUrl);
+  customerUrl.username = "shapewebs_portal_runtime";
+  customerUrl.password = customerRuntimePassword;
 
   return {
     DATABASE_OWNER_URL: connectionString(branchId, "shapewebs_owner"),
     DATABASE_MIGRATION_URL: connectionString(branchId, "shapewebs_migrator"),
     DATABASE_ADMIN_URL: adminUrl,
-    DATABASE_PORTAL_URL: portalUrl.toString(),
+    DATABASE_CUSTOMER_URL: customerUrl.toString(),
     DATABASE_WEB_URL: connectionString(branchId, "shapewebs_web_runtime", true),
     DATABASE_PUBLIC_URL: connectionString(
       branchId,
@@ -244,10 +276,92 @@ function connectionsFor(branchId) {
 
 function migrate(connections) {
   run("corepack", ["pnpm", "--filter", "@shapewebs/database", "db:migrate"], {
+    capture: true,
     env: {
       DATABASE_MIGRATION_URL: connections.DATABASE_MIGRATION_URL,
     },
   });
+}
+
+function preparePreUnifiedMigrations() {
+  const sourceDirectory = join(repositoryRoot, "drizzle");
+  const sourceJournalPath = join(sourceDirectory, "meta", "_journal.json");
+  const sourceJournal = JSON.parse(readFileSync(sourceJournalPath, "utf8"));
+  const entries = sourceJournal.entries.filter((entry) => entry.idx <= 18);
+
+  assert.equal(entries.length, 19, "Expected migrations 0000 through 0018");
+  assert.equal(entries.at(-1)?.tag, "0018_preview-session-transition");
+
+  // This bounded directory is created beneath this process's private mkdtemp.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  mkdirSync(join(preUnifiedMigrationsDirectory, "meta"), { recursive: true });
+  for (const entry of entries) {
+    copyFileSync(
+      join(sourceDirectory, `${entry.tag}.sql`),
+      join(preUnifiedMigrationsDirectory, `${entry.tag}.sql`),
+    );
+  }
+
+  // This bounded file is written beneath this process's private mkdtemp.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  writeFileSync(
+    join(preUnifiedMigrationsDirectory, "meta", "_journal.json"),
+    `${JSON.stringify({ ...sourceJournal, entries }, null, 2)}\n`,
+    { mode: 0o600 },
+  );
+  // This bounded file is written beneath this process's private mkdtemp.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  writeFileSync(
+    preUnifiedConfigPath,
+    `const migrationUrl = process.env.DATABASE_MIGRATION_URL;
+if (!migrationUrl) throw new Error("DATABASE_MIGRATION_URL is required.");
+export default ${JSON.stringify(
+      {
+        dialect: "postgresql",
+        out: preUnifiedMigrationsDirectory,
+        migrations: {
+          schema: "drizzle",
+          table: "__shapewebs_migrations",
+        },
+        dbCredentials: { url: "__DATABASE_MIGRATION_URL__" },
+      },
+      null,
+      2,
+    ).replace('"__DATABASE_MIGRATION_URL__"', "migrationUrl")};\n`,
+    { mode: 0o600 },
+  );
+}
+
+function migrateThrough0018(connections) {
+  run(
+    "corepack",
+    [
+      "pnpm",
+      "--filter",
+      "@shapewebs/database",
+      "exec",
+      "drizzle-kit",
+      "migrate",
+      "--config",
+      preUnifiedConfigPath,
+    ],
+    {
+      env: {
+        DATABASE_MIGRATION_URL: connections.DATABASE_MIGRATION_URL,
+      },
+    },
+  );
+}
+
+function expectUnifiedMigrationFailure(connections) {
+  try {
+    migrate(connections);
+  } catch (error) {
+    assert.ok(error instanceof CommandExecutionError);
+    return;
+  }
+
+  assert.fail("The ambiguous identity migration unexpectedly succeeded");
 }
 
 function runDatabaseScript(script, args, connections, extraEnvironment = {}) {
@@ -266,7 +380,12 @@ function deleteBranch(branchId, name) {
 }
 
 function cleanNamedBranches() {
-  const targets = new Set([sourceBranchName, restoreBranchName]);
+  const targets = new Set([
+    sourceBranchName,
+    restoreBranchName,
+    identityBranchName,
+    conflictBranchName,
+  ]);
   const branches = listBranches();
 
   for (const branch of branches) {
@@ -296,10 +415,64 @@ try {
   parentBranchId = parentBranch.id;
   assert.equal(
     initialBranches.some((branch) =>
-      [sourceBranchName, restoreBranchName].includes(branch.name),
+      [
+        sourceBranchName,
+        restoreBranchName,
+        identityBranchName,
+        conflictBranchName,
+      ].includes(branch.name),
     ),
     false,
     "A generated lifecycle branch name already exists",
+  );
+
+  preparePreUnifiedMigrations();
+
+  identityBranchId = createBranch(identityBranchName);
+  createDatabase(identityBranchId);
+  const identityConnections = connectionsFor(identityBranchId);
+  migrateThrough0018(identityConnections);
+  runDatabaseScript(
+    unifiedIdentityScript,
+    ["seed-success"],
+    identityConnections,
+  );
+  try {
+    migrate(identityConnections);
+  } catch {
+    runDatabaseScript(
+      unifiedIdentityScript,
+      ["diagnose-unified-migration"],
+      identityConnections,
+    );
+    assert.fail("The migration diagnostic unexpectedly returned");
+  }
+  runDatabaseScript(
+    unifiedIdentityScript,
+    ["verify-success"],
+    identityConnections,
+  );
+  runDatabaseScript(securityScript, [], identityConnections);
+
+  conflictBranchId = createBranch(conflictBranchName);
+  createDatabase(conflictBranchId);
+  const conflictConnections = connectionsFor(conflictBranchId);
+  migrateThrough0018(conflictConnections);
+  runDatabaseScript(
+    unifiedIdentityScript,
+    ["seed-conflict"],
+    conflictConnections,
+  );
+  expectUnifiedMigrationFailure(conflictConnections);
+  runDatabaseScript(
+    unifiedIdentityScript,
+    ["verify-conflict-rejection"],
+    conflictConnections,
+  );
+  runDatabaseScript(
+    unifiedIdentityScript,
+    ["verify-conflict-rollback"],
+    conflictConnections,
   );
 
   sourceBranchId = createBranch(sourceBranchName);
@@ -319,7 +492,7 @@ try {
   // Both files contain synthetic example.test data only.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const sourceExport = readFileSync(exportPath, "utf8");
-  const sourceHashMatch = sourceExport.match(/"version": 5/);
+  const sourceHashMatch = sourceExport.match(/"version": 6/);
   assert.ok(sourceHashMatch, "The logical export is invalid");
 
   restoreBranchId = createBranch(restoreBranchName);
@@ -360,6 +533,8 @@ try {
       );
       assert.equal(remainingNames.has(sourceBranchName), false);
       assert.equal(remainingNames.has(restoreBranchName), false);
+      assert.equal(remainingNames.has(identityBranchName), false);
+      assert.equal(remainingNames.has(conflictBranchName), false);
     }
   } catch (cleanupError) {
     primaryFailure = primaryFailure

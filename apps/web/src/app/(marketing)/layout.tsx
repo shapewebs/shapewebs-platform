@@ -1,9 +1,9 @@
-import { MarketingShell } from "@/components/site/marketing-shell";
+import { PublicShell } from "@/components/site/public-shell";
 
 export default function MarketingLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <MarketingShell>{children}</MarketingShell>;
+  return <PublicShell>{children}</PublicShell>;
 }

@@ -1,2 +1,41 @@
-.root {
+.surface-root-zimz1n {
+  min-width: 0;
+  border: 1px solid rgb(var(--color-border-primary) / 1);
+  border-radius: var(--radius-md);
+}
+
+.surface-base-8k9kt5 {
+  background: rgb(var(--color-bg-secondary) / 1);
+}
+
+.surface-raised-52nakb {
+  background: rgb(var(--color-bg-secondary) / 1);
+  box-shadow: var(--shadow-raised);
+}
+
+.surface-sunken-3ignpz {
+  background: rgb(var(--color-bg-tertiary) / 1);
+  box-shadow: inset 0 1px rgb(0 0 0 / 0.025);
+}
+
+.surface-none-avqcyw {
+  padding: 0;
+}
+
+.surface-small-3cjx0o {
+  padding: var(--space-4);
+}
+
+.surface-medium-on5a3d {
+  padding: var(--space-5);
+}
+
+.surface-large-rd2mun {
+  padding: var(--space-6);
+}
+
+@media (forced-colors: active) {
+  .surface-root-zimz1n {
+    border-color: CanvasText;
+  }
 }

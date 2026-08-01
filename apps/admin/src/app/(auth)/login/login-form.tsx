@@ -1,24 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { adminAuthClient } from "@shapewebs/auth/client";
-import { Buttons } from "@shapewebs/ui";
+import { Authentication, Buttons, Forms, Navigation } from "@shapewebs/ui";
 
 import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 
-import styles from "./page.module.css";
-
 type LoginFormProps = {
   isConfigured: boolean;
+  isLocalSetupMode: boolean;
 };
+
+type LoginStage = "email" | "methods" | "passkey";
 
 function getRouteErrorMessage(errorCode: string | null) {
   switch (errorCode) {
     case "access_denied":
     case "unauthorized":
-      return "This Google account is not authorized for Shapewebs Admin.";
+      return "This account does not have active Shapewebs access.";
     case "setup":
       return "Authentication still needs to be configured for this environment.";
     default:
@@ -26,9 +26,19 @@ function getRouteErrorMessage(errorCode: string | null) {
   }
 }
 
-export function LoginForm({ isConfigured }: LoginFormProps) {
+function getInitialStage(method: string | null): LoginStage {
+  return method === "email" || method === "passkey" ? method : "methods";
+}
+
+export function LoginForm({ isConfigured, isLocalSetupMode }: LoginFormProps) {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [pendingMethod, setPendingMethod] = useState<
+    "google" | "password" | null
+  >(null);
+  const [stage, setStage] = useState<LoginStage>(() =>
+    getInitialStage(searchParams.get("method")),
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,6 +52,26 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
       ? "Your password is ready. You can now use Google or password."
       : null;
   const mfaPath = `/login/mfa?redirectTo=${encodeURIComponent(redirectTo)}`;
+  const completionPath = `/login/complete?redirectTo=${encodeURIComponent(redirectTo)}`;
+
+  function getLoginHref(nextStage?: Exclude<LoginStage, "methods">) {
+    const query = new URLSearchParams();
+
+    if (nextStage) {
+      query.set("method", nextStage);
+    }
+    if (redirectTo !== "/dashboard") {
+      query.set("redirectTo", redirectTo);
+    }
+
+    const serialized = query.toString();
+    return serialized ? `/login?${serialized}` : "/login";
+  }
+
+  function showStage(nextStage: LoginStage) {
+    setErrorMessage(null);
+    setStage(nextStage);
+  }
 
   function signInWithPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,127 +81,243 @@ export function LoginForm({ isConfigured }: LoginFormProps) {
       return;
     }
 
+    setPendingMethod("password");
     startTransition(async () => {
       setErrorMessage(null);
 
-      const { data, error } = await adminAuthClient.signIn.email({
-        email: email.trim().toLowerCase(),
-        password,
-        rememberMe: false,
-      });
+      try {
+        const { data, error } = await adminAuthClient.signIn.email({
+          email: email.trim().toLowerCase(),
+          password,
+          rememberMe: false,
+        });
 
-      if (error || !data) {
-        setErrorMessage(
-          "Sign-in could not be completed. Check your details and try again.",
+        if (error || !data) {
+          setPendingMethod(null);
+          setErrorMessage(
+            "Sign-in could not be completed. Check your details and try again.",
+          );
+          return;
+        }
+
+        const pendingChallenge =
+          "twoFactorRedirect" in data && data.twoFactorRedirect === true;
+        window.location.assign(
+          pendingChallenge ? `${mfaPath}&pending=password` : completionPath,
         );
-        return;
+      } catch {
+        setPendingMethod(null);
+        setErrorMessage(
+          "Sign-in is temporarily unavailable. Please try again.",
+        );
       }
-
-      const pendingChallenge =
-        "twoFactorRedirect" in data && data.twoFactorRedirect === true;
-      window.location.assign(
-        pendingChallenge ? `${mfaPath}&pending=password` : mfaPath,
-      );
     });
   }
 
-  return (
-    <div className={styles.formB8q1n7}>
-      {statusMessage ? (
-        <p className={styles.noticeStateV7m3k2}>{statusMessage}</p>
-      ) : errorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+  function signInWithGoogle() {
+    if (!isConfigured) {
+      setErrorMessage("Authentication is not configured in this environment.");
+      return;
+    }
+
+    setPendingMethod("google");
+    startTransition(async () => {
+      setErrorMessage(null);
+
+      try {
+        const { error } = await adminAuthClient.signIn.social({
+          callbackURL: completionPath,
+          errorCallbackURL: `/login?error=access_denied&redirectTo=${encodeURIComponent(redirectTo)}`,
+          provider: "google",
+        });
+
+        if (error) {
+          setPendingMethod(null);
+          setErrorMessage(
+            "Google sign-in could not be started. Please try again.",
+          );
+        }
+      } catch {
+        setPendingMethod(null);
+        setErrorMessage(
+          "Google sign-in is temporarily unavailable. Please try again.",
+        );
+      }
+    });
+  }
+
+  function renderMessage() {
+    if (statusMessage) {
+      return (
+        <Authentication.AuthMessage tone="success">
+          {statusMessage}
+        </Authentication.AuthMessage>
+      );
+    }
+    if (errorMessage) {
+      return (
+        <Authentication.AuthMessage tone="error">
           {errorMessage}
-        </p>
-      ) : routeErrorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+        </Authentication.AuthMessage>
+      );
+    }
+    if (routeErrorMessage) {
+      return (
+        <Authentication.AuthMessage tone="error">
           {routeErrorMessage}
-        </p>
-      ) : null}
+        </Authentication.AuthMessage>
+      );
+    }
+    if (isLocalSetupMode) {
+      return (
+        <Authentication.AuthMessage>
+          Local setup mode is active for interface work.
+        </Authentication.AuthMessage>
+      );
+    }
+    if (!isConfigured) {
+      return (
+        <Authentication.AuthMessage tone="error">
+          Authentication is unavailable in this environment.
+        </Authentication.AuthMessage>
+      );
+    }
 
-      <form
-        className={styles["sw-auth-form-h8q2v5"]}
-        onSubmit={signInWithPassword}
-      >
-        <label className={styles.fieldM4k7v3}>
-          <span>Email</span>
-          <input
-            autoComplete="email"
-            disabled={isPending}
-            maxLength={320}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            type="email"
-            value={email}
-          />
-        </label>
-        <label className={styles.fieldM4k7v3}>
-          <span>Password</span>
-          <input
-            autoComplete="current-password"
-            disabled={isPending}
-            maxLength={128}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            type="password"
-            value={password}
-          />
-        </label>
-        <Buttons.Button
-          disabled={!isConfigured || isPending}
-          kind="primary"
-          size="medium"
-          type="submit"
-        >
-          {isPending ? "Signing in..." : "Sign in with password"}
-        </Buttons.Button>
-      </form>
+    return null;
+  }
 
-      <div className={styles["sw-auth-divider-n4c8p2"]}>
-        <span>or</span>
-      </div>
+  return (
+    <Authentication.AuthStageTransition stage={stage}>
+      {(displayedStage) => {
+        if (displayedStage === "email") {
+          return (
+            <>
+              <Authentication.AuthStageHeader title="Sign in with email" />
+              <Authentication.AuthStack>
+                {renderMessage()}
+                <Forms.Form onSubmit={signInWithPassword}>
+                  <Forms.Field>
+                    <Forms.Label htmlFor="employee-email">Email</Forms.Label>
+                    <Forms.Input
+                      autoComplete="email"
+                      autoFocus
+                      controlSize="large"
+                      disabled={isPending}
+                      id="employee-email"
+                      maxLength={320}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                      type="email"
+                      value={email}
+                    />
+                  </Forms.Field>
+                  <Forms.PasswordField
+                    autoComplete="current-password"
+                    disabled={isPending}
+                    label="Password"
+                    maxLength={128}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    value={password}
+                  />
+                  <Authentication.AuthActions>
+                    <Buttons.Button
+                      disabled={!isConfigured}
+                      kind="secondary"
+                      pending={isPending && pendingMethod === "password"}
+                      pendingLabel="Signing in"
+                      size="large"
+                      type="submit"
+                    >
+                      Log in
+                    </Buttons.Button>
+                  </Authentication.AuthActions>
+                </Forms.Form>
+                <Authentication.AuthLinks>
+                  <Navigation.Link href="/forgot-password">
+                    Forgot your password?
+                  </Navigation.Link>
+                  <Navigation.Link
+                    href={getLoginHref()}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      showStage("methods");
+                    }}
+                  >
+                    Back to login
+                  </Navigation.Link>
+                </Authentication.AuthLinks>
+              </Authentication.AuthStack>
+            </>
+          );
+        }
 
-      <Buttons.Button
-        disabled={!isConfigured || isPending}
-        kind="primary"
-        onClick={() => {
-          if (!isConfigured) {
-            setErrorMessage(
-              "Authentication is not configured in this environment.",
-            );
-            return;
-          }
+        if (displayedStage === "passkey") {
+          return (
+            <>
+              <Authentication.AuthStageHeader title="Continue with passkey" />
+              <Authentication.AuthStack>
+                <Authentication.PasskeyFrame status="unavailable" />
+                <Authentication.AuthLinks>
+                  <Navigation.Link
+                    href={getLoginHref()}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      showStage("methods");
+                    }}
+                  >
+                    Back to login
+                  </Navigation.Link>
+                </Authentication.AuthLinks>
+              </Authentication.AuthStack>
+            </>
+          );
+        }
 
-          startTransition(async () => {
-            setErrorMessage(null);
-
-            const { error } = await adminAuthClient.signIn.social({
-              callbackURL: mfaPath,
-              errorCallbackURL: `/login?error=access_denied&redirectTo=${encodeURIComponent(redirectTo)}`,
-              provider: "google",
-            });
-
-            if (error) {
-              setErrorMessage(
-                "Google sign-in could not be started. Please try again.",
-              );
-            }
-          });
-        }}
-        size="medium"
-        type="button"
-      >
-        {isPending ? "Opening Google..." : "Continue with Google"}
-      </Buttons.Button>
-
-      <p className={styles.noticeStateV7m3k2}>
-        Both methods open the same employee account. Every admin login still
-        requires your authenticator code.
-      </p>
-      <div className={styles["sw-auth-links-r6m2k9"]}>
-        <Link href="/forgot-password">Forgot or want to add a password?</Link>
-        <Link href="/activate">Activate an allowlisted employee account</Link>
-      </div>
-    </div>
+        return (
+          <>
+            <Authentication.AuthStageHeader title="Sign in" />
+            <Authentication.AuthStack>
+              {renderMessage()}
+              <Authentication.AuthActions>
+                <Buttons.Button
+                  disabled={!isConfigured}
+                  kind="brand"
+                  onClick={signInWithGoogle}
+                  pending={isPending && pendingMethod === "google"}
+                  pendingLabel="Opening Google"
+                  size="large"
+                  type="button"
+                >
+                  Continue with Google
+                </Buttons.Button>
+                <Buttons.ButtonLink
+                  href={getLoginHref("email")}
+                  kind="secondary"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    showStage("email");
+                  }}
+                  size="large"
+                >
+                  Continue with email
+                </Buttons.ButtonLink>
+                <Buttons.ButtonLink
+                  href={getLoginHref("passkey")}
+                  kind="secondary"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    showStage("passkey");
+                  }}
+                  size="large"
+                >
+                  Continue with passkey
+                </Buttons.ButtonLink>
+              </Authentication.AuthActions>
+            </Authentication.AuthStack>
+          </>
+        );
+      }}
+    </Authentication.AuthStageTransition>
   );
 }

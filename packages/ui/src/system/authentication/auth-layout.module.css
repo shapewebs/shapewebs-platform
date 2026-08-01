@@ -1,0 +1,118 @@
+.authlayout-root-6l61tg {
+  display: grid;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: var(--space-6) var(--space-4);
+  background: rgb(var(--color-bg-primary) / 1);
+  place-items: center;
+}
+
+.authlayout-container-ggeec5 {
+  display: grid;
+  width: 100%;
+  gap: var(--space-5);
+}
+
+.authlayout-compact-8krd5z {
+  max-width: 320px;
+}
+
+.authlayout-expanded-7ikwah {
+  max-width: 760px;
+}
+
+.authlayout-brand-y7iol3 {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  margin-inline: auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-text-primary) / 1);
+}
+
+.authlayout-brand-y7iol3:focus-visible {
+  outline: 3px solid rgb(var(--color-focus-ring) / 0.42);
+  outline-offset: 2px;
+}
+
+.authlayout-header-9va4rb {
+  display: grid;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.authlayout-eyebrow-1mtknu,
+.authlayout-title-udn9j1,
+.authlayout-description-1k31q3 > :where(p),
+.authlayout-footer-tfkp3x > :where(p) {
+  margin: 0;
+}
+
+.authlayout-eyebrow-1mtknu {
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+}
+
+.authlayout-title-udn9j1 {
+  color: rgb(var(--color-text-primary) / 1);
+  font-size: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.032em;
+  line-height: 1.2;
+}
+
+.authlayout-description-1k31q3 {
+  max-width: 58ch;
+  margin-inline: auto;
+  color: rgb(var(--color-text-secondary) / 1);
+  font-size: var(--font-size-regular);
+  line-height: 1.55;
+}
+
+.authlayout-content-k3v9rr {
+  min-width: 0;
+}
+
+.authlayout-footer-tfkp3x {
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.authstack-root-pb19cq,
+.authactions-root-n8vax6 {
+  display: grid;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.authactions-root-n8vax6 > :where(button, a)[data-component-status="styled"] {
+  width: 100%;
+}
+
+.authlinks-root-scjviz {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  gap: var(--space-1);
+  color: rgb(var(--color-text-secondary) / 1);
+  font-size: var(--font-size-regular);
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .authlayout-root-6l61tg {
+    align-items: start;
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .authlayout-container-ggeec5 {
+    margin-top: min(10vh, var(--space-7));
+  }
+}

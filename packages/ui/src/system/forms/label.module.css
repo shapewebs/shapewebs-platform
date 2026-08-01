@@ -1,2 +1,8 @@
-.root {
+.label-root-ilro4b {
+  display: inline-flex;
+  width: fit-content;
+  color: rgb(var(--color-text-secondary) / 1);
+  font-size: var(--font-size-small-plus);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
 }

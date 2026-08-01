@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Buttons } from "@shapewebs/ui";
+import { Buttons, Layout } from "@shapewebs/ui";
 
 import styles from "./session-manager.module.css";
 
@@ -38,10 +38,10 @@ export function SessionManager({ sessions }: SessionManagerProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   return (
-    <section className={styles["sw-session-root-q8m2v4"]}>
-      <div className={styles["sw-session-header-n3k7p1"]}>
+    <Layout.Card className={styles["session-root-3mf22o"]}>
+      <div className={styles["session-header-mymn81"]}>
         <div>
-          <p className={styles["sw-session-eyebrow-t6m1q9"]}>Security</p>
+          <p className={styles["session-eyebrow-uywjd6"]}>Security</p>
           <h2>Administrative sessions</h2>
         </div>
         <p>
@@ -53,7 +53,7 @@ export function SessionManager({ sessions }: SessionManagerProps) {
       {errorMessage ? (
         <p
           aria-live="polite"
-          className={styles["sw-session-error-r4n8k2"]}
+          className={styles["session-error-sgujpf"]}
           role="alert"
         >
           {errorMessage}
@@ -61,22 +61,22 @@ export function SessionManager({ sessions }: SessionManagerProps) {
       ) : null}
 
       {sessions.length === 0 ? (
-        <p className={styles["sw-session-empty-b7p2m5"]}>
+        <p className={styles["session-empty-394br8"]}>
           No administrative sessions are available.
         </p>
       ) : (
-        <ul className={styles["sw-session-list-f2q9m6"]}>
+        <ul className={styles["session-list-8nkv5n"]}>
           {sessions.map((session) => (
-            <li className={styles["sw-session-item-k5m3v8"]} key={session.id}>
-              <div className={styles["sw-session-details-z7p4n2"]}>
-                <div className={styles["sw-session-title-h9m2q5"]}>
+            <li className={styles["session-item-nxu4vh"]} key={session.id}>
+              <div className={styles["session-details-e9xjke"]}>
+                <div className={styles["session-title-5y8svb"]}>
                   <strong>{session.userName}</strong>
                   {session.isCurrent ? <span>Current session</span> : null}
                   {!session.isActive ? <span>Inactive</span> : null}
                 </div>
                 <p>{session.userEmail}</p>
                 <p title={session.userAgent}>{session.userAgent}</p>
-                <dl className={styles["sw-session-metadata-d3n8p7"]}>
+                <dl className={styles["session-metadata-7xsicr"]}>
                   <div>
                     <dt>Last active</dt>
                     <dd>
@@ -165,6 +165,7 @@ export function SessionManager({ sessions }: SessionManagerProps) {
                       router.refresh();
                     });
                   }}
+                  pending={isPending && pendingSessionId === session.id}
                   size="small"
                   type="button"
                 >
@@ -177,6 +178,6 @@ export function SessionManager({ sessions }: SessionManagerProps) {
           ))}
         </ul>
       )}
-    </section>
+    </Layout.Card>
   );
 }

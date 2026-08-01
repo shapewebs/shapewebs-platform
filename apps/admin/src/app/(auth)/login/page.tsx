@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import type { Metadata } from "next";
+import { AdminAuthShell } from "@/components/admin-auth-shell";
 import { hasAdminAuthConfig, isLocalAdminSetupMode } from "@/lib/better-auth";
 import { LoginForm } from "./login-form";
-import styles from "./page.module.css";
+
+export const metadata: Metadata = {
+  title: "Sign in",
+};
 
 export default async function LoginPage() {
   await connection();
@@ -11,31 +16,22 @@ export default async function LoginPage() {
   const isLocalSetupMode = isLocalAdminSetupMode();
 
   return (
-    <main className={styles.rootD4n8k1}>
-      <section className={styles.panelQ7m2v5}>
-        <p className={styles.eyebrowZ3p9t2}>Shapewebs Admin</p>
-        <h1 className={styles.titleR6k2m4}>CMS access</h1>
-        <p className={styles.copyH2v8q6}>
-          Use Google or your password for the same allowlisted employee account,
-          then complete TOTP before entering the CMS.
+    <AdminAuthShell
+      description={
+        <p>
+          Use Google or your password for the same Shapewebs account. Employee
+          studio access adds the required TOTP check after sign-in.
         </p>
-
-        {isLocalSetupMode ? (
-          <p className={styles.noticeStateV7m3k2}>
-            Local setup mode is active for development. Protected screens are
-            available for interface work until authentication is connected.
-          </p>
-        ) : !isConfigured ? (
-          <p className={styles.noticeStateV7m3k2} role="alert">
-            Authentication is unavailable because the required environment
-            configuration is missing.
-          </p>
-        ) : null}
-
-        <Suspense fallback={null}>
-          <LoginForm isConfigured={isConfigured} />
-        </Suspense>
-      </section>
-    </main>
+      }
+      minimal
+      title="Sign in"
+    >
+      <Suspense fallback={null}>
+        <LoginForm
+          isConfigured={isConfigured}
+          isLocalSetupMode={isLocalSetupMode}
+        />
+      </Suspense>
+    </AdminAuthShell>
   );
 }

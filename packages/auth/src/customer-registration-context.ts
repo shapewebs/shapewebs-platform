@@ -31,9 +31,7 @@ export async function encryptCustomerRegistrationContext(
   encryptionSecret: string,
 ): Promise<string> {
   if (encryptionSecret.length < 32) {
-    throw new Error(
-      "PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET must contain at least 32 characters.",
-    );
+    throw new Error("The account registration encryption secret is too short.");
   }
 
   return symmetricEncodeJWT(

@@ -1,75 +1,105 @@
-.root {
-  --spinner-size: 1.5rem;
+.spinner-root-19eyax {
+  --spinner-size: 24px;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: var(--spinner-size);
   height: var(--spinner-size);
-  color: currentColor;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
 }
 
-.icon {
+.spinner-icon-qgt7pw {
   width: 100%;
   height: 100%;
-  animation: spinner-rotate 0.85s linear infinite;
+  animation: sw-spinner-rotate 720ms linear infinite;
+  fill: none;
   transform-origin: center;
 }
 
-.sizeSm {
-  --spinner-size: 1rem;
+.spinner-small-c2t9ko {
+  --spinner-size: 16px;
 }
 
-.sizeMd {
-  --spinner-size: 1.5rem;
+.spinner-medium-3z6qhn {
+  --spinner-size: 24px;
 }
 
-.sizeLg {
-  --spinner-size: 2rem;
+.spinner-large-dl73u5 {
+  --spinner-size: 32px;
 }
 
-.sizeXl {
-  --spinner-size: 2.75rem;
+.spinner-xlarge-mhuugu {
+  --spinner-size: 44px;
 }
 
-.colorCurrent {
+.spinner-current-8scmdu {
   color: currentColor;
 }
 
-.colorAccent {
-  color: rgb(var(--sw-ui-color-feedback-accent) / 1);
+.spinner-accent-zvu555 {
+  color: rgb(var(--color-feedback-accent) / 1);
 }
 
-.colorSuccess {
-  color: rgb(var(--sw-ui-color-feedback-success) / 1);
+.spinner-success-qdeuli {
+  color: rgb(var(--color-feedback-success) / 1);
 }
 
-.colorWarning {
-  color: rgb(var(--sw-ui-color-feedback-warning) / 1);
+.spinner-warning-v18gah {
+  color: rgb(var(--color-feedback-warning) / 1);
 }
 
-.colorDanger {
-  color: rgb(var(--sw-ui-color-feedback-danger) / 1);
+.spinner-danger-gbnwo3 {
+  color: rgb(var(--color-feedback-danger) / 1);
 }
 
-.srOnly {
+.spinner-track-ic069b {
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.2;
+}
+
+.spinner-arc-hah2od {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.spinner-label-l5zn1u {
   position: absolute;
   width: 1px;
   height: 1px;
-  padding: 0;
   margin: -1px;
+  padding: 0;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip: rect(0 0 0 0);
   white-space: nowrap;
-  border: 0;
+  clip-path: inset(50%);
 }
 
-@keyframes spinner-rotate {
+@keyframes sw-spinner-rotate {
   from {
     transform: rotate(0deg);
   }
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-icon-qgt7pw {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .spinner-track-ic069b {
+    stroke: GrayText;
+  }
+
+  .spinner-arc-hah2od {
+    stroke: CanvasText;
   }
 }

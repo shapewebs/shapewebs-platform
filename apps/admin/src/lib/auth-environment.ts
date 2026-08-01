@@ -18,20 +18,34 @@ export function hasAdminAuthConfig(): boolean {
   );
 }
 
+export function hasUnifiedAccountPortalConfig(): boolean {
+  return Boolean(
+    hasAdminAuthConfig() &&
+    process.env.ACCOUNT_TURNSTILE_EXPECTED_HOSTNAME &&
+    process.env.ACCOUNT_TURNSTILE_SECRET_KEY &&
+    process.env.CUSTOMER_DATABASE_URL &&
+    process.env.NEXT_PUBLIC_ACCOUNT_TURNSTILE_SITE_KEY,
+  );
+}
+
 export function isLocalAdminSetupMode(): boolean {
   return process.env.NODE_ENV === "development" && !hasAdminAuthConfig();
 }
 
 export function getAdminDatabaseUrl(): string | null {
-  return process.env.DATABASE_URL ?? null;
+  return process.env.DATABASE_URL || null;
+}
+
+export function getCustomerDatabaseUrl(): string | null {
+  return process.env.CUSTOMER_DATABASE_URL || null;
 }
 
 export function getAdminBaseUrl(): string | null {
-  return process.env.BETTER_AUTH_URL ?? null;
+  return process.env.BETTER_AUTH_URL || null;
 }
 
 export function getAdminOrganizationId(): string | null {
-  return process.env.SHAPEWEBS_ORGANIZATION_ID ?? null;
+  return process.env.SHAPEWEBS_ORGANIZATION_ID || null;
 }
 
 export function isTrustedAdminOrigin(origin: string | null): boolean {

@@ -1,35 +1,36 @@
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createShapewebsCustomerAuth } from "../../auth/src/create-customer-auth";
+import { createShapewebsAuth } from "../../auth/src/create-auth";
 import { hashCustomerPassword } from "../../auth/src/customer-password";
 import { authorizeCustomerSession } from "../src/customer-auth";
 import { createDatabase } from "../src/client";
-import {
-  customerAccount,
-  customerSession,
-  customerSessionSecurity,
-} from "../src/schema/customer-auth";
+import { unifiedCustomerSessionSecurity } from "../src/schema/admin-auth";
+import { account, session } from "../src/schema/auth";
 
-const databaseUrl = process.env.DATABASE_PORTAL_URL;
+const adminDatabaseUrl = process.env.DATABASE_ADMIN_URL;
+const customerDatabaseUrl = process.env.DATABASE_CUSTOMER_URL;
 
-if (!databaseUrl) {
+if (!adminDatabaseUrl || !customerDatabaseUrl) {
   throw new Error(
-    "DATABASE_PORTAL_URL is required for the customer auth integration test.",
+    "DATABASE_ADMIN_URL and DATABASE_CUSTOMER_URL are required for the unified customer auth integration test.",
   );
 }
 
-const database = createDatabase(databaseUrl);
-const baseUrl = "http://localhost:3002";
+const database = createDatabase(adminDatabaseUrl);
+const baseUrl = "http://localhost:3001";
 const customerId = "lifecycle-customer";
 const credentialAccountId = "lifecycle-customer-credential-account";
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const password = "lifecycle customer passphrase 2026";
-const auth = createShapewebsCustomerAuth({
+const auth = createShapewebsAuth({
   baseUrl,
-  databaseUrl,
+  customerDatabaseUrl,
+  databaseUrl: adminDatabaseUrl,
+  editorEmails: [],
   emailEncryptionSecret: "lifecycle-customer-email-encryption-secret-value",
   organizationId,
+  ownerEmails: ["lifecycle-owner@example.test"],
   production: false,
   secret: "lifecycle-customer-better-auth-secret-value",
   trustedOrigins: [baseUrl],
@@ -41,7 +42,7 @@ beforeAll(async () => {
   const passwordHash = await hashCustomerPassword(password);
 
   await database
-    .insert(customerAccount)
+    .insert(account)
     .values({
       accountId: customerId,
       id: credentialAccountId,
@@ -55,18 +56,14 @@ beforeAll(async () => {
         password: passwordHash,
         updatedAt: new Date(),
       },
-      target: customerAccount.id,
+      target: account.id,
     });
 });
 
 afterAll(async () => {
   await database.batch([
-    database
-      .delete(customerSession)
-      .where(eq(customerSession.userId, customerId)),
-    database
-      .delete(customerAccount)
-      .where(eq(customerAccount.id, credentialAccountId)),
+    database.delete(session).where(eq(session.userId, customerId)),
+    database.delete(account).where(eq(account.id, credentialAccountId)),
   ]);
 });
 
@@ -88,13 +85,13 @@ describe.sequential("customer Better Auth runtime", () => {
 
     expect(response.status).toBe(401);
     const sessions = await database
-      .select({ id: customerSession.id })
-      .from(customerSession)
-      .where(eq(customerSession.userId, customerId));
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.userId, customerId));
     expect(sessions).toEqual([]);
   });
 
-  it("issues a separate fixed customer session for an active invited member", async () => {
+  it("issues one canonical fixed session for an active invited customer", async () => {
     const response = await auth.handler(
       new Request(`${baseUrl}/api/auth/sign-in/email`, {
         body: JSON.stringify({
@@ -112,29 +109,29 @@ describe.sequential("customer Better Auth runtime", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain(
-      "shapewebs-customer.session_token=",
+      "shapewebs.session_token=",
     );
 
     const sessions = await database
       .select({
-        id: customerSession.id,
-        lastSeenAt: customerSessionSecurity.lastSeenAt,
-        revokedAt: customerSessionSecurity.revokedAt,
-        token: customerSession.token,
+        id: session.id,
+        lastSeenAt: unifiedCustomerSessionSecurity.lastSeenAt,
+        revokedAt: unifiedCustomerSessionSecurity.revokedAt,
+        token: session.token,
       })
-      .from(customerSession)
+      .from(session)
       .innerJoin(
-        customerSessionSecurity,
-        eq(customerSessionSecurity.sessionId, customerSession.id),
+        unifiedCustomerSessionSecurity,
+        eq(unifiedCustomerSessionSecurity.sessionId, session.id),
       )
-      .where(eq(customerSession.userId, customerId));
+      .where(eq(session.userId, customerId));
     expect(sessions).toHaveLength(1);
     expect(sessions[0]?.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(sessions[0]?.revokedAt).toBeNull();
     sessionId = sessions[0]?.id ?? "";
 
     await expect(
-      authorizeCustomerSession(databaseUrl, {
+      authorizeCustomerSession(customerDatabaseUrl, {
         organizationId: "20000000-0000-4000-8000-000000000002",
         sessionId,
         userId: customerId,
@@ -142,7 +139,7 @@ describe.sequential("customer Better Auth runtime", () => {
     ).resolves.toBeNull();
 
     await expect(
-      authorizeCustomerSession(databaseUrl, {
+      authorizeCustomerSession(customerDatabaseUrl, {
         organizationId,
         sessionId,
         userId: customerId,
@@ -157,19 +154,19 @@ describe.sequential("customer Better Auth runtime", () => {
 
   it("fails closed after the 24-hour inactivity boundary", async () => {
     await database
-      .update(customerSessionSecurity)
+      .update(unifiedCustomerSessionSecurity)
       .set({
         lastSeenAt: sql`now() - interval '25 hours'`,
       })
       .where(
         and(
-          eq(customerSessionSecurity.sessionId, sessionId),
-          eq(customerSessionSecurity.userId, customerId),
+          eq(unifiedCustomerSessionSecurity.sessionId, sessionId),
+          eq(unifiedCustomerSessionSecurity.userId, customerId),
         ),
       );
 
     await expect(
-      authorizeCustomerSession(databaseUrl, {
+      authorizeCustomerSession(customerDatabaseUrl, {
         organizationId,
         sessionId,
         userId: customerId,

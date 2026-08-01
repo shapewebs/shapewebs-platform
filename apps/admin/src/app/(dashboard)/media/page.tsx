@@ -1,5 +1,7 @@
 import { listAdminMediaFiles } from "@shapewebs/database/server";
+import { Layout } from "@shapewebs/ui";
 
+import { AdminEmptyState, AdminPage } from "@/components/admin-page";
 import { requireAdminSession } from "@/lib/auth";
 import { getMediaEnvironment } from "@/lib/media-environment";
 
@@ -21,49 +23,57 @@ export default async function MediaPage() {
         );
 
   return (
-    <main className={styles["sw-media-root-m3q7k2"]}>
-      <header className={styles["sw-media-header-r6p2v8"]}>
-        <p className={styles["sw-media-eyebrow-t8m4q1"]}>Media</p>
-        <h1>Private image library</h1>
+    <AdminPage
+      description={
         <p>
           Every source image is decoded, bounded, normalized to metadata-free
           WebP, and stored privately before it can enter a publishing workflow.
         </p>
-      </header>
-
-      <section className={styles["sw-media-panel-q5n9p2"]}>
-        <div>
+      }
+      eyebrow="Manage"
+      title="Private image library"
+    >
+      <Layout.Card className={styles["media-panel-5s2tru"]}>
+        <div className={styles["media-heading-iavr91"]}>
           <h2>Upload an image</h2>
           <p>
-            Uploading never makes an image public. Publishing will use a
-            separate reviewed public asset path in a later slice.
+            Uploading never makes an image public. Publishing uses a separate,
+            reviewed public asset path.
           </p>
         </div>
+
         {environment ? (
           <MediaUploadForm />
         ) : (
-          <p className={styles["sw-media-notice-v2m8q6"]}>
+          <p className={styles["media-notice-6sqyqz"]}>
             Private media storage is not configured for this environment.
           </p>
         )}
-      </section>
+      </Layout.Card>
 
-      <section className={styles["sw-media-library-f4q1m8"]}>
-        <div>
+      <section className={styles["media-library-tyoxfb"]}>
+        <div className={styles["media-heading-iavr91"]}>
           <h2>Verified files</h2>
           <p>Provider paths and private URLs are never exposed in this view.</p>
         </div>
 
         {media.length === 0 ? (
-          <p className={styles["sw-media-empty-k9m2v5"]}>
-            No private images have been uploaded.
-          </p>
+          <AdminEmptyState
+            description={
+              <p>
+                Upload a source image when it is ready to enter the reviewed
+                publishing workflow.
+              </p>
+            }
+            title="No private images yet"
+          />
         ) : (
-          <div className={styles["sw-media-list-a7q3m6"]}>
+          <div className={styles["media-list-dwheyz"]}>
             {media.map((item) => (
-              <article
-                className={styles["sw-media-item-c2m8p4"]}
+              <Layout.Card
+                className={styles["media-item-cwx5n1"]}
                 key={`${item.id}:${item.localeCode}`}
+                tone="quiet"
               >
                 <div>
                   <strong>{item.originalName}</strong>
@@ -89,11 +99,11 @@ export default async function MediaPage() {
                     <dd>{Math.ceil(item.byteSize / 1024)} KiB</dd>
                   </div>
                 </dl>
-              </article>
+              </Layout.Card>
             ))}
           </div>
         )}
       </section>
-    </main>
+    </AdminPage>
   );
 }

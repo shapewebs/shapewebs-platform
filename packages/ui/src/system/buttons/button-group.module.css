@@ -1,6 +1,26 @@
-.root {
+.buttongroup-root-hg59sr {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.buttongroup-start-yeub3j {
+  justify-content: flex-start;
+}
+
+.buttongroup-end-ix8dho {
+  justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .buttongroup-root-hg59sr {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .buttongroup-root-hg59sr > * {
+    width: 100%;
+  }
 }

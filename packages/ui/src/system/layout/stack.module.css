@@ -1,0 +1,33 @@
+.stack-root-obiaf3 {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.stack-gap2-p7k7s0 {
+  gap: var(--space-2);
+}
+
+.stack-gap3-7jajgv {
+  gap: var(--space-3);
+}
+
+.stack-gap4-46we4c {
+  gap: var(--space-4);
+}
+
+.stack-gap5-a8wi33 {
+  gap: var(--space-5);
+}
+
+.stack-gap6-j4m2d3 {
+  gap: var(--space-6);
+}
+
+.stack-gap7-acbvhb {
+  gap: var(--space-7);
+}
+
+.stack-gap8-j6xydf {
+  gap: var(--space-8);
+}

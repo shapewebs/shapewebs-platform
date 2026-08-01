@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { adminAuthClient } from "@shapewebs/auth/client";
-import { Buttons } from "@shapewebs/ui";
-
-import styles from "../login/page.module.css";
+import { Authentication, Buttons, Forms, Navigation } from "@shapewebs/ui";
 
 export function ResetPasswordForm({ isConfigured }: { isConfigured: boolean }) {
   const searchParams = useSearchParams();
@@ -34,77 +31,91 @@ export function ResetPasswordForm({ isConfigured }: { isConfigured: boolean }) {
 
     startTransition(async () => {
       setErrorMessage(null);
-      const { error } = await adminAuthClient.resetPassword({
-        newPassword: password,
-        token,
-      });
 
-      if (error) {
+      try {
+        const { error } = await adminAuthClient.resetPassword({
+          newPassword: password,
+          token,
+        });
+
+        if (error) {
+          setErrorMessage(
+            "The password could not be set. Request a new link and use a strong, uncompromised password.",
+          );
+          return;
+        }
+
+        setCompleted(true);
+        setPassword("");
+        setConfirmation("");
+      } catch {
         setErrorMessage(
-          "The password could not be set. Request a new link and use a strong, uncompromised password.",
+          "Password reset is temporarily unavailable. Please try again.",
         );
-        return;
       }
-
-      setCompleted(true);
-      setPassword("");
-      setConfirmation("");
     });
   }
 
   if (completed) {
     return (
-      <div className={styles.formB8q1n7}>
-        <p className={styles.noticeStateV7m3k2}>
+      <Authentication.AuthStack>
+        <Authentication.AuthMessage tone="success">
           Your password is ready and existing sessions were revoked.
-        </p>
-        <Link href="/login?passwordUpdated=true">Sign in securely</Link>
-      </div>
+        </Authentication.AuthMessage>
+        <Authentication.AuthLinks>
+          <Navigation.Link href="/login?passwordUpdated=true">
+            Sign in securely
+          </Navigation.Link>
+        </Authentication.AuthLinks>
+      </Authentication.AuthStack>
     );
   }
 
   return (
-    <form className={styles.formB8q1n7} onSubmit={submit}>
+    <Forms.Form onSubmit={submit}>
       {errorMessage ? (
-        <p className={styles.errorStateC6d2r9} role="alert">
+        <Authentication.AuthMessage tone="error">
           {errorMessage}
-        </p>
+        </Authentication.AuthMessage>
       ) : null}
-      <label className={styles.fieldM4k7v3}>
-        <span>New password</span>
-        <input
-          autoComplete="new-password"
-          disabled={isPending}
-          maxLength={128}
-          minLength={15}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-          type="password"
-          value={password}
-        />
-      </label>
-      <label className={styles.fieldM4k7v3}>
-        <span>Repeat new password</span>
-        <input
-          autoComplete="new-password"
-          disabled={isPending}
-          maxLength={128}
-          minLength={15}
-          onChange={(event) => setConfirmation(event.target.value)}
-          required
-          type="password"
-          value={confirmation}
-        />
-      </label>
-      <Buttons.Button
-        disabled={!isConfigured || isPending || !token}
-        kind="primary"
-        size="medium"
-        type="submit"
-      >
-        {isPending ? "Updating..." : "Set password"}
-      </Buttons.Button>
-      <Link href="/forgot-password">Request a new link</Link>
-    </form>
+      <Forms.PasswordField
+        autoComplete="new-password"
+        description="Use at least 15 characters and a unique password."
+        disabled={isPending}
+        label="New password"
+        maxLength={128}
+        minLength={15}
+        onChange={(event) => setPassword(event.target.value)}
+        required
+        value={password}
+      />
+      <Forms.PasswordField
+        autoComplete="new-password"
+        disabled={isPending}
+        label="Repeat new password"
+        maxLength={128}
+        minLength={15}
+        onChange={(event) => setConfirmation(event.target.value)}
+        required
+        value={confirmation}
+      />
+      <Authentication.AuthActions>
+        <Buttons.Button
+          disabled={!isConfigured || !token}
+          kind="brand"
+          pending={isPending}
+          pendingLabel="Updating password"
+          size="large"
+          type="submit"
+        >
+          Set password
+        </Buttons.Button>
+      </Authentication.AuthActions>
+      <Authentication.AuthLinks>
+        <Navigation.Link href="/forgot-password">
+          Request a new link
+        </Navigation.Link>
+      </Authentication.AuthLinks>
+    </Forms.Form>
   );
 }

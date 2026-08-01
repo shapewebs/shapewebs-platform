@@ -1,4 +1,7 @@
 import styles from "./tag-group.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const TagGroup = createStyledComponent("div", styles.root);
+export const TagGroup = createStyledComponent(
+  "div",
+  styles["taggroup-root-e2484g"],
+);

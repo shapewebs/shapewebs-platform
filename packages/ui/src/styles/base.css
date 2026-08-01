@@ -4,7 +4,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--sw-ui-header-height) + 40px);
+  scroll-padding-top: calc(var(--header-height) + 40px);
 }
 
 html,
@@ -16,9 +16,9 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
-  background: rgb(var(--sw-ui-color-bg-primary) / 1);
-  color: rgb(var(--sw-ui-color-text-primary) / 1);
-  font-family: var(--sw-ui-font-regular);
+  background: rgb(var(--color-bg-primary) / 1);
+  color: rgb(var(--color-text-primary) / 1);
+  font-family: var(--font-regular);
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-text-size-adjust: none;

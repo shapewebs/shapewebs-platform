@@ -1,2 +1,22 @@
-.root {
+.card-root-ipf37r {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid rgb(var(--color-border-primary) / 1);
+  border-radius: var(--radius-md);
+  background: rgb(var(--color-bg-secondary) / 1);
+}
+
+.card-quiet-u9bpho {
+  background: transparent;
+}
+
+.card-raised-8bsiys {
+  box-shadow: var(--shadow-raised);
+}
+
+@media (forced-colors: active) {
+  .card-root-ipf37r {
+    border-color: CanvasText;
+  }
 }

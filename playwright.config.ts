@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 const webOrigin = "http://127.0.0.1:3100";
 const adminOrigin = "http://127.0.0.1:3101";
-const portalOrigin = "http://127.0.0.1:3102";
+const configuredAdminPreviewOrigin = "http://127.0.0.1:3102";
+const canonicalAdminOrigin = "https://admin.shapewebs.com";
+const canonicalWebOrigin = "https://shapewebs.com";
 const missingAuthEnvironment = {
   ADMIN_OWNER_EMAILS: "admin@shapewebs.test",
   BETTER_AUTH_SECRET: "shapewebs-test-secret-with-at-least-32-characters",
@@ -18,6 +20,21 @@ const missingAuthEnvironment = {
   SHAPEWEBS_ORGANIZATION_ID: "00000000-0000-4000-8000-000000000001",
   SUPABASE_SERVICE_ROLE_KEY: "",
   TURNSTILE_SECRET_KEY: "",
+};
+const configuredAdminPreviewEnvironment = {
+  ...missingAuthEnvironment,
+  ACCOUNT_TURNSTILE_EXPECTED_HOSTNAME: "admin.shapewebs.com",
+  ACCOUNT_TURNSTILE_SECRET_KEY: "account-turnstile-secret",
+  ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET:
+    "a-unified-account-email-secret-with-32-characters",
+  BETTER_AUTH_TRUSTED_ORIGINS: canonicalAdminOrigin,
+  BETTER_AUTH_URL: canonicalAdminOrigin,
+  CUSTOMER_DATABASE_URL: "postgresql://test:test@example.test/customer",
+  DATABASE_URL: "postgresql://test:test@example.test/shapewebs",
+  GOOGLE_CLIENT_ID: "account-google-client",
+  GOOGLE_CLIENT_SECRET: "account-google-secret",
+  NEXT_PUBLIC_ACCOUNT_TURNSTILE_SITE_KEY: "account-site-key",
+  NEXT_PUBLIC_SITE_URL: canonicalWebOrigin,
 };
 
 export default defineConfig({
@@ -76,16 +93,16 @@ export default defineConfig({
     },
     {
       command:
-        "corepack pnpm --filter @shapewebs/portal exec next start --port 3102",
-      env: missingAuthEnvironment,
+        "corepack pnpm --filter @shapewebs/admin exec next start --port 3102",
+      env: configuredAdminPreviewEnvironment,
       gracefulShutdown: {
         signal: "SIGTERM",
         timeout: 1_000,
       },
-      name: "portal",
+      name: "configured-admin-preview",
       reuseExistingServer: false,
       timeout: 120_000,
-      url: `${portalOrigin}/api/health`,
+      url: `${configuredAdminPreviewOrigin}/api/health`,
     },
   ],
   workers: process.env.CI ? 1 : undefined,

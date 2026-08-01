@@ -1,0 +1,32 @@
+.preview-shell-i15yyt {
+  min-height: 100vh;
+  color: rgb(var(--color-text-primary) / 1);
+  background: rgb(var(--color-bg-primary) / 1);
+}
+
+.preview-banner-za6e13 {
+  position: sticky;
+  z-index: 100;
+  top: 0;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid rgb(var(--color-border-secondary));
+  color: rgb(var(--color-text-primary) / 1);
+  background: rgb(var(--color-bg-secondary) / 0.96);
+  font-size: var(--font-size-regular);
+  backdrop-filter: blur(16px);
+}
+
+.preview-main-l19ng4 {
+  min-height: calc(100vh - 40px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-banner-za6e13 {
+    backdrop-filter: none;
+  }
+}

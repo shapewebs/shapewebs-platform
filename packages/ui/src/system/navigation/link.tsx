@@ -1,50 +1,37 @@
-"use client";
-
-import NextLink, { useLinkStatus } from "next/link";
+import NextLink from "next/link";
 import type { ComponentProps, ReactNode } from "react";
-import styles from "./link.module.css";
+
 import { mergeClassNames } from "../_internal/merge-class-names";
+import styles from "./link.module.css";
 
 export type LinkProps = ComponentProps<typeof NextLink> & {
   children: ReactNode;
-  hintClassName?: string;
-  labelClassName?: string;
-  showPendingHint?: boolean;
+  underline?: "always" | "hover" | "none";
 };
-
-function LinkHint({ className }: { className?: string }) {
-  const { pending } = useLinkStatus();
-
-  return (
-    <span
-      aria-hidden
-      className={mergeClassNames(
-        styles.hint,
-        pending ? styles.hintPending : undefined,
-        className,
-      )}
-    />
-  );
-}
 
 export function Link({
   children,
   className,
-  hintClassName,
-  labelClassName,
-  showPendingHint = true,
+  prefetch = false,
+  underline = "hover",
   ...props
 }: LinkProps) {
   return (
     <NextLink
-      className={mergeClassNames(styles.root, className)}
+      className={mergeClassNames(
+        styles["link-root-zvbqny"],
+        underline === "always"
+          ? styles["link-always-6mytr2"]
+          : underline === "none"
+            ? styles["link-none-zg0f8w"]
+            : styles["link-hover-p8wt5w"],
+        className,
+      )}
       data-component-status="styled"
+      prefetch={prefetch}
       {...props}
     >
-      <span className={mergeClassNames(styles.label, labelClassName)}>
-        {children}
-      </span>
-      {showPendingHint ? <LinkHint className={hintClassName} /> : null}
+      {children}
     </NextLink>
   );
 }

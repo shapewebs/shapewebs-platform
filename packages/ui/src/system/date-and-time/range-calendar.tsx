@@ -1,4 +1,7 @@
 import styles from "./range-calendar.module.css";
 import { createStyledComponent } from "../_internal/create-styled-component";
 
-export const RangeCalendar = createStyledComponent("div", styles.root);
+export const RangeCalendar = createStyledComponent(
+  "div",
+  styles["rangecalendar-root-4a2n72"],
+);

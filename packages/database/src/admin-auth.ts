@@ -63,7 +63,8 @@ export type ClaimedAdminAuthEmail = {
   encryptedToken: string;
   eventId: string;
   idempotencyKey: string;
-  kind: "email_verification" | "password_reset";
+  invitationId: string | null;
+  kind: "email_verification" | "invitation" | "password_reset";
   recipient: string;
 };
 
@@ -247,14 +248,36 @@ export async function getAdminAuthEmailRequestCooldown(
   kind: "email_verification" | "password_reset",
   now = new Date(),
 ): Promise<AdminAuthEmailRequestCooldown | null> {
+  return getAccountAuthEmailRequestCooldown(
+    databaseUrl,
+    {
+      membershipRole: authorization.role,
+      organizationId: authorization.organizationId,
+      userId: authorization.actor.id,
+    },
+    kind,
+    now,
+  );
+}
+
+export async function getAccountAuthEmailRequestCooldown(
+  databaseUrl: string,
+  identity: {
+    membershipRole?: StaffMembershipRole;
+    organizationId: string;
+    userId: string;
+  },
+  kind: "email_verification" | "password_reset",
+  now = new Date(),
+): Promise<AdminAuthEmailRequestCooldown | null> {
   const database = createDatabase(databaseUrl);
   const context = contextQueries(
     database,
     {
-      organizationId: authorization.organizationId,
-      userId: authorization.actor.id,
+      organizationId: identity.organizationId,
+      userId: identity.userId,
     },
-    authorization.role,
+    identity.membershipRole ?? "",
   );
   const cutoff = new Date(now.getTime() - authEmailRequestCooldownMs);
   const results = await database.batch([
@@ -264,8 +287,8 @@ export async function getAdminAuthEmailRequestCooldown(
       .from(adminAuthEmailOutbox)
       .where(
         and(
-          eq(adminAuthEmailOutbox.organizationId, authorization.organizationId),
-          eq(adminAuthEmailOutbox.userId, authorization.actor.id),
+          eq(adminAuthEmailOutbox.organizationId, identity.organizationId),
+          eq(adminAuthEmailOutbox.userId, identity.userId),
           eq(adminAuthEmailOutbox.kind, kind),
           gt(adminAuthEmailOutbox.createdAt, cutoff),
           inArray(adminAuthEmailOutbox.status, [
@@ -369,6 +392,7 @@ export async function claimAdminAuthEmail(
         encryptedToken: adminAuthEmailOutbox.encryptedToken,
         eventId: adminAuthEmailOutbox.id,
         idempotencyKey: adminAuthEmailOutbox.idempotencyKey,
+        invitationId: adminAuthEmailOutbox.invitationId,
         kind: adminAuthEmailOutbox.kind,
         recipient: adminAuthEmailOutbox.recipient,
       })
@@ -420,6 +444,7 @@ export async function claimAdminAuthEmail(
         encryptedToken: candidate.encryptedToken,
         eventId: candidate.eventId,
         idempotencyKey: candidate.idempotencyKey,
+        invitationId: candidate.invitationId,
         kind: candidate.kind,
         recipient: candidate.recipient,
       }

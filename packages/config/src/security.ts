@@ -89,6 +89,7 @@ export function buildAdminContentSecurityPolicy(
   nonce: string,
   options: {
     allowPublicContentImages?: boolean;
+    allowTurnstile?: boolean;
     formActionOrigins?: string[];
   } = {},
 ): string {
@@ -103,6 +104,7 @@ export function buildAdminContentSecurityPolicy(
     "'self'",
     `'nonce-${nonce}'`,
     "'strict-dynamic'",
+    ...(options.allowTurnstile ? ["https://challenges.cloudflare.com"] : []),
     ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
   ].join(" ");
   const imageSrc = [
@@ -120,10 +122,10 @@ export function buildAdminContentSecurityPolicy(
     `img-src ${imageSrc}`,
     "font-src 'self' data:",
     "object-src 'none'",
-    "connect-src 'self'",
+    `connect-src 'self'${options.allowTurnstile ? " https://challenges.cloudflare.com" : ""}`,
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    "frame-src 'self'",
+    `frame-src 'self'${options.allowTurnstile ? " https://challenges.cloudflare.com" : ""}`,
   ].join("; ");
 }
 

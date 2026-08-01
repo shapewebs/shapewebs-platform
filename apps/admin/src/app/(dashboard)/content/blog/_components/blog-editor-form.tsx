@@ -16,7 +16,9 @@ import {
 } from "@portabletext/editor";
 import { EventListenerPlugin } from "@portabletext/editor/plugins";
 import type { SanityBlogPost } from "@shapewebs/content-schema";
+import { Buttons } from "@shapewebs/ui";
 
+import { AdminPage } from "@/components/admin-page";
 import { PreviewSavedRevisionForm } from "../../_components/preview-saved-revision-form";
 import styles from "./blog-editor-form.module.css";
 
@@ -191,7 +193,7 @@ function createRenderBlock(assets: BlogAssetOption[]): RenderBlockFunction {
       );
 
       return (
-        <figure className={styles["sw-blog-imageblock-r8q2m4"]}>
+        <figure className={styles["blog-imageblock-gz7ylo"]}>
           {asset ? (
             <Image
               alt={imageBlock.decorative ? "" : imageBlock.alt}
@@ -215,20 +217,20 @@ function createRenderBlock(assets: BlogAssetOption[]): RenderBlockFunction {
 
     if (props.schemaType.name === "callout") {
       return (
-        <aside className={styles["sw-blog-object-v2m8q6"]}>Callout block</aside>
+        <aside className={styles["blog-object-podh35"]}>Callout block</aside>
       );
     }
 
     if (props.schemaType.name === "cta") {
       return (
-        <aside className={styles["sw-blog-object-v2m8q6"]}>
+        <aside className={styles["blog-object-podh35"]}>
           Call-to-action block
         </aside>
       );
     }
 
     if (props.schemaType.name === "codeBlock") {
-      return <pre className={styles["sw-blog-object-v2m8q6"]}>Code block</pre>;
+      return <pre className={styles["blog-object-podh35"]}>Code block</pre>;
     }
 
     return <div>{props.children}</div>;
@@ -309,69 +311,90 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
   }
 
   return (
-    <div className={styles["sw-blog-toolbar-q4m8p3"]}>
-      <div className={styles["sw-blog-toolrow-f3m8v2"]}>
+    <div className={styles["blog-toolbar-dpdffv"]}>
+      <div className={styles["blog-toolrow-cqtdkx"]}>
         {(["normal", "h2", "h3", "h4", "blockquote"] as const).map((style) => (
-          <button key={style} onClick={() => toggleStyle(style)} type="button">
+          <Buttons.Button
+            key={style}
+            kind="ghost"
+            onClick={() => toggleStyle(style)}
+            size="small"
+            type="button"
+          >
             {style}
-          </button>
+          </Buttons.Button>
         ))}
         {(["strong", "em", "underline", "strike-through", "code"] as const).map(
           (decorator) => (
-            <button
+            <Buttons.Button
               key={decorator}
+              kind="ghost"
               onClick={() => toggleDecorator(decorator)}
+              size="small"
               type="button"
             >
               {decorator}
-            </button>
+            </Buttons.Button>
           ),
         )}
-        <button
+        <Buttons.Button
+          kind="ghost"
           onClick={() => {
             editor.send({ listItem: "bullet", type: "list item.toggle" });
             refocus();
           }}
+          size="small"
           type="button"
         >
           Bullets
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => {
             editor.send({ listItem: "number", type: "list item.toggle" });
             refocus();
           }}
+          size="small"
           type="button"
         >
           Numbered
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => editor.send({ type: "history.undo" })}
+          size="small"
           type="button"
         >
           Undo
-        </button>
-        <button
+        </Buttons.Button>
+        <Buttons.Button
+          kind="ghost"
           onClick={() => editor.send({ type: "history.redo" })}
+          size="small"
           type="button"
         >
           Redo
-        </button>
+        </Buttons.Button>
       </div>
 
-      <div className={styles["sw-blog-toolrow-f3m8v2"]}>
+      <div className={styles["blog-toolrow-cqtdkx"]}>
         <input
           aria-label="Link URL"
           onChange={(event) => setHref(event.target.value)}
           placeholder="/contact or https://…"
           value={href}
         />
-        <button onClick={applyLink} type="button">
+        <Buttons.Button
+          kind="secondary"
+          onClick={applyLink}
+          size="small"
+          type="button"
+        >
           Apply link to selection
-        </button>
+        </Buttons.Button>
       </div>
 
-      <div className={styles["sw-blog-imageinsert-n4v8q1"]}>
+      <div className={styles["blog-imageinsert-ae614m"]}>
         <label>
           <span>Insert image</span>
           <select
@@ -415,7 +438,7 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
             <option value="full">Full</option>
           </select>
         </label>
-        <label className={styles["sw-blog-check-z6p1h3"]}>
+        <label className={styles["blog-check-sjbvkk"]}>
           <input
             checked={decorative}
             onChange={(event) => setDecorative(event.target.checked)}
@@ -423,13 +446,15 @@ function EditorToolbar({ assets }: { assets: BlogAssetOption[] }) {
           />
           <span>Decorative image</span>
         </label>
-        <button
+        <Buttons.Button
           disabled={assets.length === 0}
+          kind="secondary"
           onClick={insertImage}
+          size="small"
           type="button"
         >
           Insert selected image
-        </button>
+        </Buttons.Button>
       </div>
     </div>
   );
@@ -487,7 +512,7 @@ function PublicMediaUploadControl({
   }
 
   return (
-    <div className={styles["sw-blog-upload-b7n2q5"]}>
+    <div className={styles["blog-upload-dahdl4"]}>
       <label>
         <span>Upload public website image</span>
         <input
@@ -497,9 +522,15 @@ function PublicMediaUploadControl({
           type="file"
         />
       </label>
-      <button disabled={isPending} onClick={upload} type="button">
+      <Buttons.Button
+        kind="secondary"
+        onClick={upload}
+        pending={isPending}
+        size="small"
+        type="button"
+      >
         {isPending ? "Verifying and uploading…" : "Upload to public library"}
-      </button>
+      </Buttons.Button>
       <p aria-live="polite" role="status">
         {message}
       </p>
@@ -533,28 +564,26 @@ export function BlogEditorForm({
   const selectedCoverId = post?.coverImage.asset._ref ?? assets[0]?.id ?? "";
 
   return (
-    <main className={styles["sw-blog-root-p4m8q2"]}>
-      <header className={styles["sw-blog-header-b7m2p5"]}>
-        <div>
-          <p className={styles["sw-blog-eyebrow-d8m3q1"]}>Blog editor</p>
-          <h1>{post?.title ?? "New blog post"}</h1>
+    <AdminPage
+      description={
+        <>
           <p>
             Structured website content is saved in Sanity. Every mutation is
             re-authorized here; publishing also requires a recent TOTP step-up.
           </p>
-        </div>
-        {documentId ? (
-          <div className={styles["sw-blog-meta-r6m2q4"]}>
-            <span>Document: {documentId}</span>
-            <span>Draft revision: {expectedRevision}</span>
-            <span>Published: {publishedRevision ? "yes" : "not yet"}</span>
-          </div>
-        ) : null}
-      </header>
-
-      {notice ? (
-        <p className={styles["sw-blog-notice-k6m1q7"]}>{notice}</p>
-      ) : null}
+          {documentId ? (
+            <div className={styles["blog-meta-hh5f5l"]}>
+              <span>Document: {documentId}</span>
+              <span>Draft revision: {expectedRevision}</span>
+              <span>Published: {publishedRevision ? "yes" : "not yet"}</span>
+            </div>
+          ) : null}
+        </>
+      }
+      eyebrow="Blog editor"
+      title={post?.title ?? "New blog post"}
+    >
+      {notice ? <p className={styles["blog-notice-8jnwty"]}>{notice}</p> : null}
 
       <PublicMediaUploadControl
         onUploaded={(asset) =>
@@ -565,7 +594,7 @@ export function BlogEditorForm({
         }
       />
 
-      <form action={saveAction} className={styles["sw-blog-form-n5m2p8"]}>
+      <form action={saveAction} className={styles["blog-form-47z1dj"]}>
         <input name="bodyJson" type="hidden" value={JSON.stringify(body)} />
         <input name="commandId" type="hidden" value={commandId} />
         {documentId ? (
@@ -579,10 +608,10 @@ export function BlogEditorForm({
           />
         ) : null}
 
-        <section className={styles["sw-blog-section-q7m3n9"]}>
+        <section className={styles["blog-section-2441go"]}>
           <h2>Article</h2>
-          <div className={styles["sw-blog-grid-f3m8v2"]}>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+          <div className={styles["blog-grid-ojomea"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Title</span>
               <input
                 defaultValue={post?.title}
@@ -591,7 +620,7 @@ export function BlogEditorForm({
                 required
               />
             </label>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Slug</span>
               <input
                 defaultValue={post?.slug.current}
@@ -601,14 +630,14 @@ export function BlogEditorForm({
                 required
               />
             </label>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Locale</span>
               <select defaultValue={post?.locale ?? "en"} name="locale">
                 <option value="en">English</option>
                 <option value="da-DK">Dansk</option>
               </select>
             </label>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Author</span>
               <select
                 defaultValue={post?.author._ref ?? authors[0]?.id}
@@ -623,7 +652,7 @@ export function BlogEditorForm({
               </select>
             </label>
           </div>
-          <label className={styles["sw-blog-field-y2m7q3"]}>
+          <label className={styles["blog-field-hhoy7e"]}>
             <span>Excerpt</span>
             <textarea
               defaultValue={post?.excerpt}
@@ -634,7 +663,7 @@ export function BlogEditorForm({
             />
           </label>
           {categories.length > 0 ? (
-            <fieldset className={styles["sw-blog-categories-c2m8p4"]}>
+            <fieldset className={styles["blog-categories-kpdvy4"]}>
               <legend>Categories</legend>
               {categories.map((category) => (
                 <label key={category.id}>
@@ -653,10 +682,10 @@ export function BlogEditorForm({
           ) : null}
         </section>
 
-        <section className={styles["sw-blog-section-q7m3n9"]}>
+        <section className={styles["blog-section-2441go"]}>
           <h2>Cover image</h2>
-          <div className={styles["sw-blog-grid-f3m8v2"]}>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+          <div className={styles["blog-grid-ojomea"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Shared public asset</span>
               <select
                 defaultValue={selectedCoverId}
@@ -670,7 +699,7 @@ export function BlogEditorForm({
                 ))}
               </select>
             </label>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>Alternative text</span>
               <input
                 defaultValue={post?.coverImage.alt}
@@ -679,7 +708,7 @@ export function BlogEditorForm({
               />
             </label>
           </div>
-          <label className={styles["sw-blog-field-y2m7q3"]}>
+          <label className={styles["blog-field-hhoy7e"]}>
             <span>Caption (optional)</span>
             <input
               defaultValue={post?.coverImage.caption}
@@ -687,7 +716,7 @@ export function BlogEditorForm({
               name="coverCaption"
             />
           </label>
-          <label className={styles["sw-blog-check-z6p1h3"]}>
+          <label className={styles["blog-check-sjbvkk"]}>
             <input
               defaultChecked={post?.coverImage.decorative}
               name="coverDecorative"
@@ -698,7 +727,7 @@ export function BlogEditorForm({
           </label>
         </section>
 
-        <section className={styles["sw-blog-section-q7m3n9"]}>
+        <section className={styles["blog-section-2441go"]}>
           <h2>Body</h2>
           <EditorProvider
             initialConfig={{
@@ -716,7 +745,7 @@ export function BlogEditorForm({
             <EditorToolbar assets={assets} />
             <PortableTextEditable
               aria-label="Blog post body"
-              className={styles["sw-blog-editor-a7q3m6"]}
+              className={styles["blog-editor-k83xwb"]}
               renderAnnotation={renderAnnotation}
               renderBlock={renderBlock}
               renderDecorator={renderDecorator}
@@ -727,10 +756,10 @@ export function BlogEditorForm({
           </EditorProvider>
         </section>
 
-        <section className={styles["sw-blog-section-q7m3n9"]}>
+        <section className={styles["blog-section-2441go"]}>
           <h2>Search and sharing</h2>
-          <div className={styles["sw-blog-grid-f3m8v2"]}>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+          <div className={styles["blog-grid-ojomea"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>SEO title (optional)</span>
               <input
                 defaultValue={post?.seo.title}
@@ -738,7 +767,7 @@ export function BlogEditorForm({
                 name="seoTitle"
               />
             </label>
-            <label className={styles["sw-blog-field-y2m7q3"]}>
+            <label className={styles["blog-field-hhoy7e"]}>
               <span>SEO description (optional)</span>
               <textarea
                 defaultValue={post?.seo.description}
@@ -748,7 +777,7 @@ export function BlogEditorForm({
               />
             </label>
           </div>
-          <label className={styles["sw-blog-check-z6p1h3"]}>
+          <label className={styles["blog-check-sjbvkk"]}>
             <input
               defaultChecked={post?.seo.noIndex}
               name="seoNoIndex"
@@ -759,13 +788,13 @@ export function BlogEditorForm({
           </label>
         </section>
 
-        <div className={styles["sw-blog-actions-m8q2r6"]}>
-          <button
+        <div className={styles["blog-actions-fh8g5m"]}>
+          <Buttons.Button
             disabled={assets.length === 0 || authors.length === 0}
             type="submit"
           >
             Save draft
-          </button>
+          </Buttons.Button>
         </div>
       </form>
 
@@ -780,7 +809,7 @@ export function BlogEditorForm({
           />
           <form
             action={publishAction}
-            className={styles["sw-blog-publish-v3m9q2"]}
+            className={styles["blog-publish-d2c72f"]}
           >
             <input name="commandId" type="hidden" value={publishCommandId} />
             <input name="documentId" type="hidden" value={documentId} />
@@ -796,7 +825,9 @@ export function BlogEditorForm({
                 minutes. Unsaved editor changes are never published.
               </p>
             </div>
-            <button type="submit">Publish saved revision</button>
+            <Buttons.Button type="submit">
+              Publish saved revision
+            </Buttons.Button>
           </form>
         </>
       ) : null}
@@ -804,7 +835,7 @@ export function BlogEditorForm({
       {documentId && publishedRevision ? (
         <form
           action={unpublishAction}
-          className={styles["sw-blog-publish-v3m9q2"]}
+          className={styles["blog-publish-d2c72f"]}
         >
           <input name="commandId" type="hidden" value={unpublishCommandId} />
           <input name="documentId" type="hidden" value={documentId} />
@@ -820,9 +851,11 @@ export function BlogEditorForm({
               This destructive action requires a recent TOTP step-up.
             </p>
           </div>
-          <button type="submit">Unpublish article</button>
+          <Buttons.Button kind="danger" type="submit">
+            Unpublish article
+          </Buttons.Button>
         </form>
       ) : null}
-    </main>
+    </AdminPage>
   );
 }

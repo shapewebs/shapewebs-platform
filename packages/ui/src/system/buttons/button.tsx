@@ -1,65 +1,35 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import styles from "./button.module.css";
-import { mergeClassNames } from "../_internal/merge-class-names";
+import type { ReactNode } from "react";
+import { Spinner } from "../feedback/spinner";
+import { ButtonControl, type ButtonControlProps } from "./button-control";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  kind?: "primary" | "secondary" | "tertiary" | "ghost";
-  size?: "small" | "medium" | "large";
+export type ButtonProps = ButtonControlProps & {
   leadingIcon?: ReactNode;
-  trailingIcon?: ReactNode;
+  pending?: boolean;
+  pendingLabel?: string;
 };
 
-function getKindClass(kind: NonNullable<ButtonProps["kind"]>) {
-  switch (kind) {
-    case "secondary":
-      return styles.kindSecondary;
-    case "tertiary":
-      return styles.kindTertiary;
-    case "ghost":
-      return styles.kindGhost;
-    default:
-      return styles.kindPrimary;
-  }
-}
-
-function getSizeClass(size: NonNullable<ButtonProps["size"]>) {
-  switch (size) {
-    case "small":
-      return styles.sizeSmall;
-    case "large":
-      return styles.sizeLarge;
-    default:
-      return styles.sizeMedium;
-  }
-}
-
 export function Button({
+  "aria-label": ariaLabel,
   children,
   className,
-  kind = "primary",
+  disabled,
   leadingIcon,
-  size = "medium",
-  trailingIcon,
-  type = "button",
+  pending = false,
+  pendingLabel = "Processing",
   ...props
 }: ButtonProps) {
   return (
-    <button
-      className={mergeClassNames(
-        styles.root,
-        getKindClass(kind),
-        getSizeClass(size),
-        className,
-      )}
-      data-component-status="styled"
-      type={type}
+    <ButtonControl
+      aria-busy={pending || undefined}
+      aria-label={pending ? pendingLabel : ariaLabel}
+      className={className}
+      disabled={disabled || pending}
+      leadingIcon={
+        pending ? <Spinner announce={false} size="sm" /> : leadingIcon
+      }
       {...props}
     >
-      <span className={styles.content}>
-        {leadingIcon}
-        {children}
-        {trailingIcon}
-      </span>
-    </button>
+      {children}
+    </ButtonControl>
   );
 }

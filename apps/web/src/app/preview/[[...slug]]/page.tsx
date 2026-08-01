@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ContentPage } from "@/components/content/content-page";
+import { PreviewShell } from "@/components/content/preview-shell";
 import { SanityBlogPostView } from "@/components/content/sanity-blog-post";
-import { MarketingShell } from "@/components/site/marketing-shell";
 import { getPrivatePreviewContent } from "@/lib/content";
 import { resolveContentRoute } from "@/lib/content-routing";
 import { getPrivateSanityBlogPreview } from "@/lib/sanity-preview";
@@ -39,12 +39,12 @@ export default async function PrivatePreviewPage(
 
   if (sanityPreview) {
     return (
-      <MarketingShell preview>
+      <PreviewShell>
         <SanityBlogPostView
           post={sanityPreview.post}
           resolveImage={sanityPreview.resolveImage}
         />
-      </MarketingShell>
+      </PreviewShell>
     );
   }
 
@@ -55,8 +55,8 @@ export default async function PrivatePreviewPage(
   }
 
   return (
-    <MarketingShell preview>
+    <PreviewShell>
       <ContentPage document={document} />
-    </MarketingShell>
+    </PreviewShell>
   );
 }

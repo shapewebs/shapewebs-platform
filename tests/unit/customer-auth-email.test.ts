@@ -7,10 +7,10 @@ import {
 } from "../../packages/email/src/customer-auth-template";
 
 const baseInput = {
+  accountBaseUrl: "https://admin.shapewebs.com",
   from: "Shapewebs <noreply@shapewebs.com>",
   idempotencyKey: "customer.password_reset/fixture",
   kind: "password_reset" as const,
-  portalBaseUrl: "https://portal.shapewebs.com",
   to: "customer@example.test",
   token: "secret-token-with-special-%2F-characters",
 };
@@ -20,9 +20,9 @@ afterEach(() => {
 });
 
 describe("customer authentication email", () => {
-  it("uses exact portal routes and encodes bearer tokens", () => {
+  it("uses exact account routes and encodes bearer tokens", () => {
     expect(getCustomerAuthActionUrl({ ...baseInput, kind: "invitation" })).toBe(
-      "https://portal.shapewebs.com/invite/secret-token-with-special-%252F-characters",
+      "https://admin.shapewebs.com/invite/secret-token-with-special-%252F-characters",
     );
     expect(
       getCustomerAuthActionUrl({
@@ -30,7 +30,7 @@ describe("customer authentication email", () => {
         kind: "email_verification",
       }),
     ).toBe(
-      "https://portal.shapewebs.com/verify/secret-token-with-special-%252F-characters",
+      "https://admin.shapewebs.com/verify/secret-token-with-special-%252F-characters",
     );
     expect(getCustomerAuthActionUrl(baseInput)).toContain(
       "/api/auth/reset-password/secret-token-with-special-%252F-characters?callbackURL=",
@@ -58,7 +58,7 @@ describe("customer authentication email", () => {
       expect(JSON.parse(String(init?.body))).toMatchObject({
         from: baseInput.from,
         tags: [
-          { name: "source", value: "shapewebs-customer-auth" },
+          { name: "source", value: "shapewebs-account-auth" },
           { name: "kind", value: "password_reset" },
         ],
         to: [baseInput.to],

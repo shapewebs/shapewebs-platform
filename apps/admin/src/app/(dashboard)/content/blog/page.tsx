@@ -1,5 +1,6 @@
-import Link from "next/link";
+import { Buttons, Navigation } from "@shapewebs/ui";
 
+import { AdminEmptyState, AdminPage } from "@/components/admin-page";
 import { requireAdminSession } from "@/lib/auth";
 import { getAdminSanityRuntime } from "@/lib/sanity";
 import styles from "./page.module.css";
@@ -31,27 +32,24 @@ export default async function BlogListPage({
     : [];
 
   return (
-    <main className={styles["sw-bloglist-root-m3q7k2"]}>
-      <header className={styles["sw-bloglist-header-r6p2v8"]}>
-        <div>
-          <p className={styles["sw-bloglist-eyebrow-t8m4q1"]}>Publishing</p>
-          <h1>Blog posts</h1>
-          <p>
-            Employee-authored structured content backed by the staging Sanity
-            dataset. Provider Studio remains a recovery surface, not the normal
-            editorial workflow.
-          </p>
-        </div>
-        <Link
-          className={styles["sw-bloglist-action-x6p1m9"]}
-          href="/content/blog/new"
-        >
+    <AdminPage
+      actions={
+        <Buttons.ButtonLink href="/content/blog/new" size="small">
           New blog post
-        </Link>
-      </header>
-
-      <form className={styles["sw-bloglist-filter-b7n2q5"]} method="get">
-        <label>
+        </Buttons.ButtonLink>
+      }
+      description={
+        <p>
+          Employee-authored structured content backed by the staging Sanity
+          dataset. Provider Studio remains a recovery surface, not the normal
+          editorial workflow.
+        </p>
+      }
+      eyebrow="Publishing"
+      title="Blog posts"
+    >
+      <form className={styles["bloglist-filter-xjzeh4"]} method="get">
+        <label className={styles["bloglist-field-tp3rtn"]}>
           <span>Locale</span>
           <select defaultValue={locale ?? ""} name="locale">
             <option value="">All</option>
@@ -59,22 +57,32 @@ export default async function BlogListPage({
             <option value="da-DK">Dansk</option>
           </select>
         </label>
-        <button type="submit">Apply</button>
+        <Buttons.Button kind="secondary" size="small" type="submit">
+          Apply
+        </Buttons.Button>
       </form>
 
-      <section className={styles["sw-bloglist-panel-q5n9p2"]}>
-        {!sanity ? (
-          <p>
-            Sanity is not configured in this local environment. Fixed staging
-            and production fail closed instead of showing this fallback.
-          </p>
-        ) : posts.length === 0 ? (
-          <p>No blog posts exist for this filter yet.</p>
-        ) : (
-          <div className={styles["sw-bloglist-list-a7q3m6"]}>
+      {!sanity ? (
+        <AdminEmptyState
+          description={
+            <p>
+              Sanity is not configured in this local environment. Fixed staging
+              and production fail closed instead of showing this fallback.
+            </p>
+          }
+          title="Publishing is unavailable"
+        />
+      ) : posts.length === 0 ? (
+        <AdminEmptyState
+          description={<p>Change the locale filter or create a blog post.</p>}
+          title="No blog posts yet"
+        />
+      ) : (
+        <section className={styles["bloglist-panel-25cch0"]}>
+          <div className={styles["bloglist-list-gxepfj"]}>
             {posts.map((entry) => (
               <article
-                className={styles["sw-bloglist-item-c2m8p4"]}
+                className={styles["bloglist-item-z6pvd0"]}
                 key={entry.documentId}
               >
                 <div>
@@ -103,12 +111,17 @@ export default async function BlogListPage({
                     <dd>{entry.post._updatedAt}</dd>
                   </div>
                 </dl>
-                <Link href={`/content/blog/${entry.documentId}`}>Edit</Link>
+                <Navigation.Link
+                  href={`/content/blog/${entry.documentId}`}
+                  underline="none"
+                >
+                  Edit
+                </Navigation.Link>
               </article>
             ))}
           </div>
-        )}
-      </section>
-    </main>
+        </section>
+      )}
+    </AdminPage>
   );
 }

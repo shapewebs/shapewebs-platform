@@ -17,6 +17,7 @@
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:lifecycle-fixture": "node scripts/lifecycle-fixture.mjs",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:verify-unified-identity": "node scripts/verify-unified-identity-migration.mjs",
     "db:verify-lifecycle": "neonctl --version && node scripts/verify-neon-lifecycle.mjs",
     "db:verify-rollback": "node scripts/verify-migration-rollback.mjs",
     "db:verify-security": "node scripts/verify-security.mjs",

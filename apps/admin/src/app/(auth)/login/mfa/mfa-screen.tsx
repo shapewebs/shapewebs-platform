@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminAuthClient } from "@shapewebs/auth/client";
-import { Buttons } from "@shapewebs/ui";
+import { Authentication, Buttons, Forms } from "@shapewebs/ui";
 import { QRCodeSVG } from "qrcode.react";
 
 import { getSafeAdminRedirectTarget } from "@/lib/redirect";
@@ -44,49 +44,39 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
   const stepUpReason = searchParams.get("reason");
 
   return (
-    <div className={styles.stackM3q7d5}>
-      <section className={styles.cardP8m2v4}>
-        <div className={styles.copyBlockN7m3v1}>
-          <p className={styles.eyebrowK1m9q4}>Security check</p>
-          <h1 className={styles.titleQ2m8v6}>Authenticator verification</h1>
-          <p className={styles.copyT6m4p2}>
-            Shapewebs Admin requires a fresh six-digit TOTP code after Google or
-            password sign-in and again before sensitive operations.
-          </p>
-        </div>
+    <div className={styles["mfa-root-xs1ivr"]}>
+      {!isConfigured ? (
+        <Authentication.AuthMessage tone="error">
+          Better Auth is not configured in this environment, so TOTP setup
+          cannot be completed here.
+        </Authentication.AuthMessage>
+      ) : null}
 
-        {!isConfigured ? (
-          <p className={styles.noticeStateW5m1d9}>
-            Better Auth is not configured in this environment, so TOTP setup
-            cannot be completed here.
-          </p>
-        ) : null}
+      {stepUpReason === "password-link" ? (
+        <Authentication.AuthMessage>
+          Verify your authenticator code to request the password link. The email
+          request will resume automatically afterward.
+        </Authentication.AuthMessage>
+      ) : stepUpReason === "step-up" ? (
+        <Authentication.AuthMessage>
+          This operation requires a recently verified authenticator code.
+        </Authentication.AuthMessage>
+      ) : null}
 
-        {stepUpReason === "password-link" ? (
-          <p className={styles.noticeStateW5m1d9}>
-            Verify your authenticator code to request the password link. The
-            email request will resume automatically afterward.
-          </p>
-        ) : stepUpReason === "step-up" ? (
-          <p className={styles.noticeStateW5m1d9}>
-            This operation requires a recently verified authenticator code.
-          </p>
-        ) : null}
+      {errorMessage ? (
+        <Authentication.AuthMessage tone="error">
+          {errorMessage}
+        </Authentication.AuthMessage>
+      ) : null}
 
-        {errorMessage ? (
-          <p className={styles.errorStateR7n2q1} role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
+      {needsEnrollment && isConfigured ? (
+        <Buttons.Button
+          kind="brand"
+          onClick={() => {
+            startTransition(async () => {
+              setErrorMessage(null);
 
-        {needsEnrollment && isConfigured ? (
-          <Buttons.Button
-            disabled={isPending}
-            kind="primary"
-            onClick={() => {
-              startTransition(async () => {
-                setErrorMessage(null);
-
+              try {
                 const { data, error } = await adminAuthClient.twoFactor.enable(
                   {},
                 );
@@ -101,93 +91,105 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
                 setEnrollment({
                   totpUri: data.totpURI,
                 });
-              });
-            }}
-            size="medium"
-            type="button"
-          >
-            {isPending ? "Preparing setup..." : "Set up authenticator"}
-          </Buttons.Button>
-        ) : null}
+              } catch {
+                setErrorMessage(
+                  "Authenticator setup is temporarily unavailable. Please try again.",
+                );
+              }
+            });
+          }}
+          pending={isPending}
+          pendingLabel="Preparing authenticator setup"
+          size="large"
+          type="button"
+        >
+          Set up authenticator
+        </Buttons.Button>
+      ) : null}
 
-        {enrollment ? (
-          <>
-            <div className={styles.setupGridD3m8p2}>
-              <div className={styles.qrPanelN6q5v7}>
-                <QRCodeSVG
-                  className={styles.qrImageK3p7m2}
-                  level="M"
-                  marginSize={4}
-                  size={220}
-                  title="Scan to add Shapewebs Admin to your authenticator"
-                  value={enrollment.totpUri}
-                />
-              </div>
-
-              <div className={styles.setupFieldsF4m6p1}>
-                <div>
-                  <h2>1. Add Shapewebs to your authenticator</h2>
-                  <p className={styles.mutedH8p2q5}>
-                    Scan the QR code in Google Authenticator or another TOTP
-                    app. Signing in to the authenticator app does not add this
-                    account automatically.
-                  </p>
-                </div>
-
-                <div>
-                  <p className={styles.mutedH8p2q5}>
-                    If you cannot scan, choose “Enter a setup key”, use account
-                    name “Shapewebs Admin”, select a time-based key and enter
-                    this one-time secret:
-                  </p>
-                  <div className={styles.secretBoxJ7m2r8}>
-                    {enrollmentSecret}
-                  </div>
-                </div>
-
-                <div>
-                  <h2>2. Verify the changing code</h2>
-                  <p className={styles.mutedH8p2q5}>
-                    Enter the current six-digit Shapewebs code generated by the
-                    authenticator below. The field text is not a usable code.
-                  </p>
-                </div>
-              </div>
+      {enrollment ? (
+        <>
+          <div className={styles["mfa-setup-gd76s4"]}>
+            <div className={styles["mfa-qrpanel-by4yak"]}>
+              <QRCodeSVG
+                className={styles["mfa-qrimage-dlu8d5"]}
+                level="M"
+                marginSize={4}
+                size={220}
+                title="Scan to add Shapewebs Admin to your authenticator"
+                value={enrollment.totpUri}
+              />
             </div>
 
-            <p className={styles.noticeStateW5m1d9}>
-              Recovery codes are intentionally unavailable until the
-              administrative identity-recovery procedure has been implemented
-              and tested. Keep the authenticator enrollment active.
-            </p>
-          </>
-        ) : null}
+            <div className={styles["mfa-fields-k0o163"]}>
+              <div>
+                <h2>1. Add Shapewebs to your authenticator</h2>
+                <p className={styles["mfa-copy-d3vyng"]}>
+                  Scan the QR code in Google Authenticator or another TOTP app.
+                  Signing in to the authenticator app does not add this account
+                  automatically.
+                </p>
+              </div>
 
-        {!needsEnrollment && isConfigured ? (
-          <div className={styles.setupFieldsF4m6p1}>
-            <label className={styles.fieldT5m3n9}>
-              <span>Authenticator code</span>
-              <input
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                maxLength={6}
-                onChange={(event) => {
-                  setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
-                }}
-                pattern="[0-9]{6}"
-                placeholder="Enter 6-digit code"
-                type="text"
-                value={code}
-              />
-            </label>
+              <div>
+                <p className={styles["mfa-copy-d3vyng"]}>
+                  If you cannot scan, choose “Enter a setup key”, use account
+                  name “Shapewebs Admin”, select a time-based key and enter this
+                  one-time secret:
+                </p>
+                <div className={styles["mfa-secret-f9v6z5"]}>
+                  {enrollmentSecret}
+                </div>
+              </div>
 
-            <Buttons.Button
-              disabled={!/^\d{6}$/.test(code) || isPending}
-              kind="primary"
-              onClick={() => {
-                startTransition(async () => {
-                  setErrorMessage(null);
+              <div>
+                <h2>2. Verify the changing code</h2>
+                <p className={styles["mfa-copy-d3vyng"]}>
+                  Enter the current six-digit Shapewebs code generated by the
+                  authenticator below. The field text is not a usable code.
+                </p>
+              </div>
+            </div>
+          </div>
 
+          <Authentication.AuthMessage>
+            Recovery codes are intentionally unavailable until the
+            administrative identity-recovery procedure has been implemented and
+            tested. Keep the authenticator enrollment active.
+          </Authentication.AuthMessage>
+        </>
+      ) : null}
+
+      {!needsEnrollment && isConfigured ? (
+        <div className={styles["mfa-fields-k0o163"]}>
+          <Forms.Field>
+            <Forms.Label htmlFor="employee-totp-code">
+              Authenticator code
+            </Forms.Label>
+            <Forms.InputOtp
+              autoComplete="one-time-code"
+              disabled={isPending}
+              id="employee-totp-code"
+              inputMode="numeric"
+              maxLength={6}
+              onChange={(event) => {
+                setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+              }}
+              pattern="[0-9]{6}"
+              placeholder="Enter 6-digit code"
+              type="text"
+              value={code}
+            />
+          </Forms.Field>
+
+          <Buttons.Button
+            disabled={!/^\d{6}$/.test(code)}
+            kind="brand"
+            onClick={() => {
+              startTransition(async () => {
+                setErrorMessage(null);
+
+                try {
                   const response = await fetch("/api/admin/step-up", {
                     body: JSON.stringify({ code }),
                     headers: {
@@ -205,16 +207,22 @@ export function MfaScreen({ isConfigured, twoFactorEnabled }: MfaScreenProps) {
 
                   router.replace(redirectTo);
                   router.refresh();
-                });
-              }}
-              size="medium"
-              type="button"
-            >
-              {isPending ? "Verifying..." : "Verify and continue"}
-            </Buttons.Button>
-          </div>
-        ) : null}
-      </section>
+                } catch {
+                  setErrorMessage(
+                    "Authenticator verification is temporarily unavailable. Please try again.",
+                  );
+                }
+              });
+            }}
+            pending={isPending}
+            pendingLabel="Verifying authenticator code"
+            size="large"
+            type="button"
+          >
+            Verify and continue
+          </Buttons.Button>
+        </div>
+      ) : null}
     </div>
   );
 }

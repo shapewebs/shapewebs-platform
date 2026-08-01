@@ -16,11 +16,6 @@ export {
 } from "./admin-method-authorization";
 export { verifyAdminPasswordHash } from "./admin-password";
 export { createShapewebsAuth } from "./create-auth";
-export { createShapewebsCustomerAuth } from "./create-customer-auth";
-export {
-  createCustomerMethodAuthorization,
-  verifyCustomerMethodAuthorization,
-} from "./customer-method-authorization";
 export {
   activateCustomerInvitation,
   beginCustomerPasswordRegistration,
@@ -39,7 +34,6 @@ export {
 export {
   clearCustomerRegistrationContext,
   clearCustomerRegistrationGrant,
-  getCustomerCookiePolicy,
   getCustomerRegistrationContextCookieName,
   getCustomerRegistrationCookieName,
   readCustomerRegistrationGrant,
@@ -52,8 +46,6 @@ export {
   type CustomerRegistrationContext,
 } from "./customer-registration-context";
 export {
-  decryptCustomerEmailToken,
-  encryptCustomerEmailToken,
   generateCustomerBearerToken,
   hashCustomerBearerToken,
   hashCustomerOpaqueToken,
@@ -69,7 +61,3 @@ export type {
   GoogleOAuthCredentials,
   ShapewebsAuthOptions,
 } from "./create-auth";
-export type {
-  CustomerGoogleOAuthCredentials,
-  ShapewebsCustomerAuthOptions,
-} from "./create-customer-auth";

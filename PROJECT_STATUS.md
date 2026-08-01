@@ -2,24 +2,27 @@
 
 ## Current milestone
 
-- Date: 30 July 2026
+- Date: 1 August 2026
 - Branch: protected `staging` at
-  `8b62a0d0bff5b0cb30d01b17df83ed28310fa808`; the first public front-face
-  implementation is isolated on `codex/public-frontface-foundation`
+  `eea5f3abe12daf05f4ceddd82a7022ad9db630fc`; the visual-system reset is
+  isolated on `codex/visual-foundation`
 - Pull requests: foundation and migration pull requests `#15` through `#45`
   are merged; the Sanity publishing foundation and its deployment corrections
   `#46` through `#51`, unpublish lifecycle repair `#52`, and public-route/ZAP
-  robustness repair `#53` and foundation evidence reconciliation `#54` are
-  also merged into protected `staging`
-- Status: staging foundation complete for employee authentication, Neon
+  robustness repair `#53`, foundation evidence reconciliation `#54`, and the
+  superseded first homepage implementation `#55` are also merged into
+  protected `staging`
+- Status: protected staging remains complete for employee authentication, Neon
   operations, Sanity public content/media, private Vercel Blob, lead/email
-  reliability, monitoring, and release assurance; the public studio design
-  phase is active, while production launch remains deliberately gated
+  reliability, monitoring, and release assurance. The active branch now
+  consolidates customer and employee accounts into `apps/admin`; migration
+  `0019` has passed its disposable lifecycle, while persistent staging,
+  provider configuration and the complete release gate remain pending
 - Production baseline: commit
   `33affde883340d9db1d53d89ffd0c49d73fb531f`
 
 Production remains on the known-good baseline. Pull requests `#15` through
-`#54` are merged into protected `staging`. Migrations `0000` through `0018`
+`#55` are merged into protected `staging`. Migrations `0000` through `0018`
 are applied to the persistent synthetic staging database; the journal contains
 19 entries and its live six-identity security verification passes. Google
 OAuth, password login, shared TOTP step-up and protected employee navigation
@@ -42,6 +45,39 @@ remains the source of truth for identities, authorization, audit, idempotency,
 preview grants and company/customer operations; private Vercel Blob remains
 the boundary for confidential files. The checked-in Studio is a
 provider-recovery surface, not the employee CMS.
+
+## Active visual-foundation branch
+
+The unmerged `codex/visual-foundation` branch deliberately supersedes the
+first homepage composition from pull request `#55`. The public application is
+now a controlled design canvas:
+
+- `/` has an empty body and retains only a rebuilt header and footer.
+- Every other public marketing page is removed. Private CMS preview and
+  integration Route Handlers remain isolated infrastructure.
+- Crawling remains enabled and the sitemap contains only the canonical
+  homepage, preserving the SEO release budget while public body content is
+  intentionally absent.
+- Shared semantic tokens define separate dark `showcase` and light `studio`
+  themes. Header, footer and both application shells consume shared brand,
+  button and layout primitives.
+- The admin login, dashboard, navigation, content lists and editors, media,
+  submissions, settings, security and audit surfaces share one composition
+  model. The same application now also contains invitation-gated customer
+  onboarding, a customer workspace, and shared account security without
+  weakening employee TOTP or customer RLS.
+- `pnpm visual:foundation:check` protects the exact route reset, theme
+  selection, required tokens, component use, application token boundary and
+  all 404 globally unique application/shared CSS Module class contracts across
+  105 CSS Modules.
+
+The consolidated branch now passes `pnpm verify`, both Next.js build engines,
+the Worker and Sanity Studio builds, runtime-artifact checks, all 32 Playwright
+security/accessibility/interaction scenarios, three Lighthouse runs and the
+253-control ASVS launch gate. Drizzle regeneration leaves the worktree
+unchanged. The disposable migration rehearsal is also green. Protected GitHub,
+Neon and Vercel checks, the migrated fixed-staging provider journeys, and
+post-deployment k6/ZAP remain mandatory before merge or promotion.
 
 ## Implemented on protected staging
 
@@ -73,19 +109,17 @@ provider-recovery surface, not the employee CMS.
 
 ### Applications and runtime controls
 
-- `apps/web`, `apps/admin`, and the fail-closed `apps/portal` foundation remain
-  independently buildable Next.js applications. The portal has no Vercel
-  project, fixed staging domain, authentication endpoint, customer-facing
-  route, or production deployment. Its reviewed database boundary is applied
-  to persistent synthetic staging and remains unreachable from customer-facing
-  routes.
-- Portal provider values use a distinct `PORTAL_*` namespace. A code-owned
-  implementation gate and complete environment validator keep every portal UI
-  route unavailable with HTTP `503` unless the isolated provider namespace is
-  complete. Liveness remains observable while readiness fails closed.
-- Portal responses use nonce CSP, private/no-store and noindex controls. Its
-  APIs deny browser rendering contexts, and both Next.js build engines plus
-  Playwright cover the third application in the canonical root workflow.
+- `apps/web` remains the unauthenticated static-first application;
+  `apps/admin` is the only authenticated application for customers and
+  employees. The former `apps/portal` package, duplicate Better Auth instance,
+  duplicate build target and `PORTAL_*` application environment are removed on
+  the active branch.
+- The authenticated app uses one exact origin, one host-only cookie namespace,
+  one Google callback, one canonical `auth` schema and shared recovery. Customer
+  repositories still use a separate least-privilege connection and forced RLS;
+  employee-studio access still requires active staff membership and TOTP.
+- Authenticated responses use nonce CSP, private/no-store and noindex controls.
+  Both Next.js build engines and Playwright cover the unified application.
 - The boundary gate now rejects direct source imports between applications and
   rejects any authentication-library import in the public application.
 - The public site remains static-first and within its Lighthouse and transfer
@@ -168,9 +202,14 @@ provider-recovery surface, not the employee CMS.
 
 ### Authentication and authorization
 
-- The public application contains no authentication runtime. Admin and portal
-  own independent Better Auth instances, schemas, secrets, cookies and route
-  namespaces; the portal remains fail-closed without its dedicated providers.
+- The public application contains no authentication runtime. `apps/admin` is
+  the one authenticated application for employees and customers, with one
+  Better Auth instance, canonical `auth` schema, exact origin, host-only cookie
+  namespace, Google callback and recovery surface.
+- Authentication establishes one account identity only. Every protected entry
+  point then derives either a staff or customer authorization context from
+  trusted memberships; a customer membership never grants studio access, and
+  staff status never grants access to an unrelated customer project.
 - Protected staging gives every allowlisted owner/editor one administrative
   account with Google, a verified password, or both attached as login methods.
   Open signup, implicit email merging and privileged unlinking remain disabled.
@@ -212,18 +251,20 @@ provider-recovery surface, not the employee CMS.
 - Every migrated admin page, Route Handler, and Server Action re-authorizes
   against server-owned session and membership context. Authentication,
   step-up, revocation, and authorization-denial events are audited.
-- The accepted future customer identity contract uses a separate
-  `apps/portal`, Vercel project, Better Auth instance, cookie namespace, OAuth
-  client, Neon schema, and runtime role. It supports invitation-gated Google
-  and verified email/password onboarding with explicit same-email account
-  linking, without weakening or sharing administrative authentication.
-- Protected staging now contains fail-closed customer routes over the
-  protected credential foundation: project-bound invitation acceptance,
-  Google-first or password-first onboarding, login/logout, generic recovery,
-  explicit same-account Google linking, verified-email password addition,
-  authorization-backed dashboard/security pages, Turnstile, and a durable
-  encrypted Resend worker. Dedicated portal provider resources are still
-  absent, so no customer route is live on staging or production.
+- The active branch implements ADR 0006: one `auth.user` can hold staff,
+  customer, or both memberships and can sign in with Google, password, or both.
+  Project-bound invitation acceptance, Google-first or password-first
+  onboarding, generic recovery, explicit method linking, shared account
+  security, Turnstile and the durable encrypted Resend worker now live in
+  `apps/admin`.
+- Migration `0019` performs conflict-aborting legacy identity reconciliation,
+  moves non-conflicting provider accounts and terminal outbox evidence, repoints
+  customer memberships, revokes old customer sessions, and installs a narrow
+  customer-session authorization function. Its disposable success, explicit
+  conflict-abort, rollback, full security and byte-identical restore paths are
+  green and recorded in
+  `docs/audits/unified-account-identity-verification-2026-08-01.md`. It is not
+  yet applied to persistent staging or production.
 - The protected administrative slice adds allowlisted password activation,
   generic recovery, durable encrypted auth-email delivery, method discovery,
   explicit Google linking, password addition and a shared security page.
@@ -240,18 +281,20 @@ provider-recovery surface, not the employee CMS.
   remain canonical release gates.
 - Both application Development database URLs use pooled Neon endpoints.
   Owner/migrator operations remain direct and outside Vercel runtimes.
-- Migration `0013` replaces the transitional mixed membership model with
-  `staff_memberships`, `customer_memberships`, and
-  `customer_project_memberships`; customer Better Auth records live only in
-  `customer_auth`. The dedicated SQL-created `shapewebs_portal_runtime` has no
-  `neon_superuser`, ownership, role-creation, database-creation, replication,
-  or RLS-bypass capability. Its password is restricted to the macOS Keychain
-  and GitHub `neon-nonproduction` environment.
-- A complete disposable source/restore lifecycle applied migrations `0000`
-  through `0013`, verified mutually isolated admin/portal runtime identities,
-  active and suspended customer behavior, wrong-role and cross-tenant denial,
-  rollback, deterministic export, and byte-identical restore. Both disposable
-  branches and the short-lived diagnostic branch were deleted. Evidence is in
+- Migration `0013` originally established separate staff/customer membership
+  tables and a transitional `customer_auth` identity realm. Active migration
+  `0019` reconciles that realm into canonical `auth` while preserving separate
+  membership and repository authorization boundaries. The physical
+  `shapewebs_portal_runtime` PostgreSQL role name is temporarily retained as a
+  migration detail, but application configuration calls it the customer
+  runtime. It has no `neon_superuser`, ownership, role-creation,
+  database-creation, replication, or RLS-bypass capability.
+- Historical disposable source/restore evidence through `0013` verified the
+  original split identities, active and suspended customer behavior,
+  wrong-role and cross-tenant denial, rollback, deterministic export, and
+  byte-identical restore. Migration `0019` has now repeated and extended those
+  guarantees for the unified identity model on disposable branches. The
+  earlier evidence remains in
   `docs/audits/customer-identity-boundary-verification-2026-07-26.md`.
 - Pull request `#33` reproduced that lifecycle through the protected GitHub
   environment and merged at `b8f9750`. An expiring point-in-time branch
@@ -287,7 +330,7 @@ provider-recovery surface, not the employee CMS.
 - Migration `0016_secure-media-foundation` adds an explicit media lifecycle,
   normalized image metadata, provider state, localized alt text/captions, and
   forced tenant-aware RLS. Draft/private files remain invisible to the web,
-  portal, and public-reader roles. The web role can read only same-tenant,
+  customer-runtime, and public-reader roles. The web role can read only same-tenant,
   public-ready rows and a reviewed column projection.
 - The admin upload route authorizes owner/editor sessions before reading the
   body, enforces an exact-origin multipart request, bounds the complete request
@@ -728,18 +771,23 @@ plan.
 
 ## Next implementation slices
 
-1. Complete the first public front-face pull request through the protected
-   staging sequence and repeat the fixed-domain k6/ZAP assurance run.
-2. Inventory real project evidence, screenshots, outcomes, testimonials,
+1. Publish the active branch for protected GitHub, Neon and Vercel review.
+   Apply migration `0019` to persistent synthetic staging only after its
+   pre-migration snapshot and protected disposable lifecycle are green.
+2. Configure `admin-staging.shapewebs.com` as the single pre-production account
+   surface with canonical staging database URLs, Turnstile hostname/action,
+   one Google callback, the Resend worker, cookie behavior and monitoring.
+   Rerun the real customer/employee journeys plus k6 and ZAP. Keep
+   `admin.shapewebs.com` and all production data untouched until that evidence
+   is green.
+3. Inventory real project evidence, screenshots, outcomes, testimonials,
    service details, commercial positioning, and approved studio biography.
    Never invent client work to fill the design.
-3. Extend the approved public visual system through Work, Case Study, Services,
+4. Extend the approved public visual system through Work, Case Study, Services,
    Process, About, Contact, Journal, and legal surfaces while keeping published
    website content and public media in Sanity.
-4. Keep the retained pre-`0017` Neon rollback branch only until its recorded
+5. Keep the retained pre-`0017` Neon rollback branch only until its recorded
    expiry/rollback decision; do not treat it as a production backup.
-5. Rehearse accepted-risk expiry checks and the remaining production provider,
+6. Rehearse accepted-risk expiry checks and the remaining production provider,
    recovery, WAF, alerting, legal, retention, and commercial-plan gates before
    any production promotion.
-6. Provision the isolated customer-portal providers and private-file journeys
-   only when the invitation-only portal becomes an active delivery milestone.

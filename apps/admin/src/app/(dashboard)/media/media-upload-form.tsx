@@ -3,6 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { Buttons } from "@shapewebs/ui";
+
 import styles from "./page.module.css";
 
 const feedback: Record<string, string> = {
@@ -57,11 +59,11 @@ export function MediaUploadForm() {
   return (
     <form
       action={submit}
-      className={styles["sw-media-form-b7n2q5"]}
+      className={styles["media-form-3a3zdh"]}
       ref={formReference}
     >
-      <div className={styles["sw-media-fields-n4v8q1"]}>
-        <label className={styles["sw-media-field-p8m3k2"]}>
+      <div className={styles["media-fields-xhjl7r"]}>
+        <label className={styles["media-field-aiws9c"]}>
           <span>Image</span>
           <input
             accept="image/jpeg,image/png,image/webp"
@@ -73,7 +75,7 @@ export function MediaUploadForm() {
           <small>JPEG, PNG, or WebP. Maximum source size: 4 MiB.</small>
         </label>
 
-        <label className={styles["sw-media-field-p8m3k2"]}>
+        <label className={styles["media-field-aiws9c"]}>
           <span>Alt text</span>
           <input
             disabled={isPending}
@@ -87,7 +89,7 @@ export function MediaUploadForm() {
           </small>
         </label>
 
-        <label className={styles["sw-media-field-p8m3k2"]}>
+        <label className={styles["media-field-aiws9c"]}>
           <span>Caption (optional)</span>
           <input
             disabled={isPending}
@@ -97,7 +99,7 @@ export function MediaUploadForm() {
           />
         </label>
 
-        <label className={styles["sw-media-field-p8m3k2"]}>
+        <label className={styles["media-field-aiws9c"]}>
           <span>Locale</span>
           <select defaultValue="en" disabled={isPending} name="localeCode">
             <option value="en">English</option>
@@ -106,17 +108,13 @@ export function MediaUploadForm() {
         </label>
       </div>
 
-      <button
-        className={styles["sw-media-submit-x6p1m9"]}
-        disabled={isPending}
-        type="submit"
-      >
+      <Buttons.Button pending={isPending} type="submit">
         {isPending ? "Verifying and uploading…" : "Upload private image"}
-      </button>
+      </Buttons.Button>
 
       <p
         aria-live="polite"
-        className={styles["sw-media-feedback-j3q7m4"]}
+        className={styles["media-feedback-lf8jb5"]}
         role="status"
       >
         {message}

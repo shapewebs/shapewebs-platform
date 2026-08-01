@@ -1,2 +1,6 @@
-.root {
+.fielderror-root-mbr31l {
+  margin: 0;
+  color: rgb(var(--color-feedback-danger) / 1);
+  font-size: var(--font-size-small);
+  line-height: 1.45;
 }

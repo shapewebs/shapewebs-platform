@@ -6,7 +6,6 @@ const generatedPaths = [
   ".lighthouseci",
   ".turbo",
   "apps/admin/.next",
-  "apps/portal/.next",
   "apps/studio/.sanity",
   "apps/web/.next",
   "coverage",

@@ -1,2 +1,15 @@
-.root {
+.togglegroup-root-zd1zgu {
+  display: flex;
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.togglegroup-horizontal-bwtwro {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.togglegroup-vertical-paxg5x {
+  align-items: flex-start;
+  flex-direction: column;
 }

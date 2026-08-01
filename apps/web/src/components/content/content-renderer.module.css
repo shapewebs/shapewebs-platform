@@ -1,61 +1,61 @@
-.rootN6m2q8 {
+.renderer-root-nztb6v {
   display: grid;
-  gap: 28px;
+  gap: var(--space-6);
 }
 
-.heroT2m9q3,
-.sectionM8q2p5 {
+.renderer-hero-jpodfg,
+.renderer-section-smy3lo {
   display: grid;
-  gap: 14px;
+  gap: var(--space-4);
 }
 
-.heroT2m9q3 h2,
-.sectionM8q2p5 h2 {
-  font-size: clamp(1.6rem, 1.1rem + 1.6vw, 2.4rem);
+.renderer-hero-jpodfg h2,
+.renderer-section-smy3lo h2 {
+  font-size: var(--font-size-title-3);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.03em;
   line-height: 1.1;
-  font-weight: var(--font-weight-medium);
+  margin: 0;
 }
 
-.eyebrowK5m1q7 {
-  font-size: 12px;
-  letter-spacing: 0.08em;
+.renderer-eyebrow-z07u8c {
+  color: rgb(var(--color-text-tertiary));
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+  margin: 0;
   text-transform: uppercase;
-  color: rgba(var(--color-text-tertiary), 1);
 }
 
-.bodyP7m3q1,
-.paragraphB8m4q1,
-.captionR6m3q8 {
-  color: rgba(var(--color-text-secondary), 1);
+.renderer-body-xcdqqj,
+.renderer-paragraph-jaiec8,
+.renderer-caption-sr5qta {
+  color: rgb(var(--color-text-secondary));
+  font-size: var(--font-size-regular-plus);
   line-height: 1.7;
+  margin: 0;
 }
 
-.ctaLinkQ3m8r4 {
-  color: rgba(var(--color-text-primary), 1);
-  text-decoration: none;
-  font-size: 13px;
-}
-
-.ctaPanelV9m4q2,
-.faqItemH6m4q9,
-.imagePlaceholderC4m7p2 {
-  border: 1px solid rgba(var(--color-border-primary), 1);
-  padding: 18px;
-}
-
-.faqListX5m2q7 {
+.renderer-ctapanel-ph5l63,
+.renderer-faqitem-vjwww2 {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.faqItemH6m4q9 h3 {
-  font-size: 1rem;
-  font-weight: var(--font-weight-medium);
+.renderer-faqlist-hkpmio {
+  display: grid;
+  gap: var(--space-3);
 }
 
-.imagePlaceholderC4m7p2 {
-  color: rgba(var(--color-text-secondary), 1);
+.renderer-faqitem-vjwww2 h3 {
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.renderer-image-xq8c66 {
+  color: rgb(var(--color-text-secondary));
+  display: grid;
   min-height: 180px;
-  display: grid;
   place-items: center;
 }

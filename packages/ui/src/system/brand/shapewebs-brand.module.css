@@ -1,0 +1,28 @@
+.brand-root-jjoyxs {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  color: inherit;
+}
+
+.brand-mark-n1o5i5 {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: currentColor;
+  overflow: visible;
+}
+
+.brand-name-ujglwz {
+  overflow: hidden;
+  font-size: var(--font-size-regular-plus);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-compact-ugpa23 {
+  justify-content: center;
+}

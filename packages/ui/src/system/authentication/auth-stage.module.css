@@ -1,0 +1,35 @@
+.authstage-header-h3zdki {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  text-align: center;
+}
+
+.authstage-eyebrow-gdna63,
+.authstage-title-pg8m01,
+.authstage-description-lucf6e > :where(p) {
+  margin: 0;
+}
+
+.authstage-eyebrow-gdna63 {
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+}
+
+.authstage-title-pg8m01 {
+  color: rgb(var(--color-text-primary) / 1);
+  font-size: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.032em;
+  line-height: 1.2;
+}
+
+.authstage-description-lucf6e {
+  max-width: 58ch;
+  margin-inline: auto;
+  color: rgb(var(--color-text-secondary) / 1);
+  font-size: var(--font-size-regular);
+  line-height: 1.55;
+}

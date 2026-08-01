@@ -1,5 +1,8 @@
-import Link from "next/link";
 import type { ContentBlock, ContentDocument } from "@shapewebs/content-schema";
+import { ButtonLink } from "@shapewebs/ui/button-link";
+import { Card } from "@shapewebs/ui/card";
+import { Surface } from "@shapewebs/ui/surface";
+
 import styles from "./content-renderer.module.css";
 
 type ContentRendererProps = {
@@ -32,7 +35,10 @@ function renderRichTextBlock(
   return block.document.map((node, index) => {
     if (node.type === "paragraph") {
       return (
-        <p key={`paragraph-${index}`} className={styles.paragraphB8m4q1}>
+        <p
+          key={`paragraph-${index}`}
+          className={styles["renderer-paragraph-jaiec8"]}
+        >
           {Array.isArray(node.content)
             ? node.content.map((child, childIndex) =>
                 renderInlineNode(child, `paragraph-${index}-${childIndex}`),
@@ -48,25 +54,27 @@ function renderRichTextBlock(
 
 export function ContentRenderer({ document }: ContentRendererProps) {
   return (
-    <div className={styles.rootN6m2q8}>
+    <div className={styles["renderer-root-nztb6v"]}>
       {document.blocks.map((block, index) => {
         if (block.type === "hero") {
           return (
-            <section className={styles.heroT2m9q3} key={`hero-${index}`}>
+            <section
+              className={styles["renderer-hero-jpodfg"]}
+              key={`hero-${index}`}
+            >
               {block.eyebrow ? (
-                <p className={styles.eyebrowK5m1q7}>{block.eyebrow}</p>
+                <p className={styles["renderer-eyebrow-z07u8c"]}>
+                  {block.eyebrow}
+                </p>
               ) : null}
               <h2>{block.heading}</h2>
               {block.body ? (
-                <p className={styles.bodyP7m3q1}>{block.body}</p>
+                <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
               ) : null}
               {block.primaryCtaHref && block.primaryCtaLabel ? (
-                <Link
-                  className={styles.ctaLinkQ3m8r4}
-                  href={block.primaryCtaHref}
-                >
+                <ButtonLink href={block.primaryCtaHref} kind="secondary">
                   {block.primaryCtaLabel}
-                </Link>
+                </ButtonLink>
               ) : null}
             </section>
           );
@@ -74,7 +82,10 @@ export function ContentRenderer({ document }: ContentRendererProps) {
 
         if (block.type === "rich_text") {
           return (
-            <section className={styles.sectionM8q2p5} key={`rich-${index}`}>
+            <section
+              className={styles["renderer-section-smy3lo"]}
+              key={`rich-${index}`}
+            >
               {renderRichTextBlock(block)}
             </section>
           );
@@ -82,28 +93,32 @@ export function ContentRenderer({ document }: ContentRendererProps) {
 
         if (block.type === "cta") {
           return (
-            <section className={styles.sectionM8q2p5} key={`cta-${index}`}>
-              <div className={styles.ctaPanelV9m4q2}>
+            <section
+              className={styles["renderer-section-smy3lo"]}
+              key={`cta-${index}`}
+            >
+              <Surface className={styles["renderer-ctapanel-ph5l63"]}>
                 <h2>{block.heading}</h2>
                 {block.body ? (
-                  <p className={styles.bodyP7m3q1}>{block.body}</p>
+                  <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
                 ) : null}
-                <Link className={styles.ctaLinkQ3m8r4} href={block.href}>
-                  {block.label}
-                </Link>
-              </div>
+                <ButtonLink href={block.href}>{block.label}</ButtonLink>
+              </Surface>
             </section>
           );
         }
 
         if (block.type === "faq") {
           return (
-            <section className={styles.sectionM8q2p5} key={`faq-${index}`}>
+            <section
+              className={styles["renderer-section-smy3lo"]}
+              key={`faq-${index}`}
+            >
               {block.heading ? <h2>{block.heading}</h2> : null}
-              <div className={styles.faqListX5m2q7}>
+              <div className={styles["renderer-faqlist-hkpmio"]}>
                 {block.items.map((item, itemIndex) => (
-                  <article
-                    className={styles.faqItemH6m4q9}
+                  <Card
+                    className={styles["renderer-faqitem-vjwww2"]}
                     key={`faq-item-${itemIndex}`}
                   >
                     <h3>{item.question}</h3>
@@ -111,7 +126,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
                       <div key={`faq-answer-${itemIndex}-${answerIndex}`}>
                         {answerNode.type === "paragraph" &&
                         Array.isArray(answerNode.content) ? (
-                          <p className={styles.paragraphB8m4q1}>
+                          <p className={styles["renderer-paragraph-jaiec8"]}>
                             {answerNode.content.map((child, childIndex) =>
                               renderInlineNode(
                                 child,
@@ -122,7 +137,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
                         ) : null}
                       </div>
                     ))}
-                  </article>
+                  </Card>
                 ))}
               </div>
             </section>
@@ -131,12 +146,20 @@ export function ContentRenderer({ document }: ContentRendererProps) {
 
         if (block.type === "image") {
           return (
-            <section className={styles.sectionM8q2p5} key={`image-${index}`}>
-              <div className={styles.imagePlaceholderC4m7p2}>
+            <section
+              className={styles["renderer-section-smy3lo"]}
+              key={`image-${index}`}
+            >
+              <Surface
+                className={styles["renderer-image-xq8c66"]}
+                level="sunken"
+              >
                 Media pipeline pending for asset <code>{block.assetId}</code>.
-              </div>
+              </Surface>
               {block.caption ? (
-                <p className={styles.captionR6m3q8}>{block.caption}</p>
+                <p className={styles["renderer-caption-sr5qta"]}>
+                  {block.caption}
+                </p>
               ) : null}
             </section>
           );

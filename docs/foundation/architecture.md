@@ -1,9 +1,16 @@
 # Shapewebs foundation brief
 
-- Status: recommended architecture
+- Status: historical foundation; application-topology sections are superseded
+  by ADR 0006
 - Researched: 23 July 2026
 - Scope: public studio website, custom CMS, admin authentication, and a future
   customer portal
+
+> The research and control rationale in this document remains useful, but the
+> three-application topology is no longer current. Shapewebs now uses one public
+> app and one authenticated app with a canonical identity, distinct membership
+> contexts, TOTP-gated studio access, and separate least-privilege database
+> connections. See ADR 0006 and `docs/architecture/platform-foundation.md`.
 
 ## Executive decision
 

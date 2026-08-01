@@ -6,22 +6,6 @@ const productionRegistrationContextCookieName =
 const developmentRegistrationContextCookieName =
   "shapewebs-customer-registration-context";
 
-function getCustomerCookiePrefix(production: boolean): string {
-  return production ? "__Host-shapewebs-customer" : "shapewebs-customer";
-}
-
-export function getCustomerCookiePolicy(production: boolean) {
-  return {
-    attributes: {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax" as const,
-      secure: production,
-    },
-    prefix: getCustomerCookiePrefix(production),
-  };
-}
-
 export function getCustomerRegistrationCookieName(production: boolean): string {
   return production
     ? productionRegistrationCookieName

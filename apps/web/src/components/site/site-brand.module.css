@@ -1,0 +1,19 @@
+.brand-link-q0kxgw {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-text-primary) / 1);
+  text-decoration: none;
+}
+
+.brand-link-q0kxgw:focus-visible {
+  outline: 3px solid rgb(var(--color-focus-ring) / 0.42);
+  outline-offset: 3px;
+}
+
+.brand-compact-kuxhlj {
+  width: 44px;
+  justify-content: center;
+}

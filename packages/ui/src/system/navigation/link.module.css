@@ -1,20 +1,53 @@
-.root {
+.link-root-zvbqny {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--space-2);
+  border-radius: var(--radius-xs);
   color: inherit;
+  text-decoration-color: rgb(var(--color-text-tertiary) / 0.7);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition:
+    color 160ms var(--ease-out-quad),
+    text-decoration-color 160ms var(--ease-out-quad);
+}
+
+.link-root-zvbqny:hover {
+  color: rgb(var(--color-link-hover) / 1);
+  text-decoration-color: currentColor;
+}
+
+.link-root-zvbqny:focus-visible {
+  outline: 3px solid rgb(var(--color-focus-ring) / 0.42);
+  outline-offset: 3px;
+}
+
+.link-always-6mytr2 {
+  text-decoration-line: underline;
+}
+
+.link-hover-p8wt5w {
+  text-decoration-line: none;
+}
+
+.link-hover-p8wt5w:hover {
+  text-decoration-line: underline;
+}
+
+.link-none-zg0f8w,
+.link-none-zg0f8w:hover {
   text-decoration: none;
 }
 
-.label {
-  display: inline-flex;
-  align-items: center;
+@media (prefers-reduced-motion: reduce) {
+  .link-root-zvbqny {
+    transition: none;
+  }
 }
 
-.hint {
-  display: none;
-}
-
-.hintPending {
-  display: none;
+@media (forced-colors: active) {
+  .link-root-zvbqny:focus-visible {
+    outline-color: Highlight;
+  }
 }
