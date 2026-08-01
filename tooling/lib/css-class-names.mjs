@@ -1,9 +1,11 @@
+import { randomInt } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const CSS_CLASS_NAME_PATTERN =
   /^(?<scope>[a-z][a-z0-9]*)-(?<role>[a-z][a-z0-9]*)-(?<id>[a-z0-9]{6})$/;
 export const CSS_CLASS_PART_PATTERN = /^[a-z][a-z0-9]*$/;
+const CSS_CLASS_ID_SPACE = 36 ** 6;
 
 const classSelectorPattern = /\.([A-Za-z_][A-Za-z0-9_-]*)/g;
 const ignoredDirectories = new Set([
@@ -93,4 +95,8 @@ export function collectCssClassDefinitions(repositoryRoot) {
 
 export function parseCssClassName(className) {
   return CSS_CLASS_NAME_PATTERN.exec(className)?.groups ?? null;
+}
+
+export function createCssClassId(randomInteger = randomInt) {
+  return randomInteger(CSS_CLASS_ID_SPACE).toString(36).padStart(6, "0");
 }

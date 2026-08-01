@@ -1,9 +1,9 @@
-import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import process from "node:process";
 
 import {
   collectCssClassDefinitions,
+  createCssClassId,
   CSS_CLASS_PART_PATTERN,
   parseCssClassName,
 } from "../lib/css-class-names.mjs";
@@ -48,8 +48,7 @@ const existingIds = new Set(
 
 let id;
 do {
-  const candidate = randomBytes(4).readUInt32BE(0) % 36 ** 6;
-  id = candidate.toString(36).padStart(6, "0");
+  id = createCssClassId();
 } while (existingIds.has(id));
 
 console.log(`${scope}-${role}-${id}`);
