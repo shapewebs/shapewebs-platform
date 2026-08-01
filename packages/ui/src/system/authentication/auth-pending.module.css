@@ -1,0 +1,13 @@
+.authpending-root-glhdxg {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: rgb(var(--color-text-secondary) / 1);
+}
+
+.authpending-label-yfwtv0 {
+  font-size: var(--font-size-small-plus);
+}

@@ -11,24 +11,24 @@ export type SurfaceProps = HTMLAttributes<HTMLDivElement> & {
 function getLevelClass(level: NonNullable<SurfaceProps["level"]>) {
   switch (level) {
     case "raised":
-      return styles["sw-surface-raised-p4a1d7"];
+      return styles["surface-raised-52nakb"];
     case "sunken":
-      return styles["sw-surface-sunken-q5b2e8"];
+      return styles["surface-sunken-3ignpz"];
     default:
-      return styles["sw-surface-base-n3z9c6"];
+      return styles["surface-base-8k9kt5"];
   }
 }
 
 function getPaddingClass(padding: NonNullable<SurfaceProps["padding"]>) {
   switch (padding) {
     case "large":
-      return styles["sw-surface-large-v9f6j3"];
+      return styles["surface-large-rd2mun"];
     case "none":
-      return styles["sw-surface-none-r6c3f9"];
+      return styles["surface-none-avqcyw"];
     case "small":
-      return styles["sw-surface-small-s7d4g1"];
+      return styles["surface-small-3cjx0o"];
     default:
-      return styles["sw-surface-medium-t8e5h2"];
+      return styles["surface-medium-on5a3d"];
   }
 }
 
@@ -41,7 +41,7 @@ export function Surface({
   return (
     <div
       className={mergeClassNames(
-        styles["sw-surface-root-m2y8b5"],
+        styles["surface-root-zimz1n"],
         getLevelClass(level),
         getPaddingClass(padding),
         className,

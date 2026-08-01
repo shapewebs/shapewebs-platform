@@ -15,7 +15,8 @@
 
 ## Current Status
 
-- Styled now: `Button`, `ButtonGroup`, `CloseButton`, `ToggleButton`, `ToggleButtonGroup`, `Navigation.Link`, `Feedback.Spinner`
+- Styled now: authentication layouts and states, buttons, core form controls,
+  `Navigation.Link`, and `Feedback.Spinner`
 - Scaffolded only: every other listed component. The file structure and CSS Modules exist, but behavior and styling still need to be built.
 
 ## Registry

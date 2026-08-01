@@ -39,7 +39,7 @@ export async function sendAdminAuthNotification(
           html: renderAdminAuthEmailHtml(input),
           subject: getAdminAuthEmailSubject(input.kind),
           tags: [
-            { name: "source", value: "shapewebs-admin-auth" },
+            { name: "source", value: "shapewebs-account-auth" },
             { name: "kind", value: input.kind },
           ],
           text: renderAdminAuthEmailText(input),

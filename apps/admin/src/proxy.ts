@@ -12,10 +12,20 @@ const protectedPrefixes = [
   "/account",
   "/audit",
   "/content",
+  "/customer",
   "/dashboard",
   "/media",
   "/settings",
   "/submissions",
+  "/studio",
+];
+
+const turnstilePrefixes = [
+  "/forgot-password",
+  "/invite",
+  "/register",
+  "/reset-password",
+  "/verify",
 ];
 
 function isProtectedPath(pathname: string): boolean {
@@ -40,6 +50,11 @@ export function proxy(request: NextRequest) {
       : undefined;
   const csp = buildAdminContentSecurityPolicy(nonce, {
     allowPublicContentImages: true,
+    allowTurnstile: turnstilePrefixes.some(
+      (prefix) =>
+        request.nextUrl.pathname === prefix ||
+        request.nextUrl.pathname.startsWith(`${prefix}/`),
+    ),
     formActionOrigins: publicSiteOrigin ? [publicSiteOrigin] : [],
   });
   const requestHeaders = new Headers(request.headers);

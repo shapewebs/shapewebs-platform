@@ -1,15 +1,15 @@
-.sw-togglegroup-root-k2x7a4 {
+.togglegroup-root-zd1zgu {
   display: flex;
   min-width: 0;
-  gap: var(--ui-space-3);
+  gap: var(--space-3);
 }
 
-.sw-togglegroup-horizontal-m3y8b5 {
+.togglegroup-horizontal-bwtwro {
   flex-wrap: wrap;
   align-items: center;
 }
 
-.sw-togglegroup-vertical-n4z9c6 {
+.togglegroup-vertical-paxg5x {
   align-items: flex-start;
   flex-direction: column;
 }

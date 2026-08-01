@@ -1,0 +1,16 @@
+.authtransition-root-0puzm7 {
+  min-width: 0;
+  opacity: 1;
+  transition: opacity 140ms var(--ease-out-quad);
+}
+
+.authtransition-root-0puzm7[data-transition-phase="entering"],
+.authtransition-root-0puzm7[data-transition-phase="leaving"] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authtransition-root-0puzm7 {
+    transition: none;
+  }
+}

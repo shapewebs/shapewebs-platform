@@ -1,10 +1,16 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { AdminAuthShell } from "@/components/admin-auth-shell";
 import { getAdminRuntimeState } from "@/lib/auth";
 import { hasAdminAuthConfig } from "@/lib/better-auth";
+import { Authentication } from "@shapewebs/ui";
 import { MfaScreen } from "./mfa-screen";
+
+export const metadata: Metadata = {
+  title: "Authenticator verification",
+};
 
 export default async function MfaPage({
   searchParams,
@@ -35,9 +41,13 @@ export default async function MfaPage({
       }
       eyebrow="Security check"
       title="Authenticator verification"
-      wide
+      expanded
     >
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <Authentication.AuthPending label="Preparing security check" />
+        }
+      >
         <MfaScreen
           isConfigured={hasAdminAuthConfig()}
           twoFactorEnabled={

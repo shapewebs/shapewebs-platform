@@ -1,0 +1,59 @@
+.accountsecurity-card-4m2k8p {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid rgb(var(--color-border-primary) / 1);
+  border-radius: var(--radius-md);
+  background: rgb(var(--color-bg-secondary) / 1);
+}
+
+.accountsecurity-card-4m2k8p p {
+  margin: 0;
+  color: rgb(var(--color-text-secondary) / 1);
+  font-size: var(--font-size-regular);
+  line-height: 1.6;
+}
+
+.accountsecurity-message-y7q1dc {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgb(var(--color-border-primary) / 1);
+  border-radius: var(--radius-sm);
+  background: rgb(var(--color-bg-tertiary) / 0.7);
+}
+
+.accountsecurity-methods-k9w5nf {
+  display: grid;
+  margin: 0;
+}
+
+.accountsecurity-methods-k9w5nf div {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid rgb(var(--color-border-primary) / 1);
+}
+
+.accountsecurity-methods-k9w5nf dt {
+  color: rgb(var(--color-text-secondary) / 1);
+}
+
+.accountsecurity-methods-k9w5nf dd {
+  margin: 0;
+  color: rgb(var(--color-text-primary) / 1);
+  font-weight: var(--font-weight-medium);
+}
+
+.accountsecurity-connect-t3j8vx {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (forced-colors: active) {
+  .accountsecurity-card-4m2k8p,
+  .accountsecurity-message-y7q1dc {
+    border-color: CanvasText;
+  }
+}

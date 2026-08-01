@@ -1,2 +1,6 @@
-.sw-form-root-5g6a7w {
+.form-root-l5q8a8 {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+  margin: 0;
 }

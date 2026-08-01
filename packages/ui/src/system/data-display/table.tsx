@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Table = createStyledComponent(
   "table",
-  styles["sw-table-root-8gyqmm"],
+  styles["table-root-4yyz87"],
 );

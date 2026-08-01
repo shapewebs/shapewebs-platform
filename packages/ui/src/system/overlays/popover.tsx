@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Popover = createStyledComponent(
   "div",
-  styles["sw-popover-root-w76j0r"],
+  styles["popover-root-z7cokl"],
 );

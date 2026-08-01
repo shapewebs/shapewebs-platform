@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Autocomplete = createStyledComponent(
   "div",
-  styles["sw-autocomplete-root-5s1kty"],
+  styles["autocomplete-root-ewbfb4"],
 );

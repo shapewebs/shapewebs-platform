@@ -1,7 +1,11 @@
-import styles from "./text-field.module.css";
-import { createStyledComponent } from "../_internal/create-styled-component";
+import { forwardRef } from "react";
 
-export const TextField = createStyledComponent(
-  "input",
-  styles["sw-textfield-root-875pqw"],
+import { Input, type InputProps } from "./input";
+
+export type TextFieldProps = InputProps;
+
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
+  function TextField(props, ref) {
+    return <Input {...props} data-slot="text-field" ref={ref} />;
+  },
 );

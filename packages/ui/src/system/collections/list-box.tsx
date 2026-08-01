@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ListBox = createStyledComponent(
   "div",
-  styles["sw-listbox-root-ljkk9k"],
+  styles["listbox-root-d6x0km"],
 );

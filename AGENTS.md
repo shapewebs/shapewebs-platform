@@ -34,6 +34,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## CSS Class Convention
 
-- Format every custom class as `sw-[scope]-[role]-[token6]`.
-- The last segment must be a unique six-character lowercase alphanumeric token.
-- Example: `sw-home-card-z6p1h3`
+- Format every authored class as `[scope]-[role]-[id6]`.
+- Do not use a universal `sw-`, `ui-`, or equivalent generic prefix.
+- Scope and role must be meaningful lowercase alphanumeric segments beginning
+  with a letter.
+- The final segment must be a globally unique six-character lowercase
+  alphanumeric ID.
+- Generate names with `pnpm css:class:create <scope> <role>` and verify them
+  with `pnpm css:classes:check`.
+- Follow `docs/design/css-class-naming.md` for the complete contract.

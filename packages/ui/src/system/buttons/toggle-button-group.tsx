@@ -15,10 +15,10 @@ export function ToggleButtonGroup({
   return (
     <div
       className={mergeClassNames(
-        styles["sw-togglegroup-root-k2x7a4"],
+        styles["togglegroup-root-zd1zgu"],
         orientation === "horizontal"
-          ? styles["sw-togglegroup-horizontal-m3y8b5"]
-          : styles["sw-togglegroup-vertical-n4z9c6"],
+          ? styles["togglegroup-horizontal-bwtwro"]
+          : styles["togglegroup-vertical-paxg5x"],
         className,
       )}
       data-component-status="styled"

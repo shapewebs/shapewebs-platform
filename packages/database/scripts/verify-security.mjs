@@ -7,7 +7,7 @@ const {
   DATABASE_ADMIN_URL,
   DATABASE_MIGRATION_URL,
   DATABASE_OWNER_URL,
-  DATABASE_PORTAL_URL,
+  DATABASE_CUSTOMER_URL,
   DATABASE_PUBLIC_URL,
   DATABASE_WEB_URL,
 } = process.env;
@@ -16,7 +16,7 @@ const requiredEnvironment = [
   ["DATABASE_ADMIN_URL", DATABASE_ADMIN_URL],
   ["DATABASE_MIGRATION_URL", DATABASE_MIGRATION_URL],
   ["DATABASE_OWNER_URL", DATABASE_OWNER_URL],
-  ["DATABASE_PORTAL_URL", DATABASE_PORTAL_URL],
+  ["DATABASE_CUSTOMER_URL", DATABASE_CUSTOMER_URL],
   ["DATABASE_PUBLIC_URL", DATABASE_PUBLIC_URL],
   ["DATABASE_WEB_URL", DATABASE_WEB_URL],
 ];
@@ -30,7 +30,7 @@ for (const [name, value] of requiredEnvironment) {
 const admin = neon(DATABASE_ADMIN_URL);
 const fixtureAdmin = neon(DATABASE_OWNER_URL);
 const migrator = neon(DATABASE_MIGRATION_URL);
-const portal = neon(DATABASE_PORTAL_URL);
+const customerRuntime = neon(DATABASE_CUSTOMER_URL);
 const publicReader = neon(DATABASE_PUBLIC_URL);
 const web = neon(DATABASE_WEB_URL);
 
@@ -124,16 +124,16 @@ async function withAdminContext({
   return result;
 }
 
-async function withPortalContext({
+async function withCustomerContext({
   organizationId,
   userId,
   membershipRole = "customer",
   query,
 }) {
-  const [, , , result] = await portal.transaction([
-    portal`select set_config('app.organization_id', ${organizationId}, true)`,
-    portal`select set_config('app.user_id', ${userId}, true)`,
-    portal`select set_config('app.membership_role', ${membershipRole}, true)`,
+  const [, , , result] = await customerRuntime.transaction([
+    customerRuntime`select set_config('app.organization_id', ${organizationId}, true)`,
+    customerRuntime`select set_config('app.user_id', ${userId}, true)`,
+    customerRuntime`select set_config('app.membership_role', ${membershipRole}, true)`,
     query,
   ]);
 
@@ -147,7 +147,7 @@ async function seed() {
         (${ids.adminUser}, 'Security Admin', ${`security-admin-${runId}@example.test`}, true, now(), now()),
         (${ids.customerShadowAdminUser}, 'Security Customer Shadow', ${`security-customer-shadow-${runId}@example.test`}, true, now(), now()),
         (${ids.otherUser}, 'Security Other', ${`security-other-${runId}@example.test`}, true, now(), now())`,
-    fixtureAdmin`insert into customer_auth.user (id, name, email, email_verified, created_at, updated_at)
+    fixtureAdmin`insert into auth.user (id, name, email, email_verified, created_at, updated_at)
       values
         (${ids.customerUser}, 'Security Customer', ${`security-customer-${runId}@example.test`}, true, now(), now()),
         (${ids.otherCustomerUser}, 'Security Other Customer', ${`security-other-customer-${runId}@example.test`}, true, now(), now())`,
@@ -611,15 +611,16 @@ async function cleanup() {
       where organization_id in (${ids.organizationA}, ${ids.organizationB})`,
     fixtureAdmin`delete from app.organizations
       where id in (${ids.organizationA}, ${ids.organizationB})`,
-    fixtureAdmin`delete from customer_auth.user
+    fixtureAdmin`delete from auth.user
       where id in (
+        ${ids.adminUser},
+        ${ids.customerShadowAdminUser},
+        ${ids.otherUser},
         ${ids.customerUser},
         ${ids.otherCustomerUser},
         ${ids.credentialUser},
         ${ids.googleUser}
       )`,
-    fixtureAdmin`delete from auth.user
-      where id in (${ids.adminUser}, ${ids.customerShadowAdminUser}, ${ids.otherUser})`,
   ]);
 }
 
@@ -670,16 +671,20 @@ async function verifyRoleAttributes() {
     );
 
     if (role.rolname === "shapewebs_portal_runtime") {
-      assert.equal(role.rolinherit, false, "portal runtime must use NOINHERIT");
+      assert.equal(
+        role.rolinherit,
+        false,
+        "customer runtime must use NOINHERIT",
+      );
       assert.equal(
         role.rolcanlogin,
         true,
-        "portal runtime must be a login role",
+        "customer runtime must be a login role",
       );
       assert.equal(
         role.rolreplication,
         false,
-        "portal runtime must not replicate",
+        "customer runtime must not replicate",
       );
     }
   }
@@ -829,11 +834,6 @@ async function verifyAdminIsolation() {
     query: admin`select user_id from app.staff_memberships`,
   });
   assert.deepEqual(customerStaffMemberships, []);
-
-  await expectDenied(
-    admin`select id from customer_auth.user`,
-    "admin runtime customer-auth access",
-  );
 
   const organizationAContent = await withAdminContext({
     organizationId: ids.organizationA,
@@ -1012,18 +1012,18 @@ async function verifyAdminIsolation() {
   );
 }
 
-async function verifyPortalIsolation() {
-  const organization = await withPortalContext({
+async function verifyCustomerRuntimeIsolation() {
+  const organization = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select id from app.organizations`,
+    query: customerRuntime`select id from app.organizations`,
   });
   assert.deepEqual(organization, [{ id: ids.organizationA }]);
 
-  const memberships = await withPortalContext({
+  const memberships = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select organization_id, user_id, status
+    query: customerRuntime`select organization_id, user_id, status
       from app.customer_memberships`,
   });
   assert.deepEqual(memberships, [
@@ -1034,54 +1034,54 @@ async function verifyPortalIsolation() {
     },
   ]);
 
-  const projects = await withPortalContext({
+  const projects = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select id from app.projects order by id`,
+    query: customerRuntime`select id from app.projects order by id`,
   });
   assert.deepEqual(projects, [{ id: ids.assignedProject }]);
 
-  const projectAssignments = await withPortalContext({
+  const projectAssignments = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select project_id, user_id
+    query: customerRuntime`select project_id, user_id
       from app.customer_project_memberships`,
   });
   assert.deepEqual(projectAssignments, [
     { project_id: ids.assignedProject, user_id: ids.customerUser },
   ]);
 
-  const updates = await withPortalContext({
+  const updates = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select id from app.project_updates`,
+    query: customerRuntime`select id from app.project_updates`,
   });
   assert.deepEqual(updates, [{ id: ids.visibleUpdate }]);
 
-  const crossTenantOrganization = await withPortalContext({
+  const crossTenantOrganization = await withCustomerContext({
     organizationId: ids.organizationB,
     userId: ids.customerUser,
-    query: portal`select id from app.organizations`,
+    query: customerRuntime`select id from app.organizations`,
   });
-  const crossTenantMembership = await withPortalContext({
+  const crossTenantMembership = await withCustomerContext({
     organizationId: ids.organizationB,
     userId: ids.customerUser,
-    query: portal`select user_id from app.customer_memberships`,
+    query: customerRuntime`select user_id from app.customer_memberships`,
   });
-  const crossTenantProject = await withPortalContext({
+  const crossTenantProject = await withCustomerContext({
     organizationId: ids.organizationB,
     userId: ids.customerUser,
-    query: portal`select id from app.projects`,
+    query: customerRuntime`select id from app.projects`,
   });
-  const crossTenantAssignment = await withPortalContext({
+  const crossTenantAssignment = await withCustomerContext({
     organizationId: ids.organizationB,
     userId: ids.customerUser,
-    query: portal`select user_id from app.customer_project_memberships`,
+    query: customerRuntime`select user_id from app.customer_project_memberships`,
   });
-  const crossTenantUpdate = await withPortalContext({
+  const crossTenantUpdate = await withCustomerContext({
     organizationId: ids.organizationB,
     userId: ids.customerUser,
-    query: portal`select id from app.project_updates`,
+    query: customerRuntime`select id from app.project_updates`,
   });
   for (const [label, value] of [
     ["organization", crossTenantOrganization],
@@ -1097,39 +1097,39 @@ async function verifyPortalIsolation() {
     );
   }
 
-  const spoofedStaffRole = await withPortalContext({
+  const spoofedStaffRole = await withCustomerContext({
     membershipRole: "owner",
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select id from app.projects`,
+    query: customerRuntime`select id from app.projects`,
   });
   assert.deepEqual(
     spoofedStaffRole,
     [],
-    "the portal runtime must not become staff by changing context",
+    "the customer runtime must not become staff by changing context",
   );
 
   await expectDenied(
-    portal`select user_id from app.staff_memberships`,
-    "portal runtime staff membership access",
+    customerRuntime`select user_id from app.staff_memberships`,
+    "customer runtime staff membership access",
   );
   await expectDenied(
-    portal`select id from auth.user`,
-    "portal runtime administrative auth access",
+    customerRuntime`select id from auth.user`,
+    "customer runtime administrative auth access",
   );
   await expectDenied(
-    portal`select id from app.content_documents`,
-    "portal runtime CMS draft access",
+    customerRuntime`select id from app.content_documents`,
+    "customer runtime CMS draft access",
   );
   await expectDenied(
-    withPortalContext({
+    withCustomerContext({
       organizationId: ids.organizationA,
       userId: ids.customerUser,
-      query: portal`update app.projects
+      query: customerRuntime`update app.projects
         set summary = summary
         where id = ${ids.assignedProject}`,
     }),
-    "portal runtime project mutation",
+    "customer runtime project mutation",
   );
 
   const suspended = await withAdminContext({
@@ -1144,10 +1144,10 @@ async function verifyPortalIsolation() {
   });
   assert.deepEqual(suspended, [{ user_id: ids.customerUser }]);
 
-  const suspendedProjects = await withPortalContext({
+  const suspendedProjects = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.customerUser,
-    query: portal`select id from app.projects`,
+    query: customerRuntime`select id from app.projects`,
   });
   assert.deepEqual(
     suspendedProjects,
@@ -1280,7 +1280,7 @@ async function verifyMediaIsolation() {
   );
 
   for (const [label, client] of [
-    ["portal", portal],
+    ["customer", customerRuntime],
     ["public", publicReader],
   ]) {
     await expectDenied(client`select id from app.files`, `${label} media read`);
@@ -1377,19 +1377,19 @@ async function verifyCustomerCredentialOnboarding() {
   ]);
 
   await expectDenied(
-    portal`select email from app.customer_invitations`,
-    "portal direct invitation read",
+    customerRuntime`select email from app.customer_invitations`,
+    "customer runtime direct invitation read",
   );
   await expectDenied(
-    admin`select encrypted_token from customer_auth.auth_email_outbox`,
-    "admin customer auth-email outbox read",
+    customerRuntime`select encrypted_token from auth.auth_email_outbox`,
+    "customer runtime direct account auth-email outbox read",
   );
   await expectDenied(
-    web`select encrypted_token from customer_auth.auth_email_outbox`,
-    "web customer auth-email outbox read",
+    web`select encrypted_token from auth.auth_email_outbox`,
+    "web account auth-email outbox read",
   );
 
-  const credentialExchange = await portal`
+  const credentialExchange = await customerRuntime`
     select invitation_id, organization_id, email
     from app.exchange_customer_invitation_token(
       ${onboarding.credentialInvitationTokenHash},
@@ -1405,7 +1405,7 @@ async function verifyCustomerCredentialOnboarding() {
     },
   ]);
 
-  const invitationReplay = await portal`
+  const invitationReplay = await customerRuntime`
     select invitation_id
     from app.exchange_customer_invitation_token(
       ${onboarding.credentialInvitationTokenHash},
@@ -1415,7 +1415,7 @@ async function verifyCustomerCredentialOnboarding() {
   `;
   assert.deepEqual(invitationReplay, [], "invitation URLs must be one-time");
 
-  const grantMatches = await portal`
+  const grantMatches = await customerRuntime`
     select app.customer_registration_grant_matches(
       ${credentialEmail},
       ${onboarding.credentialRegistrationGrantHash}
@@ -1424,7 +1424,7 @@ async function verifyCustomerCredentialOnboarding() {
   assert.deepEqual(grantMatches, [{ matches: true }]);
 
   await expectDenied(
-    portal`select * from app.register_customer_with_password(
+    customerRuntime`select * from app.register_customer_with_password(
       ${`wrong-${credentialEmail}`},
       'Credential Customer',
       ${onboarding.credentialRegistrationGrantHash},
@@ -1439,7 +1439,7 @@ async function verifyCustomerCredentialOnboarding() {
     "mismatched invited email registration",
   );
 
-  const credentialRegistration = await portal`
+  const credentialRegistration = await customerRuntime`
     select user_id, invitation_id, organization_id
     from app.register_customer_with_password(
       ${credentialEmail},
@@ -1462,10 +1462,10 @@ async function verifyCustomerCredentialOnboarding() {
     },
   ]);
 
-  const provisionalIdentity = await portal`
+  const provisionalIdentity = await fixtureAdmin`
     select customer.email_verified, account.password
-    from customer_auth.user as customer
-    inner join customer_auth.account as account
+    from auth.user as customer
+    inner join auth.account as account
       on account.user_id = customer.id
       and account.provider_id = 'credential'
     where customer.id = ${ids.credentialUser}
@@ -1476,12 +1476,12 @@ async function verifyCustomerCredentialOnboarding() {
       password: onboarding.credentialInitialPasswordHash,
     },
   ]);
-  const inactiveBeforeMailboxProof = await portal`
+  const inactiveBeforeMailboxProof = await customerRuntime`
     select app.customer_has_active_membership(${ids.credentialUser}) as active
   `;
   assert.deepEqual(inactiveBeforeMailboxProof, [{ active: false }]);
 
-  const completed = await portal`
+  const completed = await customerRuntime`
     select user_id, organization_id
     from app.complete_customer_password_registration(
       ${onboarding.credentialVerificationTokenHash},
@@ -1492,10 +1492,10 @@ async function verifyCustomerCredentialOnboarding() {
     { organization_id: ids.organizationA, user_id: ids.credentialUser },
   ]);
 
-  const activatedCredential = await portal`
+  const activatedCredential = await fixtureAdmin`
     select customer.email_verified, account.password
-    from customer_auth.user as customer
-    inner join customer_auth.account as account
+    from auth.user as customer
+    inner join auth.account as account
       on account.user_id = customer.id
       and account.provider_id = 'credential'
     where customer.id = ${ids.credentialUser}
@@ -1512,14 +1512,14 @@ async function verifyCustomerCredentialOnboarding() {
     "mailbox verification must replace the provisional password",
   );
 
-  const credentialProjects = await withPortalContext({
+  const credentialProjects = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.credentialUser,
-    query: portal`select id from app.projects order by id`,
+    query: customerRuntime`select id from app.projects order by id`,
   });
   assert.deepEqual(credentialProjects, [{ id: ids.unassignedProject }]);
 
-  const completionReplay = await portal`
+  const completionReplay = await customerRuntime`
     select user_id
     from app.complete_customer_password_registration(
       ${onboarding.credentialVerificationTokenHash},
@@ -1551,7 +1551,7 @@ async function verifyCustomerCredentialOnboarding() {
   const googleInvitationId = googleInvitation[3][0]?.invitation_id;
   assert.ok(googleInvitationId);
 
-  const googleExchange = await portal`
+  const googleExchange = await customerRuntime`
     select invitation_id
     from app.exchange_customer_invitation_token(
       ${onboarding.googleInvitationTokenHash},
@@ -1562,12 +1562,12 @@ async function verifyCustomerCredentialOnboarding() {
   assert.deepEqual(googleExchange, [{ invitation_id: googleInvitationId }]);
 
   await fixtureAdmin.transaction([
-    fixtureAdmin`insert into customer_auth.user (
+    fixtureAdmin`insert into auth.user (
       id, name, email, email_verified, created_at, updated_at
     ) values (
       ${ids.googleUser}, 'Google Customer', ${googleEmail}, true, now(), now()
     )`,
-    fixtureAdmin`insert into customer_auth.account (
+    fixtureAdmin`insert into auth.account (
       id, account_id, provider_id, user_id, created_at, updated_at
     ) values (
       ${ids.googleAccount}, ${`google-subject-${runId}`}, 'google',
@@ -1575,7 +1575,7 @@ async function verifyCustomerCredentialOnboarding() {
     )`,
   ]);
 
-  const googleAccepted = await portal`
+  const googleAccepted = await customerRuntime`
     select user_id, organization_id
     from app.accept_customer_google_invitation(
       ${ids.googleUser},
@@ -1586,14 +1586,14 @@ async function verifyCustomerCredentialOnboarding() {
     { organization_id: ids.organizationA, user_id: ids.googleUser },
   ]);
 
-  const googleProjects = await withPortalContext({
+  const googleProjects = await withCustomerContext({
     organizationId: ids.organizationA,
     userId: ids.googleUser,
-    query: portal`select id from app.projects`,
+    query: customerRuntime`select id from app.projects`,
   });
   assert.deepEqual(googleProjects, [{ id: ids.assignedProject }]);
 
-  const googleReplay = await portal`
+  const googleReplay = await customerRuntime`
     select user_id
     from app.accept_customer_google_invitation(
       ${ids.googleUser},
@@ -1606,9 +1606,9 @@ async function verifyCustomerCredentialOnboarding() {
     "Google invitation grants must be one-time",
   );
 
-  const encryptedOutbox = await portal`
+  const encryptedOutbox = await fixtureAdmin`
     select kind, encrypted_token
-    from customer_auth.auth_email_outbox
+    from auth.auth_email_outbox
     where organization_id = ${ids.organizationA}
       and invitation_id in (${credentialInvitationId}, ${googleInvitationId})
     order by kind, encrypted_token
@@ -2187,7 +2187,7 @@ async function verifyAdminAuthEmailIsolation() {
   );
 
   for (const [label, client] of [
-    ["portal", portal],
+    ["customer", customerRuntime],
     ["public", publicReader],
     ["web", web],
   ]) {
@@ -3115,7 +3115,7 @@ try {
   await verifyAdminAuthEmailIsolation();
   await verifyAdminSessionManagement();
   await verifyAdminIsolation();
-  await verifyPortalIsolation();
+  await verifyCustomerRuntimeIsolation();
   await verifyMediaIsolation();
   await verifyCustomerCredentialOnboarding();
   await verifyPublicAndWebBoundaries();
@@ -3123,7 +3123,7 @@ try {
   await verifyWebhookIdempotencyAndOrdering();
   await verifyAuditImmutability();
   console.log(
-    "Database security verified: role flags, forced RLS, separate administrative and customer identity stores, mutually isolated admin and portal runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable administrative auth email, owner-only organization settings, tenant-isolated CMS reads, private-media isolation, public-ready media projection, restricted media metadata, locale-specific publication pointers, exact public revisions, single-use tenant-bound Neon and Sanity preview grants, tenant-isolated provider commands, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
+    "Database security verified: role flags, forced RLS, one canonical account identity store, mutually isolated admin and customer runtimes, one-time invitation exchange, mailbox-proofed credential activation, provisional-password replacement, invitation-gated Google activation, replay denial, exact customer project assignment, active-customer project authorization, cross-tenant denial, admin session expiry/revocation/inactivity/role/step-up assurance, absolute-lifetime-preserving token rotation, organization-scoped session listing and owner revocation, one-time TOTP counters and lockout, tenant-isolated durable account email, owner-only organization settings, tenant-isolated CMS reads, private-media isolation, public-ready media projection, restricted media metadata, locale-specific publication pointers, exact public revisions, single-use tenant-bound Neon and Sanity preview grants, tenant-isolated provider commands, restricted public metadata, idempotent lead/outbox writes, strict synthetic retention, ordered webhook state, and audit immutability.",
   );
 } finally {
   await cleanup();

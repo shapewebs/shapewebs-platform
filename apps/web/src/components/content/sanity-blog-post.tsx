@@ -30,7 +30,7 @@ export function SanityBlogPostView({
   const components: PortableTextComponents = {
     block: {
       blockquote: ({ children }) => (
-        <blockquote className={styles["sw-article-quote-r8q2m4"]}>
+        <blockquote className={styles["article-quote-r8slyg"]}>
           {children}
         </blockquote>
       ),
@@ -62,7 +62,7 @@ export function SanityBlogPostView({
         const parsed = portableTextCalloutSchema.safeParse(value);
 
         return parsed.success ? (
-          <aside className={styles["sw-article-callout-v2m8q6"]}>
+          <aside className={styles["article-callout-mk6z6b"]}>
             {parsed.data.heading ? (
               <strong>{parsed.data.heading}</strong>
             ) : null}
@@ -74,7 +74,7 @@ export function SanityBlogPostView({
         const parsed = portableTextCodeSchema.safeParse(value);
 
         return parsed.success ? (
-          <figure className={styles["sw-article-code-c2m8p4"]}>
+          <figure className={styles["article-code-qqonfc"]}>
             {parsed.data.filename ? (
               <figcaption>{parsed.data.filename}</figcaption>
             ) : null}
@@ -102,14 +102,14 @@ export function SanityBlogPostView({
 
         return parsed.data.href.startsWith("/") ? (
           <Link
-            className={styles["sw-article-cta-x6p1m9"]}
+            className={styles["article-cta-gf3ajl"]}
             href={parsed.data.href}
           >
             {content}
           </Link>
         ) : (
           <a
-            className={styles["sw-article-cta-x6p1m9"]}
+            className={styles["article-cta-gf3ajl"]}
             href={parsed.data.href}
             rel="noreferrer"
           >
@@ -131,8 +131,8 @@ export function SanityBlogPostView({
             className={
               styles[
                 parsed.data.layout === "contained"
-                  ? "sw-article-image-q5n9p2"
-                  : "sw-article-imagewide-f4q1m8"
+                  ? "article-image-q6kuti"
+                  : "article-imagewide-99djmf"
               ]
             }
           >
@@ -152,14 +152,14 @@ export function SanityBlogPostView({
   };
 
   return (
-    <article className={styles["sw-article-root-p4m8q2"]}>
-      <header className={styles["sw-article-header-b7m2p5"]}>
-        <p className={styles["sw-article-eyebrow-d8m3q1"]}>Shapewebs journal</p>
+    <article className={styles["article-root-7ffx9q"]}>
+      <header className={styles["article-header-pvqg1h"]}>
+        <p className={styles["article-eyebrow-uh9u13"]}>Shapewebs journal</p>
         <h1>{post.title}</h1>
         <p>{post.excerpt}</p>
       </header>
 
-      <figure className={styles["sw-article-cover-n4v8q1"]}>
+      <figure className={styles["article-cover-dhjkpm"]}>
         <Image
           alt={post.coverImage.decorative ? "" : post.coverImage.alt}
           height={cover.height}
@@ -173,7 +173,7 @@ export function SanityBlogPostView({
         ) : null}
       </figure>
 
-      <div className={styles["sw-article-body-a7q3m6"]}>
+      <div className={styles["article-body-hzvmcb"]}>
         <PortableText components={components} value={post.body} />
       </div>
     </article>

@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Dropdown = createStyledComponent(
   "div",
-  styles["sw-dropdown-root-1w7nkn"],
+  styles["dropdown-root-yotjt3"],
 );

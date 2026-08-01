@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html data-sw-theme="studio" lang="en">
       <body>
-        <div className={styles["sw-admin-root-a2m7q4"]}>{children}</div>
+        <div className={styles["admin-root-wow1l1"]}>{children}</div>
       </body>
     </html>
   );

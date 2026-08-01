@@ -8,10 +8,10 @@ type PreviewShellProps = Readonly<{
 
 export function PreviewShell({ children }: PreviewShellProps) {
   return (
-    <div className={styles["sw-preview-shell-a3m8q1"]}>
+    <div className={styles["preview-shell-i15yyt"]}>
       <aside
         aria-label="Content preview"
-        className={styles["sw-preview-banner-b4n9r2"]}
+        className={styles["preview-banner-za6e13"]}
       >
         <span>Private CMS preview</span>
         <form action="/api/preview/exit" method="post">
@@ -20,7 +20,7 @@ export function PreviewShell({ children }: PreviewShellProps) {
           </Buttons.Button>
         </form>
       </aside>
-      <main className={styles["sw-preview-main-d6q2t4"]}>{children}</main>
+      <main className={styles["preview-main-l19ng4"]}>{children}</main>
     </div>
   );
 }

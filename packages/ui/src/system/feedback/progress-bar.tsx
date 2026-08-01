@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ProgressBar = createStyledComponent(
   "div",
-  styles["sw-progressbar-root-al9my1"],
+  styles["progressbar-root-qc34y5"],
 );

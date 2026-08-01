@@ -35,7 +35,7 @@ function renderRichTextBlock(
       return (
         <p
           key={`paragraph-${index}`}
-          className={styles["sw-renderer-paragraph-f9s5w7"]}
+          className={styles["renderer-paragraph-jaiec8"]}
         >
           {Array.isArray(node.content)
             ? node.content.map((child, childIndex) =>
@@ -52,24 +52,22 @@ function renderRichTextBlock(
 
 export function ContentRenderer({ document }: ContentRendererProps) {
   return (
-    <div className={styles["sw-renderer-root-a4m9q2"]}>
+    <div className={styles["renderer-root-nztb6v"]}>
       {document.blocks.map((block, index) => {
         if (block.type === "hero") {
           return (
             <section
-              className={styles["sw-renderer-hero-b5n1r3"]}
+              className={styles["renderer-hero-jpodfg"]}
               key={`hero-${index}`}
             >
               {block.eyebrow ? (
-                <p className={styles["sw-renderer-eyebrow-d7q3t5"]}>
+                <p className={styles["renderer-eyebrow-z07u8c"]}>
                   {block.eyebrow}
                 </p>
               ) : null}
               <h2>{block.heading}</h2>
               {block.body ? (
-                <p className={styles["sw-renderer-body-e8r4v6"]}>
-                  {block.body}
-                </p>
+                <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
               ) : null}
               {block.primaryCtaHref && block.primaryCtaLabel ? (
                 <Buttons.ButtonLink
@@ -86,7 +84,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
         if (block.type === "rich_text") {
           return (
             <section
-              className={styles["sw-renderer-section-c6p2s4"]}
+              className={styles["renderer-section-smy3lo"]}
               key={`rich-${index}`}
             >
               {renderRichTextBlock(block)}
@@ -97,15 +95,13 @@ export function ContentRenderer({ document }: ContentRendererProps) {
         if (block.type === "cta") {
           return (
             <section
-              className={styles["sw-renderer-section-c6p2s4"]}
+              className={styles["renderer-section-smy3lo"]}
               key={`cta-${index}`}
             >
-              <Layout.Surface className={styles["sw-renderer-ctapanel-g1t6x8"]}>
+              <Layout.Surface className={styles["renderer-ctapanel-ph5l63"]}>
                 <h2>{block.heading}</h2>
                 {block.body ? (
-                  <p className={styles["sw-renderer-body-e8r4v6"]}>
-                    {block.body}
-                  </p>
+                  <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
                 ) : null}
                 <Buttons.ButtonLink href={block.href}>
                   {block.label}
@@ -118,14 +114,14 @@ export function ContentRenderer({ document }: ContentRendererProps) {
         if (block.type === "faq") {
           return (
             <section
-              className={styles["sw-renderer-section-c6p2s4"]}
+              className={styles["renderer-section-smy3lo"]}
               key={`faq-${index}`}
             >
               {block.heading ? <h2>{block.heading}</h2> : null}
-              <div className={styles["sw-renderer-faqlist-h2v7y9"]}>
+              <div className={styles["renderer-faqlist-hkpmio"]}>
                 {block.items.map((item, itemIndex) => (
                   <Layout.Card
-                    className={styles["sw-renderer-faqitem-j3w8z1"]}
+                    className={styles["renderer-faqitem-vjwww2"]}
                     key={`faq-item-${itemIndex}`}
                   >
                     <h3>{item.question}</h3>
@@ -133,7 +129,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
                       <div key={`faq-answer-${itemIndex}-${answerIndex}`}>
                         {answerNode.type === "paragraph" &&
                         Array.isArray(answerNode.content) ? (
-                          <p className={styles["sw-renderer-paragraph-f9s5w7"]}>
+                          <p className={styles["renderer-paragraph-jaiec8"]}>
                             {answerNode.content.map((child, childIndex) =>
                               renderInlineNode(
                                 child,
@@ -154,17 +150,17 @@ export function ContentRenderer({ document }: ContentRendererProps) {
         if (block.type === "image") {
           return (
             <section
-              className={styles["sw-renderer-section-c6p2s4"]}
+              className={styles["renderer-section-smy3lo"]}
               key={`image-${index}`}
             >
               <Layout.Surface
-                className={styles["sw-renderer-image-k4x9a2"]}
+                className={styles["renderer-image-xq8c66"]}
                 level="sunken"
               >
                 Media pipeline pending for asset <code>{block.assetId}</code>.
               </Layout.Surface>
               {block.caption ? (
-                <p className={styles["sw-renderer-caption-m5y1b3"]}>
+                <p className={styles["renderer-caption-sr5qta"]}>
                   {block.caption}
                 </p>
               ) : null}

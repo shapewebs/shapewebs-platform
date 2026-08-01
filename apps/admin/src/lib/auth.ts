@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AdminRole } from "@shapewebs/config";
@@ -7,7 +8,9 @@ import {
   appendAdminAuditEvent,
   appendSystemAuditEvent,
   authorizeAdminSession,
+  authorizeCustomerSession,
   type AdminAuthorizationContext,
+  type CustomerAuthorizationContext,
 } from "@shapewebs/database/server";
 import {
   createStructuredLogger,
@@ -18,6 +21,7 @@ import {
   getAdminAuth,
   getAdminDatabaseUrl,
   getAdminOrganizationId,
+  getCustomerDatabaseUrl,
   isLocalAdminSetupMode,
 } from "./better-auth";
 import { getSafeAdminRedirectTarget } from "./redirect";
@@ -33,6 +37,7 @@ type BetterAuthSession = NonNullable<
 export type AdminRuntimeState = {
   authenticationAvailable: boolean;
   authorization: AdminAuthorizationContext | null;
+  customerAuthorization: CustomerAuthorizationContext | null;
   primarySession: BetterAuthSession | null;
   session: AdminRuntimeSession | null;
   setupMode: boolean;
@@ -45,6 +50,27 @@ type AuthorizedAdminRuntimeState = AdminRuntimeState & {
   session: AdminRuntimeSession;
   setupMode: false;
 };
+
+type AuthorizedAccountRuntimeState = AdminRuntimeState & {
+  authenticationAvailable: true;
+  primarySession: BetterAuthSession;
+  setupMode: false;
+};
+
+export type AccountApiAuthorizationResult =
+  | {
+      runtime: AuthorizedAccountRuntimeState;
+      status: "authorized";
+    }
+  | {
+      error:
+        | "authentication_required"
+        | "authentication_unavailable"
+        | "forbidden"
+        | "step_up_required";
+      status: "denied";
+      statusCode: 401 | 403 | 503;
+    };
 
 export type AdminApiAuthorizationResult =
   | {
@@ -160,65 +186,81 @@ function toAdminSessionContext(
   };
 }
 
-export async function getAdminRuntimeState(): Promise<AdminRuntimeState> {
-  const requestHeaders = await headers();
-  const setupMode = isLocalAdminSetupMode();
+export const getAdminRuntimeState = cache(
+  async (): Promise<AdminRuntimeState> => {
+    const requestHeaders = await headers();
+    const setupMode = isLocalAdminSetupMode();
 
-  if (setupMode) {
-    return {
-      authenticationAvailable: false,
-      authorization: null,
-      primarySession: null,
-      session: null,
-      setupMode: true,
-    };
-  }
+    if (setupMode) {
+      return {
+        authenticationAvailable: false,
+        authorization: null,
+        customerAuthorization: null,
+        primarySession: null,
+        session: null,
+        setupMode: true,
+      };
+    }
 
-  const auth = getAdminAuth();
-  const databaseUrl = getAdminDatabaseUrl();
-  const organizationId = getAdminOrganizationId();
+    const auth = getAdminAuth();
+    const databaseUrl = getAdminDatabaseUrl();
+    const customerDatabaseUrl = getCustomerDatabaseUrl();
+    const organizationId = getAdminOrganizationId();
 
-  if (!auth || !databaseUrl || !organizationId) {
-    return {
-      authenticationAvailable: false,
-      authorization: null,
-      primarySession: null,
-      session: null,
-      setupMode: false,
-    };
-  }
+    if (!auth || !databaseUrl || !organizationId) {
+      return {
+        authenticationAvailable: false,
+        authorization: null,
+        customerAuthorization: null,
+        primarySession: null,
+        session: null,
+        setupMode: false,
+      };
+    }
 
-  const primarySession = await auth.api.getSession({
-    headers: requestHeaders,
-  });
+    const primarySession = await auth.api.getSession({
+      headers: requestHeaders,
+    });
 
-  if (!primarySession) {
+    if (!primarySession) {
+      return {
+        authenticationAvailable: true,
+        authorization: null,
+        customerAuthorization: null,
+        primarySession: null,
+        session: null,
+        setupMode: false,
+      };
+    }
+
+    const [authorization, customerAuthorization] = await Promise.all([
+      authorizeAdminSession(databaseUrl, {
+        organizationId,
+        sessionId: primarySession.session.id,
+        userId: primarySession.user.id,
+      }),
+      customerDatabaseUrl
+        ? authorizeCustomerSession(customerDatabaseUrl, {
+            organizationId,
+            sessionId: primarySession.session.id,
+            userId: primarySession.user.id,
+          })
+        : Promise.resolve(null),
+    ]);
+
     return {
       authenticationAvailable: true,
-      authorization: null,
-      primarySession: null,
-      session: null,
+      authorization,
+      customerAuthorization,
+      primarySession,
+      session:
+        authorization === null
+          ? null
+          : toAdminSessionContext(primarySession, authorization),
       setupMode: false,
     };
-  }
-
-  const authorization = await authorizeAdminSession(databaseUrl, {
-    organizationId,
-    sessionId: primarySession.session.id,
-    userId: primarySession.user.id,
-  });
-
-  return {
-    authenticationAvailable: true,
-    authorization,
-    primarySession,
-    session:
-      authorization === null
-        ? null
-        : toAdminSessionContext(primarySession, authorization),
-    setupMode: false,
-  };
-}
+  },
+);
 
 export async function authorizeAdminApiSession(options?: {
   freshStepUpWithinSeconds?: number;
@@ -297,6 +339,82 @@ export async function authorizeAdminApiSession(options?: {
   };
 }
 
+export async function authorizeAccountApiSession(options?: {
+  freshStaffStepUpWithinSeconds?: number;
+}): Promise<AccountApiAuthorizationResult> {
+  const runtime = await getAdminRuntimeState();
+
+  if (!runtime.authenticationAvailable) {
+    await recordAuthorizationDenial(
+      runtime,
+      "account_api_authentication_unavailable",
+    );
+    return {
+      error: "authentication_unavailable",
+      status: "denied",
+      statusCode: 503,
+    };
+  }
+
+  if (runtime.setupMode || !runtime.primarySession) {
+    if (!runtime.setupMode) {
+      await recordAuthorizationDenial(
+        runtime,
+        "account_api_session_unavailable",
+      );
+    }
+    return {
+      error: "authentication_required",
+      status: "denied",
+      statusCode: 401,
+    };
+  }
+
+  if (!runtime.authorization && !runtime.customerAuthorization) {
+    await recordAuthorizationDenial(
+      runtime,
+      "account_api_membership_forbidden",
+    );
+    return {
+      error: "forbidden",
+      status: "denied",
+      statusCode: 403,
+    };
+  }
+
+  if (runtime.authorization && options?.freshStaffStepUpWithinSeconds) {
+    const oldestAllowed =
+      Date.now() - options.freshStaffStepUpWithinSeconds * 1_000;
+    const latestStepUpAt = runtime.authorization.latestStepUpAt;
+
+    if (
+      !runtime.primarySession.user.twoFactorEnabled ||
+      !latestStepUpAt ||
+      latestStepUpAt.getTime() < oldestAllowed
+    ) {
+      await recordAuthorizationDenial(
+        runtime,
+        "account_api_staff_step_up_required",
+      );
+      return {
+        error: "step_up_required",
+        status: "denied",
+        statusCode: 403,
+      };
+    }
+  }
+
+  return {
+    runtime: {
+      ...runtime,
+      authenticationAvailable: true,
+      primarySession: runtime.primarySession,
+      setupMode: false,
+    },
+    status: "authorized",
+  };
+}
+
 export async function requireAdminSession(options?: {
   freshStepUpWithinSeconds?: number;
   redirectTo?: string;
@@ -353,4 +471,51 @@ export async function requireAdminSession(options?: {
   }
 
   return runtime;
+}
+
+export async function requireAccountSession(redirectTo = "/account/security") {
+  const runtime = await getAdminRuntimeState();
+  const safeRedirect = getSafeAdminRedirectTarget(redirectTo);
+
+  if (
+    !runtime.authenticationAvailable ||
+    runtime.setupMode ||
+    !runtime.primarySession
+  ) {
+    redirect(`/login?redirectTo=${encodeURIComponent(safeRedirect)}`);
+  }
+
+  if (!runtime.authorization && !runtime.customerAuthorization) {
+    await recordAuthorizationDenial(runtime, "account_membership_forbidden");
+    redirect("/login?error=unauthorized");
+  }
+
+  return {
+    ...runtime,
+    authenticationAvailable: true as const,
+    primarySession: runtime.primarySession,
+    setupMode: false as const,
+  };
+}
+
+export async function requireCustomerSession(redirectTo = "/customer") {
+  const runtime = await getAdminRuntimeState();
+  const safeRedirect = getSafeAdminRedirectTarget(redirectTo);
+
+  if (
+    !runtime.authenticationAvailable ||
+    runtime.setupMode ||
+    !runtime.primarySession ||
+    !runtime.customerAuthorization
+  ) {
+    redirect(`/login?redirectTo=${encodeURIComponent(safeRedirect)}`);
+  }
+
+  return {
+    ...runtime,
+    authenticationAvailable: true as const,
+    customerAuthorization: runtime.customerAuthorization,
+    primarySession: runtime.primarySession,
+    setupMode: false as const,
+  };
 }

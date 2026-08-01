@@ -1,27 +1,27 @@
-import { Buttons, Layout } from "@shapewebs/ui";
+import { Layout, Navigation } from "@shapewebs/ui";
 
 import { SiteBrand } from "./site-brand";
 import styles from "./site-header.module.css";
+import { primaryNavigation } from "./site-navigation";
+import { SiteSearch } from "./site-search";
 
 export function SiteHeader() {
   return (
-    <header className={styles["sw-header-shell-a4m9q2"]}>
+    <header className={styles["header-shell-4tzdtn"]}>
       <Layout.Container
-        className={styles["sw-header-container-b5n1r3"]}
+        className={styles["header-container-jfltkh"]}
         size="wide"
       >
         <Layout.Cluster
-          className={styles["sw-header-content-c6p2s4"]}
+          className={styles["header-content-s5ntpk"]}
           justify="between"
         >
           <SiteBrand />
-          <Buttons.ButtonAnchor
-            href="mailto:info@shapewebs.com"
-            kind="secondary"
-            size="small"
-          >
-            Start a project
-          </Buttons.ButtonAnchor>
+          <Navigation.SubmenuNavigation
+            ariaLabel="Primary navigation"
+            items={primaryNavigation}
+            slots={{ search: <SiteSearch /> }}
+          />
         </Layout.Cluster>
       </Layout.Container>
     </header>

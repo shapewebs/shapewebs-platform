@@ -3,5 +3,6 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Description = createStyledComponent(
   "p",
-  styles["sw-description-root-98arn2"],
+  styles["description-root-m1nt5v"],
+  "styled",
 );

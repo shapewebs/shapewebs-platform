@@ -21,7 +21,7 @@ export default defineConfig({
         "**/tests/**",
       ],
       include: [
-        "apps/portal/src/lib/auth-environment.ts",
+        "apps/admin/src/lib/auth-environment.ts",
         "apps/admin/src/lib/public-revalidation.ts",
         "apps/admin/src/lib/redirect.ts",
         "apps/web/src/lib/rate-limit.ts",

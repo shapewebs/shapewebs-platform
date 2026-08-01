@@ -11,8 +11,8 @@ import {
   assertCustomerPasswordNotCompromised,
   hashCustomerPassword,
 } from "./customer-password";
+import { encryptAdminEmailToken } from "./admin-email-token";
 import {
-  encryptCustomerEmailToken,
   generateCustomerBearerToken,
   hashCustomerBearerToken,
   isCustomerBearerToken,
@@ -26,7 +26,6 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type PasswordAssurance = (password: string) => Promise<void> | void;
-
 function normalizeCustomerEmail(email: string): string {
   const parsed = emailAddressSchema.safeParse(email.trim().toLowerCase());
 
@@ -49,9 +48,7 @@ function normalizeCustomerName(name: string): string {
 
 function assertEncryptionSecret(secret: string): void {
   if (secret.length < 32) {
-    throw new Error(
-      "PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET must contain at least 32 characters.",
-    );
+    throw new Error("The account email encryption secret is too short.");
   }
 }
 
@@ -80,7 +77,7 @@ export async function createCustomerInvitation(input: {
   const expiresAt = new Date(now.getTime() + invitationLifetimeMs);
   const token = generateCustomerBearerToken();
   const tokenHash = await hashCustomerBearerToken(token);
-  const encryptedToken = await encryptCustomerEmailToken(
+  const encryptedToken = await encryptAdminEmailToken(
     token,
     input.encryptionSecret,
     Math.floor(invitationLifetimeMs / 1_000),
@@ -160,7 +157,7 @@ export async function beginCustomerPasswordRegistration(input: {
   const verificationToken = generateCustomerBearerToken();
   const verificationTokenHash =
     await hashCustomerBearerToken(verificationToken);
-  const encryptedVerificationToken = await encryptCustomerEmailToken(
+  const encryptedVerificationToken = await encryptAdminEmailToken(
     verificationToken,
     input.encryptionSecret,
     Math.floor(verificationLifetimeMs / 1_000),

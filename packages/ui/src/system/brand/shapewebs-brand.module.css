@@ -1,27 +1,28 @@
-.sw-brand-root-a1m6q9 {
+.brand-root-jjoyxs {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: var(--ui-space-3);
+  gap: var(--space-3);
   color: inherit;
 }
 
-.sw-brand-mark-c3p8s2 {
+.brand-mark-n1o5i5 {
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
   fill: currentColor;
+  overflow: visible;
 }
 
-.sw-brand-name-d4q9t3 {
+.brand-name-ujglwz {
   overflow: hidden;
-  font-size: var(--ui-font-size-regular-plus);
-  font-weight: var(--ui-font-weight-semibold);
+  font-size: var(--font-size-regular-plus);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.025em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sw-brand-compact-b2n7r1 {
+.brand-compact-ugpa23 {
   justify-content: center;
 }

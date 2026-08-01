@@ -11,14 +11,12 @@ repository.
 
 ## Topology
 
-Keep one monorepo and three isolated Vercel projects. Provision the portal
-project only after its authentication and staging gates pass:
+Keep one monorepo and two isolated Vercel projects:
 
-| Vercel project     | Root          | Production domain      | Responsibility                  |
-| ------------------ | ------------- | ---------------------- | ------------------------------- |
-| `shapewebs-web`    | `apps/web`    | `shapewebs.com`        | Static public studio site       |
-| `shapewebs-admin`  | `apps/admin`  | `admin.shapewebs.com`  | Administrative auth, CMS        |
-| `shapewebs-portal` | `apps/portal` | `portal.shapewebs.com` | Invitation-only customer portal |
+| Vercel project    | Root         | Production domain     | Responsibility                     |
+| ----------------- | ------------ | --------------------- | ---------------------------------- |
+| `shapewebs-web`   | `apps/web`   | `shapewebs.com`       | Static public studio site          |
+| `shapewebs-admin` | `apps/admin` | `admin.shapewebs.com` | Customer accounts and employee CMS |
 
 Both projects deploy `main`. A pull request creates protected previews only for
 affected projects. Keep `www.shapewebs.com` as a permanent redirect to the
@@ -104,8 +102,10 @@ Create separate database capabilities:
   migration job;
 - `shapewebs_admin_runtime`: non-owner runtime role for administrative auth and
   CMS queries;
-- `shapewebs_portal_runtime`: SQL-created non-owner runtime role for customer
-  auth and forced-RLS customer/project reads;
+- `shapewebs_portal_runtime`: transitional physical name of the SQL-created
+  customer runtime role used only for forced-RLS customer/project reads. Code
+  and environment contracts call this the customer runtime; rename the database
+  role only in a separately rehearsed credential-rotation migration;
 - `shapewebs_web_runtime`: non-owner role limited to published-content reads
   and validated lead inserts;
 - `shapewebs_public_reader`: narrowly granted published-content reads where the
@@ -166,12 +166,13 @@ Required configuration:
 - rate limits on authentication-adjacent endpoints;
 - append-only audit events for privileged changes.
 
-Each allowlisted employee owns one administrative account. Google and a
-verified password are attachable methods on that account, not separate user
-types. An employee may begin with either method and deliberately add the other
-from the authenticated security page. Do not silently merge matching signed-out
-emails, allow different-email linking or expose raw signup/set-password routes.
-Either first factor must still complete the local TOTP gate.
+Each person owns one canonical account. Google and a verified password are
+attachable methods on that account, not separate user types. Invitation-gated
+customers and allowlisted employees use the same login and cookie; customer and
+staff memberships determine the available workspaces. Do not silently merge
+unverified matching signed-out emails, allow different-email linking, or expose
+raw signup/set-password routes. Staff workspace entry after either first factor
+must still complete the local TOTP gate.
 
 Use fixed callback hosts:
 
@@ -344,7 +345,7 @@ cannot delete fresh, ordinary, editor-owned, or cross-tenant leads.
 ## 10. Post-launch operations
 
 - daily backups and a documented quarterly restore drill;
-- target RPO 24 hours and RTO 4 hours until portal data requires tighter
+- target RPO 24 hours and RTO 4 hours until customer account data requires tighter
   objectives;
 - weekly dependency and action updates;
 - continuous real-user performance and error monitoring;

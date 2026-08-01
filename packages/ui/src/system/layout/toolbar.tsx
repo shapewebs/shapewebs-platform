@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Toolbar = createStyledComponent(
   "div",
-  styles["sw-toolbar-root-sj7e5o"],
+  styles["toolbar-root-01b9az"],
 );

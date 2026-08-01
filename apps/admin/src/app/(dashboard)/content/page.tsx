@@ -61,8 +61,8 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
       eyebrow="Manage"
       title="Editorial documents"
     >
-      <form className={styles["sw-content-filters-a7m3q9"]} method="get">
-        <label className={styles["sw-content-field-b8n4r1"]}>
+      <form className={styles["content-filters-o8yszi"]} method="get">
+        <label className={styles["content-field-9nzd5k"]}>
           <span>Type</span>
           <select defaultValue={filters.contentType ?? ""} name="contentType">
             <option value="">All</option>
@@ -75,7 +75,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
           </select>
         </label>
 
-        <label className={styles["sw-content-field-b8n4r1"]}>
+        <label className={styles["content-field-9nzd5k"]}>
           <span>Locale</span>
           <select defaultValue={filters.localeCode ?? ""} name="localeCode">
             <option value="">All</option>
@@ -84,7 +84,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
           </select>
         </label>
 
-        <label className={styles["sw-content-field-b8n4r1"]}>
+        <label className={styles["content-field-9nzd5k"]}>
           <span>Status</span>
           <select defaultValue={filters.state ?? ""} name="state">
             <option value="">All</option>
@@ -106,8 +106,8 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
           title="No matching documents"
         />
       ) : (
-        <div className={styles["sw-content-tablewrap-c9p5s2"]}>
-          <table className={styles["sw-content-table-d1q6t3"]}>
+        <div className={styles["content-tablewrap-4dj3n5"]}>
+          <table className={styles["content-table-0b8ogw"]}>
             <thead>
               <tr>
                 <th scope="col">Title</th>
@@ -116,7 +116,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                 <th scope="col">Status</th>
                 <th scope="col">Updated</th>
                 <th scope="col">
-                  <span className={styles["sw-content-sronly-e2r7v4"]}>
+                  <span className={styles["content-sronly-08exq7"]}>
                     Actions
                   </span>
                 </th>
@@ -129,7 +129,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                 return (
                   <tr key={`${document.documentId}:${document.localeCode}`}>
                     <th scope="row">
-                      <span className={styles["sw-content-title-f3s8w5"]}>
+                      <span className={styles["content-title-7fthk9"]}>
                         <strong>{document.title}</strong>
                         <span>{document.slug}</span>
                       </span>
@@ -137,7 +137,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                     <td>{document.contentType}</td>
                     <td>{document.localeCode}</td>
                     <td>
-                      <span className={styles["sw-content-state-g4t9x6"]}>
+                      <span className={styles["content-state-nplhmw"]}>
                         {document.state}
                       </span>
                     </td>
@@ -148,7 +148,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
                           Edit
                         </Navigation.Link>
                       ) : (
-                        <span className={styles["sw-content-muted-h5v1y7"]}>
+                        <span className={styles["content-muted-k8ffbo"]}>
                           Next phase
                         </span>
                       )}

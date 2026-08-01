@@ -2,32 +2,34 @@ import { mergeClassNames } from "../_internal/merge-class-names";
 import styles from "./button.module.css";
 
 export type ButtonKind =
-  "danger" | "ghost" | "primary" | "secondary" | "tertiary";
+  "brand" | "danger" | "ghost" | "primary" | "secondary" | "tertiary";
 export type ButtonSize = "large" | "medium" | "small";
 
 function getKindClass(kind: ButtonKind) {
   switch (kind) {
+    case "brand":
+      return styles["button-brand-51suc5"];
     case "danger":
-      return styles["sw-button-danger-k1x7a4"];
+      return styles["button-danger-vqcuvj"];
     case "ghost":
-      return styles["sw-button-ghost-j9w6z3"];
+      return styles["button-ghost-ddydm0"];
     case "secondary":
-      return styles["sw-button-secondary-g7t4x1"];
+      return styles["button-secondary-p1w9wi"];
     case "tertiary":
-      return styles["sw-button-tertiary-h8v5y2"];
+      return styles["button-tertiary-cuf09x"];
     default:
-      return styles["sw-button-primary-f6s3w9"];
+      return styles["button-primary-ousybq"];
   }
 }
 
 function getSizeClass(size: ButtonSize) {
   switch (size) {
     case "large":
-      return styles["sw-button-large-e5r2v8"];
+      return styles["button-large-7uqlml"];
     case "small":
-      return styles["sw-button-small-c3p9s6"];
+      return styles["button-small-f9x44e"];
     default:
-      return styles["sw-button-medium-d4q1t7"];
+      return styles["button-medium-sr2thy"];
   }
 }
 
@@ -37,11 +39,11 @@ export function getButtonClassName(
   className?: string,
 ) {
   return mergeClassNames(
-    styles["sw-button-root-a1m7q4"],
+    styles["button-root-4mdhtc"],
     getKindClass(kind),
     getSizeClass(size),
     className,
   );
 }
 
-export const buttonContentClassName = styles["sw-button-content-b2n8r5"];
+export const buttonContentClassName = styles["button-content-0radnf"];

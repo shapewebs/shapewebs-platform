@@ -8,9 +8,9 @@ type PublicShellProps = Readonly<{
 
 export function PublicShell({ children }: PublicShellProps) {
   return (
-    <div className={styles["sw-public-shell-g1t6x8"]}>
+    <div className={styles["public-shell-i1mz07"]}>
       <SiteHeader />
-      <main className={styles["sw-public-main-h2v7y9"]}>{children}</main>
+      <main className={styles["public-main-9oimqj"]}>{children}</main>
       <SiteFooter />
     </div>
   );

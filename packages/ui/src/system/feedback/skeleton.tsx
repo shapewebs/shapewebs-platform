@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Skeleton = createStyledComponent(
   "div",
-  styles["sw-skeleton-root-h29yex"],
+  styles["skeleton-root-xpf7ks"],
 );

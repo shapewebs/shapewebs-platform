@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ComboBox = createStyledComponent(
   "div",
-  styles["sw-combobox-root-ayyn0m"],
+  styles["combobox-root-5nsq2f"],
 );

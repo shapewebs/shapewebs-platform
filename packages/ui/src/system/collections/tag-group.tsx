@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const TagGroup = createStyledComponent(
   "div",
-  styles["sw-taggroup-root-gqgxq0"],
+  styles["taggroup-root-e2484g"],
 );

@@ -50,7 +50,7 @@ describe("administrative authentication email", () => {
       expect(JSON.parse(String(init?.body))).toMatchObject({
         from: baseInput.from,
         tags: [
-          { name: "source", value: "shapewebs-admin-auth" },
+          { name: "source", value: "shapewebs-account-auth" },
           { name: "kind", value: "password_reset" },
         ],
         to: [baseInput.to],

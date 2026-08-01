@@ -1,60 +1,60 @@
-.sw-renderer-root-a4m9q2 {
+.renderer-root-nztb6v {
   display: grid;
-  gap: var(--ui-space-6);
+  gap: var(--space-6);
 }
 
-.sw-renderer-hero-b5n1r3,
-.sw-renderer-section-c6p2s4 {
+.renderer-hero-jpodfg,
+.renderer-section-smy3lo {
   display: grid;
-  gap: var(--ui-space-4);
+  gap: var(--space-4);
 }
 
-.sw-renderer-hero-b5n1r3 h2,
-.sw-renderer-section-c6p2s4 h2 {
-  font-size: var(--ui-font-size-title-3);
-  font-weight: var(--ui-font-weight-medium);
+.renderer-hero-jpodfg h2,
+.renderer-section-smy3lo h2 {
+  font-size: var(--font-size-title-3);
+  font-weight: var(--font-weight-medium);
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin: 0;
 }
 
-.sw-renderer-eyebrow-d7q3t5 {
-  color: rgb(var(--ui-color-text-tertiary));
-  font-size: var(--ui-font-size-small);
-  font-weight: var(--ui-font-weight-semibold);
+.renderer-eyebrow-z07u8c {
+  color: rgb(var(--color-text-tertiary));
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.1em;
   margin: 0;
   text-transform: uppercase;
 }
 
-.sw-renderer-body-e8r4v6,
-.sw-renderer-paragraph-f9s5w7,
-.sw-renderer-caption-m5y1b3 {
-  color: rgb(var(--ui-color-text-secondary));
-  font-size: var(--ui-font-size-regular-plus);
+.renderer-body-xcdqqj,
+.renderer-paragraph-jaiec8,
+.renderer-caption-sr5qta {
+  color: rgb(var(--color-text-secondary));
+  font-size: var(--font-size-regular-plus);
   line-height: 1.7;
   margin: 0;
 }
 
-.sw-renderer-ctapanel-g1t6x8,
-.sw-renderer-faqitem-j3w8z1 {
+.renderer-ctapanel-ph5l63,
+.renderer-faqitem-vjwww2 {
   display: grid;
-  gap: var(--ui-space-3);
+  gap: var(--space-3);
 }
 
-.sw-renderer-faqlist-h2v7y9 {
+.renderer-faqlist-hkpmio {
   display: grid;
-  gap: var(--ui-space-3);
+  gap: var(--space-3);
 }
 
-.sw-renderer-faqitem-j3w8z1 h3 {
-  font-size: var(--ui-font-size-large);
-  font-weight: var(--ui-font-weight-semibold);
+.renderer-faqitem-vjwww2 h3 {
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-semibold);
   margin: 0;
 }
 
-.sw-renderer-image-k4x9a2 {
-  color: rgb(var(--ui-color-text-secondary));
+.renderer-image-xq8c66 {
+  color: rgb(var(--color-text-secondary));
   display: grid;
   min-height: 180px;
   place-items: center;

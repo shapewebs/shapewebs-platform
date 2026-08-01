@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Switch = createStyledComponent(
   "button",
-  styles["sw-switch-root-rjy1mp"],
+  styles["switch-root-nit590"],
 );

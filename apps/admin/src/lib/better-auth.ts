@@ -7,11 +7,13 @@ import {
 } from "@shapewebs/observability";
 
 import { hasAdminAuthConfig, splitEnvironmentList } from "./auth-environment";
+import { getCustomerDatabaseUrl } from "./auth-environment";
 
 export {
   getAdminBaseUrl,
   getAdminDatabaseUrl,
   getAdminOrganizationId,
+  getCustomerDatabaseUrl,
   hasAdminAuthConfig,
   isLocalAdminSetupMode,
   isTrustedAdminOrigin,
@@ -44,6 +46,7 @@ export function getAdminAuth(): AdminAuth | null {
 
   cachedAuth = createShapewebsAuth({
     baseUrl,
+    customerDatabaseUrl: getCustomerDatabaseUrl() ?? undefined,
     databaseUrl: process.env.DATABASE_URL as string,
     editorEmails: splitEnvironmentList(process.env.ADMIN_EDITOR_EMAILS),
     emailEncryptionSecret: process.env

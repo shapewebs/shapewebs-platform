@@ -14,8 +14,8 @@ export function SiteBrand({ className, compact = false }: SiteBrandProps) {
     <Link
       aria-label="Shapewebs home"
       className={mergeClassNames(
-        styles["sw-brand-link-a8m3q6"],
-        compact ? styles["sw-brand-compact-b9n4r7"] : undefined,
+        styles["brand-link-q0kxgw"],
+        compact ? styles["brand-compact-kuxhlj"] : undefined,
         className,
       )}
       href="/"

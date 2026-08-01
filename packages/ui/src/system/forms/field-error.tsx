@@ -1,7 +1,20 @@
-import styles from "./field-error.module.css";
-import { createStyledComponent } from "../_internal/create-styled-component";
+import type { HTMLAttributes } from "react";
 
-export const FieldError = createStyledComponent(
-  "p",
-  styles["sw-fielderror-root-tc5ubd"],
-);
+import { mergeClassNames } from "../_internal/merge-class-names";
+import styles from "./field-error.module.css";
+
+export function FieldError({
+  className,
+  role = "alert",
+  ...props
+}: HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p
+      {...props}
+      aria-live="polite"
+      className={mergeClassNames(styles["fielderror-root-mbr31l"], className)}
+      data-component-status="styled"
+      role={role}
+    />
+  );
+}

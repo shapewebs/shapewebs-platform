@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ColorSwatch = createStyledComponent(
   "span",
-  styles["sw-colorswatch-root-g6b0yt"],
+  styles["colorswatch-root-t3r3w2"],
 );

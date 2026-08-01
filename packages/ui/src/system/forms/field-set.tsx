@@ -3,5 +3,6 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const FieldSet = createStyledComponent(
   "fieldset",
-  styles["sw-fieldset-root-7xkoaf"],
+  styles["fieldset-root-754aok"],
+  "styled",
 );

@@ -33,8 +33,8 @@ export default async function MediaPage() {
       eyebrow="Manage"
       title="Private image library"
     >
-      <Layout.Card className={styles["sw-media-panel-q5n9p2"]}>
-        <div className={styles["sw-media-heading-r6p2v8"]}>
+      <Layout.Card className={styles["media-panel-5s2tru"]}>
+        <div className={styles["media-heading-iavr91"]}>
           <h2>Upload an image</h2>
           <p>
             Uploading never makes an image public. Publishing uses a separate,
@@ -45,14 +45,14 @@ export default async function MediaPage() {
         {environment ? (
           <MediaUploadForm />
         ) : (
-          <p className={styles["sw-media-notice-v2m8q6"]}>
+          <p className={styles["media-notice-6sqyqz"]}>
             Private media storage is not configured for this environment.
           </p>
         )}
       </Layout.Card>
 
-      <section className={styles["sw-media-library-f4q1m8"]}>
-        <div className={styles["sw-media-heading-r6p2v8"]}>
+      <section className={styles["media-library-tyoxfb"]}>
+        <div className={styles["media-heading-iavr91"]}>
           <h2>Verified files</h2>
           <p>Provider paths and private URLs are never exposed in this view.</p>
         </div>
@@ -68,10 +68,10 @@ export default async function MediaPage() {
             title="No private images yet"
           />
         ) : (
-          <div className={styles["sw-media-list-a7q3m6"]}>
+          <div className={styles["media-list-dwheyz"]}>
             {media.map((item) => (
               <Layout.Card
-                className={styles["sw-media-item-c2m8p4"]}
+                className={styles["media-item-cwx5n1"]}
                 key={`${item.id}:${item.localeCode}`}
                 tone="quiet"
               >

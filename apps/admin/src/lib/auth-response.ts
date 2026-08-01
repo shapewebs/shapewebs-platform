@@ -1,3 +1,7 @@
+import "server-only";
+
+import { clearAccountRegistrationCookies } from "./account-registration-context";
+
 const clearAuthenticatedSiteData = '"cache", "cookies", "storage"';
 
 export function readAuthSetCookies(headers: Headers): string[] {
@@ -19,18 +23,27 @@ export function hardenAuthResponse(
   response: Response,
 ): Response {
   const pathname = new URL(request.url).pathname;
+  const headers = new Headers(response.headers);
 
   if (
-    request.method !== "POST" ||
-    pathname !== "/api/auth/sign-out" ||
-    !response.ok
+    pathname === "/api/auth/callback/google" &&
+    response.status >= 300 &&
+    response.status < 400
   ) {
-    return response;
+    for (const cookie of clearAccountRegistrationCookies()) {
+      headers.append("Set-Cookie", cookie);
+    }
   }
 
-  const headers = new Headers(response.headers);
   headers.set("Cache-Control", "no-store");
-  headers.set("Clear-Site-Data", clearAuthenticatedSiteData);
+
+  if (
+    request.method === "POST" &&
+    pathname === "/api/auth/sign-out" &&
+    response.ok
+  ) {
+    headers.set("Clear-Site-Data", clearAuthenticatedSiteData);
+  }
 
   return new Response(response.body, {
     headers,

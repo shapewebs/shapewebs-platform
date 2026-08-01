@@ -49,8 +49,8 @@ export default async function SettingsPage() {
       eyebrow="System"
       title="Platform settings"
     >
-      <div className={styles["sw-settings-grid-a6m2q8"]}>
-        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
+      <div className={styles["settings-grid-kxk5j6"]}>
+        <Layout.Card className={styles["settings-card-829osl"]}>
           <h2>Locales</h2>
           {settings.locales.map((locale) => (
             <p key={locale.code}>
@@ -59,7 +59,7 @@ export default async function SettingsPage() {
           ))}
         </Layout.Card>
 
-        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
+        <Layout.Card className={styles["settings-card-829osl"]}>
           <h2>Region profiles</h2>
           {settings.regionProfiles.map((profile) => (
             <p key={profile.code}>
@@ -68,7 +68,7 @@ export default async function SettingsPage() {
           ))}
         </Layout.Card>
 
-        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
+        <Layout.Card className={styles["settings-card-829osl"]}>
           <h2>Consent rule sets</h2>
           {settings.consentRuleSets.map((ruleSet) => (
             <p key={ruleSet.key}>
@@ -77,7 +77,7 @@ export default async function SettingsPage() {
           ))}
         </Layout.Card>
 
-        <Layout.Card className={styles["sw-settings-card-b7n3r9"]}>
+        <Layout.Card className={styles["settings-card-829osl"]}>
           <h2>Feature flags</h2>
           {settings.featureFlags.map((flag) => (
             <p key={flag.key}>

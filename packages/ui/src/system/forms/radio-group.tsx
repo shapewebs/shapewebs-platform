@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const RadioGroup = createStyledComponent(
   "div",
-  styles["sw-radiogroup-root-9ng78f"],
+  styles["radiogroup-root-dkp25d"],
 );

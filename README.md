@@ -1,11 +1,10 @@
 # Shapewebs Platform
 
-The Shapewebs monorepo contains two deployed Next.js applications and one
-isolated future portal:
+The Shapewebs monorepo contains two Next.js applications:
 
 - `apps/web` — the static-first studio website for `shapewebs.com`
-- `apps/admin` — the private CMS for `admin.shapewebs.com`
-- `apps/portal` — the fail-closed, invitation-only future customer surface
+- `apps/admin` — the unified customer and employee account portal, including
+  the private CMS, for `admin.shapewebs.com`
 
 Shared code lives in `packages/*`. The public site and authenticated platform
 remain separate so identity and CMS dependencies cannot enter the marketing
@@ -17,16 +16,17 @@ The hardened foundation and isolated non-production Neon database are complete
 on protected `staging`; production has not been changed. Verified runtime paths
 use:
 
-- Better Auth for Google login, database sessions, and admin TOTP step-up
+- one Better Auth identity for Google, password, and future passkeys, with TOTP
+  required before employee-studio access
 - Neon Postgres with isolated preview branches
 - Drizzle schemas and reviewed SQL migrations
 - Vercel Blob for public and private media
 
 The obsolete Supabase prototype has been removed after authentication,
-preview-isolation, publishing, restore, and release verification. Admin and
-portal own separate Better Auth instances and identity boundaries. Employees
-and future customers can attach Google, password, or both to one account;
-administrative access still requires TOTP. Public leads use an atomic Neon
+preview-isolation, publishing, restore, and release verification. Customers and
+employees share one canonical account and may attach Google, password, or both;
+membership and forced-RLS policies still separate customer projects from the
+employee studio, where TOTP remains mandatory. Public leads use an atomic Neon
 lead/outbox transaction. Production authentication and form persistence fail
 closed when required configuration is missing.
 
@@ -111,10 +111,10 @@ The existing Vercel projects remain the deployment targets:
 - `shapewebs-web`, rooted at `apps/web`
 - `shapewebs-admin`, rooted at `apps/admin`
 
-`apps/portal` is an independently verified but deliberately unavailable build
-target. It does not receive a Vercel project, domain, provider credentials, or
-customer data until its customer identity and tenant-isolation launch gates
-are implemented and reviewed.
+There is no separate customer application or customer authentication origin.
+Invitation, registration, recovery, customer workspace, account security, and
+employee-studio routes are all served by `shapewebs-admin`. The public app has
+no authentication runtime or account cookies.
 
 Do not expose authentication secrets, migration credentials, private storage
 credentials, or admin-only database access to `apps/web`. Preview environments
@@ -128,7 +128,8 @@ navigation, and visual system are reviewed as product code. The custom admin
 platform owns content that naturally changes over time, such as enquiries,
 clients, projects, case studies, posts, media, and operational notes.
 
-The future customer portal is a separate authenticated application. Its
-organization, membership, project, update, and file models are planned now so
-customer access can be added without sharing administrative identity or moving
-project data later.
+The customer workspace and employee studio are separate authorization
+workspaces inside the same authenticated application. A person has one stable
+identity and may hold customer membership, staff membership, or both. Repository
+contracts and database roles keep project data and privileged CMS operations
+separate even though login is unified.

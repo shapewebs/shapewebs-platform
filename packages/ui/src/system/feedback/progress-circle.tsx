@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ProgressCircle = createStyledComponent(
   "div",
-  styles["sw-progresscircle-root-wqscfk"],
+  styles["progresscircle-root-wdrude"],
 );

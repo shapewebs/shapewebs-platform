@@ -44,22 +44,19 @@ export default function DashboardPage() {
     >
       <section
         aria-labelledby="workspace-areas"
-        className={styles["sw-dashboard-section-a5m1q7"]}
+        className={styles["dashboard-section-v3nttd"]}
       >
-        <h2
-          className={styles["sw-dashboard-heading-b6n2r8"]}
-          id="workspace-areas"
-        >
+        <h2 className={styles["dashboard-heading-t8wg1r"]} id="workspace-areas">
           Work areas
         </h2>
-        <div className={styles["sw-dashboard-grid-c7p3s9"]}>
+        <div className={styles["dashboard-grid-xfbspi"]}>
           {workAreas.map((area) => (
             <Layout.Card
-              className={styles["sw-dashboard-card-d8q4t1"]}
+              className={styles["dashboard-card-pd6car"]}
               key={area.href}
               tone="default"
             >
-              <div className={styles["sw-dashboard-cardcopy-e9r5v2"]}>
+              <div className={styles["dashboard-cardcopy-1kgtdr"]}>
                 <h3>{area.label}</h3>
                 <p>{area.description}</p>
               </div>

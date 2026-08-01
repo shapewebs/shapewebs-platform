@@ -1,19 +1,19 @@
-.sw-brand-link-a8m3q6 {
+.brand-link-q0kxgw {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  gap: var(--ui-space-3);
-  border-radius: var(--ui-radius-sm);
-  color: rgb(var(--ui-color-text-primary) / 1);
+  gap: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-text-primary) / 1);
   text-decoration: none;
 }
 
-.sw-brand-link-a8m3q6:focus-visible {
-  outline: 3px solid rgb(var(--ui-color-focus-ring) / 0.42);
+.brand-link-q0kxgw:focus-visible {
+  outline: 3px solid rgb(var(--color-focus-ring) / 0.42);
   outline-offset: 3px;
 }
 
-.sw-brand-compact-b9n4r7 {
+.brand-compact-kuxhlj {
   width: 44px;
   justify-content: center;
 }

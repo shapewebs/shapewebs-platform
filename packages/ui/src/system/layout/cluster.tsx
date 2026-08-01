@@ -10,11 +10,11 @@ export type ClusterProps = HTMLAttributes<HTMLDivElement> & {
 function getJustifyClass(justify: NonNullable<ClusterProps["justify"]>) {
   switch (justify) {
     case "between":
-      return styles["sw-cluster-between-q9b6e3"];
+      return styles["cluster-between-4znvxu"];
     case "center":
-      return styles["sw-cluster-center-r1c7f4"];
+      return styles["cluster-center-xln1yt"];
     default:
-      return styles["sw-cluster-start-s2d8g5"];
+      return styles["cluster-start-rog1rg"];
   }
 }
 
@@ -26,7 +26,7 @@ export function Cluster({
   return (
     <div
       className={mergeClassNames(
-        styles["sw-cluster-root-p8a5d2"],
+        styles["cluster-root-xbyglc"],
         getJustifyClass(justify),
         className,
       )}

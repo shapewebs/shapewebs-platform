@@ -1,3 +1,4 @@
+export * as Authentication from "./system/authentication";
 export * as Buttons from "./system/buttons";
 export * as Brand from "./system/brand";
 export * as Collections from "./system/collections";

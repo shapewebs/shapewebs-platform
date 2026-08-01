@@ -1,2 +1,16 @@
-.sw-errormessage-root-0zorb8 {
+.errormessage-root-l52bml {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgb(var(--color-feedback-danger) / 0.35);
+  border-radius: var(--radius-sm);
+  color: rgb(var(--color-feedback-danger) / 1);
+  background: rgb(var(--color-feedback-danger) / 0.07);
+  font-size: var(--font-size-small-plus);
+  line-height: 1.5;
+}
+
+@media (forced-colors: active) {
+  .errormessage-root-l52bml {
+    border-color: CanvasText;
+  }
 }

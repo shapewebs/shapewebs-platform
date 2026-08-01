@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ColorSlider = createStyledComponent(
   "div",
-  styles["sw-colorslider-root-vb3fpq"],
+  styles["colorslider-root-puc8uq"],
 );

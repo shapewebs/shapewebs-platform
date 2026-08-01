@@ -22,19 +22,19 @@ export function ToggleButton({
 
   return (
     <label
-      className={mergeClassNames(styles["sw-toggle-root-f7s3w9"], className)}
+      className={mergeClassNames(styles["toggle-root-ffsnw5"], className)}
       htmlFor={inputId}
     >
       <input
-        className={styles["sw-toggle-input-g8t4x1"]}
+        className={styles["toggle-input-o9ks01"]}
         data-component-status="styled"
         id={inputId}
         type="checkbox"
         {...props}
       />
-      <span aria-hidden="true" className={styles["sw-toggle-track-h9v5y2"]} />
+      <span aria-hidden="true" className={styles["toggle-track-6eve9j"]} />
       {label ? (
-        <span className={styles["sw-toggle-label-j1w6z3"]}>{label}</span>
+        <span className={styles["toggle-label-d0c6i5"]}>{label}</span>
       ) : null}
     </label>
   );

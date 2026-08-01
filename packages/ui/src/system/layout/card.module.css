@@ -1,22 +1,22 @@
-.sw-card-root-w1g7k4 {
+.card-root-ipf37r {
   display: grid;
   min-width: 0;
-  padding: var(--ui-space-5);
-  border: 1px solid rgb(var(--ui-color-border-primary) / 1);
-  border-radius: var(--ui-radius-md);
-  background: rgb(var(--ui-color-bg-secondary) / 1);
+  padding: var(--space-5);
+  border: 1px solid rgb(var(--color-border-primary) / 1);
+  border-radius: var(--radius-md);
+  background: rgb(var(--color-bg-secondary) / 1);
 }
 
-.sw-card-quiet-x2h8m5 {
+.card-quiet-u9bpho {
   background: transparent;
 }
 
-.sw-card-raised-y3j9n6 {
-  box-shadow: var(--ui-shadow-raised);
+.card-raised-8bsiys {
+  box-shadow: var(--shadow-raised);
 }
 
 @media (forced-colors: active) {
-  .sw-card-root-w1g7k4 {
+  .card-root-ipf37r {
     border-color: CanvasText;
   }
 }

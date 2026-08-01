@@ -48,8 +48,8 @@ export default async function BlogListPage({
       eyebrow="Publishing"
       title="Blog posts"
     >
-      <form className={styles["sw-bloglist-filter-b7n2q5"]} method="get">
-        <label className={styles["sw-bloglist-field-c8p4s1"]}>
+      <form className={styles["bloglist-filter-xjzeh4"]} method="get">
+        <label className={styles["bloglist-field-tp3rtn"]}>
           <span>Locale</span>
           <select defaultValue={locale ?? ""} name="locale">
             <option value="">All</option>
@@ -78,11 +78,11 @@ export default async function BlogListPage({
           title="No blog posts yet"
         />
       ) : (
-        <section className={styles["sw-bloglist-panel-q5n9p2"]}>
-          <div className={styles["sw-bloglist-list-a7q3m6"]}>
+        <section className={styles["bloglist-panel-25cch0"]}>
+          <div className={styles["bloglist-list-gxepfj"]}>
             {posts.map((entry) => (
               <article
-                className={styles["sw-bloglist-item-c2m8p4"]}
+                className={styles["bloglist-item-z6pvd0"]}
                 key={entry.documentId}
               >
                 <div>

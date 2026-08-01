@@ -2,7 +2,7 @@ import { trace } from "@opentelemetry/api";
 
 export type StructuredLogLevel = "debug" | "info" | "warn" | "error";
 export type ShapewebsService =
-  "shapewebs-web" | "shapewebs-admin" | "shapewebs-portal" | "shapewebs-worker";
+  "shapewebs-web" | "shapewebs-admin" | "shapewebs-worker";
 export type ShapewebsEnvironment =
   "development" | "preview" | "production" | "test";
 export type StructuredEventCode = `shapewebs.${string}`;
@@ -168,7 +168,14 @@ export function createStructuredLogger(options: StructuredLoggerOptions) {
 export type ReadinessCheck = {
   check: () => Promise<void>;
   name:
-    "authentication" | "captcha" | "content" | "database" | "email" | "storage";
+    | "account-portal"
+    | "authentication"
+    | "captcha"
+    | "content"
+    | "customer-database"
+    | "database"
+    | "email"
+    | "storage";
 };
 
 export type ReadinessResult = {

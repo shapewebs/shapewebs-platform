@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ColorField = createStyledComponent(
   "div",
-  styles["sw-colorfield-root-eg3y5d"],
+  styles["colorfield-root-65l8jp"],
 );

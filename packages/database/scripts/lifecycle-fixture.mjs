@@ -26,7 +26,7 @@ if (["export", "restore"].includes(command) && !exportPath) {
 const sql = neon(databaseUrl);
 
 const fixture = {
-  version: 5,
+  version: 6,
   adminUsers: [
     {
       id: "lifecycle-owner",
@@ -206,8 +206,8 @@ const fixture = {
       actorUserId: "lifecycle-owner",
       action: "lifecycle.fixture.created",
       targetType: "lifecycle_test",
-      targetId: "fixture-v5",
-      requestId: "lifecycle-request-v5",
+      targetId: "fixture-v6",
+      requestId: "lifecycle-request-v6",
       metadata: { synthetic: true },
       occurredAt: "2026-01-01T00:00:00.000Z",
     },
@@ -230,7 +230,7 @@ async function cleanupFixture() {
       where id = ${fixture.files[0].id}`,
     sql`delete from app.organizations
       where id = ${fixture.organizations[0].id}`,
-    sql`delete from customer_auth.user
+    sql`delete from auth.user
       where id = ${fixture.customerUsers[0].id}`,
     sql`delete from auth.user
       where id = ${fixture.adminUsers[0].id}`,
@@ -280,13 +280,14 @@ async function seedFixture(value) {
           ${timestamp}::timestamp,
           ${owner.twoFactorEnabled}
         )`,
-    sql`insert into customer_auth.user (
+    sql`insert into auth.user (
         id,
         name,
         email,
         email_verified,
         created_at,
-        updated_at
+        updated_at,
+        two_factor_enabled
       )
       values (
           ${customer.id},
@@ -294,7 +295,8 @@ async function seedFixture(value) {
           ${customer.email},
           ${customer.emailVerified},
           ${timestamp}::timestamp,
-          ${timestamp}::timestamp
+          ${timestamp}::timestamp,
+          false
         )`,
     sql`insert into app.organizations (
         id,
@@ -612,7 +614,7 @@ async function readFixture() {
         name,
         email,
         email_verified
-      from customer_auth.user
+      from auth.user
       where id = ${fixture.customerUsers[0].id}`,
     sql`select id, slug, name, active
       from app.organizations
@@ -740,7 +742,7 @@ async function readFixture() {
   ]);
 
   return {
-    version: 5,
+    version: 6,
     adminUsers: adminUsers.map((row) => ({
       id: row.id,
       name: row.name,

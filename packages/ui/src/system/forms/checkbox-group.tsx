@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const CheckboxGroup = createStyledComponent(
   "div",
-  styles["sw-checkboxgroup-root-8hwc3n"],
+  styles["checkboxgroup-root-aesv0i"],
 );

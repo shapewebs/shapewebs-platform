@@ -77,7 +77,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html data-sw-theme="showcase" lang="en">
+    <html
+      data-color-scheme="dark"
+      data-sw-theme="showcase"
+      data-theme-preference="dark"
+      lang="en"
+    >
       <body>
         {children}
         {process.env.VERCEL === "1" ? <SpeedInsights /> : null}

@@ -19,12 +19,12 @@ export function Link({
   return (
     <NextLink
       className={mergeClassNames(
-        styles["sw-link-root-p5a1d7"],
+        styles["link-root-zvbqny"],
         underline === "always"
-          ? styles["sw-link-always-q6b2e8"]
+          ? styles["link-always-6mytr2"]
           : underline === "none"
-            ? styles["sw-link-none-r7c3f9"]
-            : styles["sw-link-hover-s8d4g1"],
+            ? styles["link-none-zg0f8w"]
+            : styles["link-hover-p8wt5w"],
         className,
       )}
       data-component-status="styled"

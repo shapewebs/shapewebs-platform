@@ -1,2 +1,6 @@
-.sw-description-root-98arn2 {
+.description-root-m1nt5v {
+  margin: 0;
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
 }

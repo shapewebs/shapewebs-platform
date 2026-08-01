@@ -1,26 +1,26 @@
-.sw-buttongroup-root-a2m7q4 {
+.buttongroup-root-hg59sr {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--ui-space-3);
+  gap: var(--space-3);
 }
 
-.sw-buttongroup-start-c4p9s6 {
+.buttongroup-start-yeub3j {
   justify-content: flex-start;
 }
 
-.sw-buttongroup-end-b3n8r5 {
+.buttongroup-end-ix8dho {
   justify-content: flex-end;
 }
 
 @media (max-width: 480px) {
-  .sw-buttongroup-root-a2m7q4 {
+  .buttongroup-root-hg59sr {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .sw-buttongroup-root-a2m7q4 > * {
+  .buttongroup-root-hg59sr > * {
     width: 100%;
   }
 }

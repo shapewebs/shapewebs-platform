@@ -40,18 +40,18 @@ export default async function SubmissionsPage() {
       ) : (
         <section
           aria-label="Lead submissions"
-          className={styles["sw-submissions-list-c8p4s1"]}
+          className={styles["submissions-list-y3c5zw"]}
         >
           {submissions.map((submission) => (
             <article
-              className={styles["sw-submissions-row-d9q5t2"]}
+              className={styles["submissions-row-ecuxmo"]}
               key={submission.id}
             >
-              <div className={styles["sw-submissions-primary-e1r6v3"]}>
+              <div className={styles["submissions-primary-c4ey0o"]}>
                 <strong>{submission.name}</strong>
                 <span>{submission.email}</span>
               </div>
-              <dl className={styles["sw-submissions-meta-f2s7w4"]}>
+              <dl className={styles["submissions-meta-z8171f"]}>
                 <div>
                   <dt>Type</dt>
                   <dd>{submission.kind}</dd>
@@ -73,7 +73,7 @@ export default async function SubmissionsPage() {
                   <dd>{submission.notificationStatus ?? "Not scheduled"}</dd>
                 </div>
               </dl>
-              <p className={styles["sw-submissions-message-g3t8x5"]}>
+              <p className={styles["submissions-message-9ak2zh"]}>
                 {submission.message}
               </p>
             </article>

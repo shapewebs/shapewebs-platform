@@ -18,12 +18,11 @@ import {
 import {
   adminRuntimeRole,
   migratorRole,
-  portalRuntimeRole,
+  customerRuntimeRole,
   publicReaderRole,
   webRuntimeRole,
 } from "./roles";
 import { user as adminUser } from "./auth";
-import { customerUser } from "./customer-auth";
 import type { OrganizationSettingsValue } from "@shapewebs/validation";
 
 export const appSchema = pgSchema("app");
@@ -133,7 +132,7 @@ export const organizations = appSchema.table(
     }),
     pgPolicy("portal runtime reads current customer organization", {
       for: "select",
-      to: portalRuntimeRole,
+      to: customerRuntimeRole,
       using: sql`${table.id} = ${currentOrganizationId}
         and ${currentMembershipRole} = 'customer'
         and ${currentCustomerHasActiveMembership}`,
@@ -261,7 +260,7 @@ export const customerMemberships = appSchema.table(
       .references(() => organizations.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
-      .references(() => customerUser.id, { onDelete: "cascade" }),
+      .references(() => adminUser.id, { onDelete: "cascade" }),
     status: membershipStatus("status").default("invited").notNull(),
     invitedByUserId: text("invited_by_user_id").references(() => adminUser.id, {
       onDelete: "set null",
@@ -289,7 +288,7 @@ export const customerMemberships = appSchema.table(
     }),
     pgPolicy("customers read their current organization membership", {
       for: "select",
-      to: portalRuntimeRole,
+      to: customerRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId}
         and ${table.userId} = ${currentUserId}
         and ${currentMembershipRole} = 'customer'`,
@@ -319,7 +318,7 @@ export const customerInvitations = appSchema.table(
     registrationGrantExpiresAt: timestamp("registration_grant_expires_at", {
       withTimezone: true,
     }),
-    claimedUserId: text("claimed_user_id").references(() => customerUser.id, {
+    claimedUserId: text("claimed_user_id").references(() => adminUser.id, {
       onDelete: "set null",
     }),
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
@@ -414,7 +413,7 @@ export const projects = appSchema.table(
     }),
     pgPolicy("assigned customers read projects in current organization", {
       for: "select",
-      to: portalRuntimeRole,
+      to: customerRuntimeRole,
       using: sql`${table.organizationId} = ${currentOrganizationId}
         and ${currentMembershipRole} = 'customer'
         and ${currentUserHasProjectAccess(table.id)}`,
@@ -441,7 +440,7 @@ export const customerProjectMemberships = appSchema.table(
       .references(() => projects.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
-      .references(() => customerUser.id, { onDelete: "cascade" }),
+      .references(() => adminUser.id, { onDelete: "cascade" }),
     createdAt: createdAt(),
   },
   (table) => [
@@ -466,7 +465,7 @@ export const customerProjectMemberships = appSchema.table(
     }),
     pgPolicy("customers read their project assignments", {
       for: "select",
-      to: portalRuntimeRole,
+      to: customerRuntimeRole,
       using: sql`${currentMembershipRole} = 'customer'
         and ${table.userId} = ${currentUserId}
         and ${currentUserHasProjectAccess(table.projectId)}`,
@@ -545,7 +544,7 @@ export const projectUpdates = appSchema.table(
     }),
     pgPolicy("assigned customers read customer-visible project updates", {
       for: "select",
-      to: portalRuntimeRole,
+      to: customerRuntimeRole,
       using: sql`${currentMembershipRole} = 'customer'
         and ${table.visibleToCustomer}
         and ${currentUserHasProjectAccess(table.projectId)}`,

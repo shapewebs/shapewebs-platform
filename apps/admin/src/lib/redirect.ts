@@ -3,9 +3,11 @@ const allowedAdminPrefixes = [
   "/account",
   "/audit",
   "/content",
+  "/customer",
   "/dashboard",
   "/media",
   "/settings",
+  "/studio",
   "/submissions",
 ] as const;
 const adminOrigin = "https://admin.shapewebs.invalid";

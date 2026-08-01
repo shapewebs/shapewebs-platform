@@ -3,15 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   clearCustomerRegistrationContext,
   clearCustomerRegistrationGrant,
-  getCustomerCookiePolicy,
   readCustomerRegistrationGrant,
   serializeCustomerRegistrationContext,
   serializeCustomerRegistrationGrant,
 } from "../../packages/auth/src/customer-cookie";
-import {
-  createCustomerMethodAuthorization,
-  verifyCustomerMethodAuthorization,
-} from "../../packages/auth/src/customer-method-authorization";
 import { createCustomerInvitation } from "../../packages/auth/src/customer-onboarding";
 import {
   assertCustomerPasswordNotCompromised,
@@ -25,8 +20,6 @@ import {
   encryptCustomerRegistrationContext,
 } from "../../packages/auth/src/customer-registration-context";
 import {
-  decryptCustomerEmailToken,
-  encryptCustomerEmailToken,
   generateCustomerBearerToken,
   hashCustomerBearerToken,
   isCustomerBearerToken,
@@ -48,30 +41,10 @@ describe("customer registration tokens and cookies", () => {
     );
   });
 
-  it("encrypts email bearer tokens and rejects expired or wrong-key data", async () => {
-    const token = generateCustomerBearerToken();
-    const encrypted = await encryptCustomerEmailToken(
-      token,
-      encryptionSecret,
-      60,
-    );
-
-    expect(encrypted).not.toContain(token);
-    await expect(
-      decryptCustomerEmailToken(encrypted, encryptionSecret),
-    ).resolves.toBe(token);
-    await expect(
-      decryptCustomerEmailToken(
-        encrypted,
-        "a-different-email-encryption-secret-with-32-chars",
-      ),
-    ).resolves.toBeNull();
-  });
-
   it("uses a host-only, HttpOnly, secure production registration cookie", () => {
     const grant = generateCustomerBearerToken();
     const serialized = serializeCustomerRegistrationGrant(grant, true);
-    const request = new Request("https://portal.shapewebs.com/register", {
+    const request = new Request("https://admin.shapewebs.com/register", {
       headers: { cookie: serialized.split(";", 1)[0] ?? "" },
     });
 
@@ -82,9 +55,6 @@ describe("customer registration tokens and cookies", () => {
     expect(serialized).not.toContain("Domain=");
     expect(readCustomerRegistrationGrant(request, true)).toBe(grant);
     expect(clearCustomerRegistrationGrant(true)).toContain("Max-Age=0");
-    expect(getCustomerCookiePolicy(true).prefix).toBe(
-      "__Host-shapewebs-customer",
-    );
   });
 
   it("keeps invitation identity server-owned in a separate encrypted cookie", async () => {
@@ -108,45 +78,6 @@ describe("customer registration tokens and cookies", () => {
       email: "customer@example.test",
       name: "Lifecycle Customer",
     });
-  });
-
-  it("makes Google linking an expiring server-authorized operation", () => {
-    const secret = "a-separate-customer-auth-secret-that-is-long-enough";
-    const issuedAt = Date.now();
-    const grant = createCustomerMethodAuthorization(
-      {
-        action: "link_google",
-        sessionId: "customer-session-123",
-        userId: "customer-user-123",
-      },
-      secret,
-      issuedAt,
-    );
-
-    expect(
-      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
-        sessionId: "customer-session-123",
-        userId: "customer-user-123",
-      }),
-    ).toBe(true);
-    expect(
-      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
-        sessionId: "different-customer-session",
-        userId: "customer-user-123",
-      }),
-    ).toBe(false);
-    expect(
-      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 30_000, {
-        sessionId: "customer-session-123",
-        userId: "different-customer-user",
-      }),
-    ).toBe(false);
-    expect(
-      verifyCustomerMethodAuthorization(grant, secret, issuedAt + 61_000),
-    ).toBe(false);
-    expect(
-      verifyCustomerMethodAuthorization(`${grant}tampered`, secret, issuedAt),
-    ).toBe(false);
   });
 });
 

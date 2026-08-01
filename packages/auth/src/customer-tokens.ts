@@ -1,8 +1,5 @@
 import { randomBytes } from "node:crypto";
 
-import { symmetricDecodeJWT, symmetricEncodeJWT } from "better-auth/crypto";
-
-const customerEmailTokenSalt = "shapewebs/customer-auth-email/v1";
 const customerBearerTokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const customerOpaqueTokenPattern = /^[A-Za-z0-9_-]{20,512}$/;
 
@@ -29,49 +26,6 @@ export async function hashCustomerOpaqueToken(token: string): Promise<string> {
   );
 
   return Buffer.from(digest).toString("hex");
-}
-
-export async function encryptCustomerEmailToken(
-  token: string,
-  encryptionSecret: string,
-  expiresInSeconds: number,
-): Promise<string> {
-  if (encryptionSecret.length < 32) {
-    throw new Error(
-      "PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET must contain at least 32 characters.",
-    );
-  }
-
-  if (!customerOpaqueTokenPattern.test(token) || expiresInSeconds < 1) {
-    throw new Error("The customer email token input is invalid.");
-  }
-
-  return symmetricEncodeJWT(
-    { token },
-    encryptionSecret,
-    customerEmailTokenSalt,
-    expiresInSeconds,
-  );
-}
-
-export async function decryptCustomerEmailToken(
-  encryptedToken: string,
-  encryptionSecret: string,
-): Promise<string | null> {
-  if (encryptionSecret.length < 32 || encryptedToken.length > 8192) {
-    return null;
-  }
-
-  const payload = await symmetricDecodeJWT<{ token?: unknown }>(
-    encryptedToken,
-    encryptionSecret,
-    customerEmailTokenSalt,
-  );
-
-  return typeof payload?.token === "string" &&
-    customerOpaqueTokenPattern.test(payload.token)
-    ? payload.token
-    : null;
 }
 
 export function isCustomerBearerToken(value: string): boolean {

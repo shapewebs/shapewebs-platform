@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const DateRangePicker = createStyledComponent(
   "div",
-  styles["sw-daterangepicker-root-0x0sio"],
+  styles["daterangepicker-root-s9v8ku"],
 );

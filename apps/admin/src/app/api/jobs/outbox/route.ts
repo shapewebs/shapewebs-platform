@@ -12,6 +12,7 @@ import {
 } from "@shapewebs/database/server";
 import {
   sendAdminAuthNotification,
+  sendCustomerAuthNotification,
   sendLeadNotification,
 } from "@shapewebs/email/server";
 import {
@@ -109,14 +110,23 @@ export async function POST(request: Request) {
           environment.authEmailEncryptionSecret,
         );
         const delivery = token
-          ? await sendAdminAuthNotification(environment.resendApiKey, {
-              adminBaseUrl: environment.adminBaseUrl,
-              from: environment.from,
-              idempotencyKey: authEmail.idempotencyKey,
-              kind: authEmail.kind,
-              to: authEmail.recipient,
-              token,
-            })
+          ? authEmail.kind === "invitation" || authEmail.invitationId
+            ? await sendCustomerAuthNotification(environment.resendApiKey, {
+                from: environment.from,
+                idempotencyKey: authEmail.idempotencyKey,
+                kind: authEmail.kind,
+                accountBaseUrl: environment.adminBaseUrl,
+                to: authEmail.recipient,
+                token,
+              })
+            : await sendAdminAuthNotification(environment.resendApiKey, {
+                adminBaseUrl: environment.adminBaseUrl,
+                from: environment.from,
+                idempotencyKey: authEmail.idempotencyKey,
+                kind: authEmail.kind,
+                to: authEmail.recipient,
+                token,
+              })
           : {
               errorCode: "encrypted_token_invalid",
               status: "permanent_failure" as const,

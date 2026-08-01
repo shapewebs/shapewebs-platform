@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ColorSwatchPicker = createStyledComponent(
   "div",
-  styles["sw-colorswatchpicker-root-6ktcpi"],
+  styles["colorswatchpicker-root-it03a7"],
 );

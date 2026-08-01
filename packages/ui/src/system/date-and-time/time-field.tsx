@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const TimeField = createStyledComponent(
   "input",
-  styles["sw-timefield-root-wpbljr"],
+  styles["timefield-root-ywqz1z"],
 );

@@ -3,5 +3,6 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Form = createStyledComponent(
   "form",
-  styles["sw-form-root-5g6a7w"],
+  styles["form-root-l5q8a8"],
+  "styled",
 );

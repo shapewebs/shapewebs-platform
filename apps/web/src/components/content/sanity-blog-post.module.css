@@ -1,4 +1,4 @@
-.sw-article-root-p4m8q2 {
+.article-root-7ffx9q {
   display: grid;
   gap: clamp(28px, 5vw, 56px);
   margin: 0 auto;
@@ -6,7 +6,7 @@
   width: min(100%, 1120px);
 }
 
-.sw-article-header-b7m2p5 {
+.article-header-pvqg1h {
   display: grid;
   gap: 18px;
   margin-inline: auto;
@@ -14,49 +14,49 @@
   width: min(100%, 820px);
 }
 
-.sw-article-header-b7m2p5 h1 {
+.article-header-pvqg1h h1 {
   font-size: clamp(2.5rem, 1.5rem + 4vw, 5.5rem);
   letter-spacing: -0.045em;
   line-height: 0.98;
 }
 
-.sw-article-header-b7m2p5 > p:last-child {
-  color: rgb(var(--ui-color-text-secondary));
-  font-size: var(--ui-font-size-large);
+.article-header-pvqg1h > p:last-child {
+  color: rgb(var(--color-text-secondary));
+  font-size: var(--font-size-large);
   line-height: 1.65;
 }
 
-.sw-article-eyebrow-d8m3q1 {
+.article-eyebrow-uh9u13 {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.sw-article-cover-n4v8q1,
-.sw-article-image-q5n9p2,
-.sw-article-imagewide-f4q1m8 {
+.article-cover-dhjkpm,
+.article-image-q6kuti,
+.article-imagewide-99djmf {
   display: grid;
   gap: 10px;
   margin: 0;
 }
 
-.sw-article-cover-n4v8q1 img,
-.sw-article-image-q5n9p2 img,
-.sw-article-imagewide-f4q1m8 img {
-  border-radius: 20px;
+.article-cover-dhjkpm img,
+.article-image-q6kuti img,
+.article-imagewide-99djmf img {
+  border-radius: var(--radius-lg);
   height: auto;
   width: 100%;
 }
 
-.sw-article-cover-n4v8q1 figcaption,
-.sw-article-image-q5n9p2 figcaption,
-.sw-article-imagewide-f4q1m8 figcaption {
-  color: rgb(var(--ui-color-text-secondary));
-  font-size: var(--ui-font-size-small);
+.article-cover-dhjkpm figcaption,
+.article-image-q6kuti figcaption,
+.article-imagewide-99djmf figcaption {
+  color: rgb(var(--color-text-secondary));
+  font-size: var(--font-size-small);
 }
 
-.sw-article-body-a7q3m6 {
+.article-body-hzvmcb {
   display: grid;
   font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
   gap: 20px;
@@ -65,54 +65,54 @@
   width: min(100%, 720px);
 }
 
-.sw-article-body-a7q3m6 h2,
-.sw-article-body-a7q3m6 h3,
-.sw-article-body-a7q3m6 h4,
-.sw-article-body-a7q3m6 p,
-.sw-article-body-a7q3m6 ul,
-.sw-article-body-a7q3m6 ol {
+.article-body-hzvmcb h2,
+.article-body-hzvmcb h3,
+.article-body-hzvmcb h4,
+.article-body-hzvmcb p,
+.article-body-hzvmcb ul,
+.article-body-hzvmcb ol {
   margin: 0;
 }
 
-.sw-article-body-a7q3m6 h2 {
+.article-body-hzvmcb h2 {
   font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.5rem);
   letter-spacing: -0.025em;
   line-height: 1.15;
   margin-top: 24px;
 }
 
-.sw-article-body-a7q3m6 h3 {
+.article-body-hzvmcb h3 {
   font-size: 1.5rem;
   margin-top: 16px;
 }
 
-.sw-article-quote-r8q2m4,
-.sw-article-callout-v2m8q6 {
-  border-left: 2px solid rgb(var(--ui-color-feedback-accent));
+.article-quote-r8slyg,
+.article-callout-mk6z6b {
+  border-left: 2px solid rgb(var(--color-feedback-accent));
   display: grid;
   gap: 8px;
   margin: 8px 0;
   padding: 12px 0 12px 20px;
 }
 
-.sw-article-code-c2m8p4 {
+.article-code-qqonfc {
   display: grid;
   gap: 8px;
   margin: 8px 0;
 }
 
-.sw-article-code-c2m8p4 pre {
-  background: rgb(var(--ui-color-bg-secondary));
-  border: 1px solid rgb(var(--ui-color-border-primary));
-  border-radius: var(--ui-radius-md);
+.article-code-qqonfc pre {
+  background: rgb(var(--color-bg-secondary));
+  border: 1px solid rgb(var(--color-border-primary));
+  border-radius: var(--radius-md);
   overflow-x: auto;
   padding: 18px;
 }
 
-.sw-article-cta-x6p1m9 {
-  background: rgb(var(--ui-color-bg-secondary));
-  border: 1px solid rgb(var(--ui-color-border-primary));
-  border-radius: var(--ui-radius-md);
+.article-cta-gf3ajl {
+  background: rgb(var(--color-bg-secondary));
+  border: 1px solid rgb(var(--color-border-primary));
+  border-radius: var(--radius-md);
   color: inherit;
   display: grid;
   gap: 4px;
@@ -121,16 +121,16 @@
   text-decoration: none;
 }
 
-.sw-article-image-q5n9p2 {
+.article-image-q6kuti {
   margin: 12px 0;
 }
 
-.sw-article-imagewide-f4q1m8 {
+.article-imagewide-99djmf {
   margin: 20px min(-10vw, -120px);
 }
 
 @media (max-width: 900px) {
-  .sw-article-imagewide-f4q1m8 {
+  .article-imagewide-99djmf {
     margin-inline: 0;
   }
 }

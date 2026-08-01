@@ -10,13 +10,13 @@ export type ContainerProps = HTMLAttributes<HTMLDivElement> & {
 function getSizeClass(size: NonNullable<ContainerProps["size"]>) {
   switch (size) {
     case "copy":
-      return styles["sw-container-copy-a5m2q8"];
+      return styles["container-copy-2zwjkw"];
     case "full":
-      return styles["sw-container-full-d8q5t2"];
+      return styles["container-full-ns4ftp"];
     case "wide":
-      return styles["sw-container-wide-c7p4s1"];
+      return styles["container-wide-ksrwtj"];
     default:
-      return styles["sw-container-default-b6n3r9"];
+      return styles["container-default-glz8z0"];
   }
 }
 
@@ -28,7 +28,7 @@ export function Container({
   return (
     <div
       className={mergeClassNames(
-        styles["sw-container-root-z4k1p7"],
+        styles["container-root-y2z36l"],
         getSizeClass(size),
         className,
       )}

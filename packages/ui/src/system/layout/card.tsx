@@ -10,9 +10,9 @@ export type CardProps = HTMLAttributes<HTMLElement> & {
 function getToneClass(tone: NonNullable<CardProps["tone"]>) {
   switch (tone) {
     case "quiet":
-      return styles["sw-card-quiet-x2h8m5"];
+      return styles["card-quiet-u9bpho"];
     case "raised":
-      return styles["sw-card-raised-y3j9n6"];
+      return styles["card-raised-8bsiys"];
     default:
       return undefined;
   }
@@ -22,7 +22,7 @@ export function Card({ className, tone = "default", ...props }: CardProps) {
   return (
     <article
       className={mergeClassNames(
-        styles["sw-card-root-w1g7k4"],
+        styles["card-root-ipf37r"],
         getToneClass(tone),
         className,
       )}

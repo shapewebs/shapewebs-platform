@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Accordion = createStyledComponent(
   "div",
-  styles["sw-accordion-root-3fssxn"],
+  styles["accordion-root-mt47kz"],
 );

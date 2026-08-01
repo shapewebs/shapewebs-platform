@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Disclosure = createStyledComponent(
   "div",
-  styles["sw-disclosure-root-z0ikt6"],
+  styles["disclosure-root-i1shsy"],
 );

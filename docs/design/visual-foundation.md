@@ -62,9 +62,10 @@ The public website uses the explicit `showcase` theme:
 - static-first Server Components;
 - motion only when it explains sequence, state, or spatial relationship.
 
-The public theme does not change automatically with the operating-system color
-preference. The art direction is intentional, so metadata, browser chrome, and
-the rendered page remain consistent.
+The public theme defaults to the intentional dark presentation. A persistent
+footer selector offers Light, System, and Dark preferences. Only the System
+option follows `prefers-color-scheme`, including changes made while the page is
+open; an explicit Light or Dark choice remains stable across visits.
 
 ### Studio
 
@@ -100,16 +101,21 @@ Component CSS Modules own component presentation. Page CSS Modules own only
 composition unique to that page. Pages may not introduce a parallel palette,
 button system, type scale, or shadow language.
 
-Tokens use the `--ui-*` namespace. New code must use semantic roles rather
-than raw palette values:
+Every authored class follows the repository-wide
+[`scope-role-id6` contract](./css-class-naming.md). The class scope identifies
+its real component or composition; there is no universal namespace prefix.
+
+Tokens use direct semantic names such as `--content-width`, `--space-4`, and
+`--color-text-primary`. New code must use semantic roles rather than raw
+palette values:
 
 - `bg-primary` through `bg-quinary`;
 - `text-primary` through `text-quaternary`;
 - `border-primary` through `border-tertiary`;
 - `link`, `feedback`, `focus`, and `signal` roles.
 
-Temporary unprefixed aliases support the existing admin styles while they are
-migrated. New code may not use those aliases.
+The shared theme is the single source of truth; compatibility aliases are not
+part of the contract.
 
 ## Typography
 
@@ -133,7 +139,7 @@ The core widths are:
 
 - copy: `680px`;
 - default content: `1120px`;
-- wide composition: `1360px`.
+- wide composition: `1344px`.
 
 Spacing follows a four-pixel base and named steps from `4px` to `128px`.
 Responsive composition is content-led:
@@ -145,6 +151,52 @@ Responsive composition is content-led:
 
 Container, stack, cluster, surface, and section primitives should express the
 common rules. A page should not repeat the same max-width and gutter formulas.
+
+### Radius and action hierarchy
+
+Shapewebs uses a rounded, structured geometry rather than a uniformly pill-like
+interface. The shared radius scale has explicit jobs:
+
+- `6px` (`--radius-xs`) for dense navigation and compact controls;
+- `8px` (`--radius-sm`) for standard form fields and supporting controls;
+- `12px` (`--radius-md`) for cards and contained surfaces;
+- `14px` (`--radius-lg`) for floating navigation, popovers, dialogs, and major
+  panels;
+- `20px` (`--radius-xl`) for rare feature frames with enough visual space; and
+- `--radius-rounded` for buttons, circles, toggles, status pills, and other
+  intentionally pill-shaped controls. Button sizes share this radius rather
+  than introducing size-specific curves.
+
+The neutral `primary` button remains the normal high-priority action. The
+colored `brand` kind uses the Shapewebs primary blue and is reserved for a
+single deliberate conversion or onboarding emphasis within a composition. It
+must not become the default treatment for every action.
+
+Buttons and other interactive components communicate hover and active state
+through color, border, shadow, and opacity only. They must not translate,
+scale, rotate, or otherwise move in response to pointer or keyboard
+interaction. Transform-based motion remains available only for functional
+state communication such as a toggle thumb, spinner, or the approved submenu
+open-and-switch transition.
+
+Button shadows are component tokens rather than page-owned effects. Primary,
+brand, and the implicit default use `--shadow-button-default`. Secondary uses
+`--shadow-button-secondary`, with only its 0.5-pixel boundary becoming stronger
+through `--shadow-button-secondary-hover`. The shared Shapewebs brand color is
+`rgb(102 121 221)` with a slightly darker hover state. Its label uses the active
+theme's `--color-bg-primary` surface color. Shared button controls have no
+physical border; any visible boundary is rendered by their component-owned
+shadow. Forced-colors mode uses an explicit outline so the controls remain
+perceivable under system colors.
+
+Shared buttons and all items in the public navigation use
+`--font-weight-normal`. Typography must not become heavier on hover, focus,
+selection, or submenu activation.
+
+Button visual heights are `32px` for small, `38px` for medium, and `44px` for
+large. Small and medium buttons extend an invisible interaction area to `44px`
+without changing their visible geometry, preserving a comfortable touch target
+inside denser navigation and application layouts.
 
 ## Components
 
@@ -176,6 +228,54 @@ Every interactive component must define:
 Scaffolded registry entries are not production-ready components. A component
 may be marked `styled` only when its states, accessibility, responsive
 behavior, and tests are complete.
+
+### Customization approval rule
+
+Shared components use their standard kind, size, spacing, radius, color, and
+motion contracts by default. Application composition may place a component in
+layout, but it must not restyle that component into a one-off visual variant.
+
+A new component-specific override or shared variant requires explicit owner
+confirmation before implementation. Once approved, a reusable variant belongs
+in `packages/ui` with a named contract and verification; it must not live as an
+undocumented page-specific CSS exception.
+
+### Public navigation contract
+
+The public header uses one code-owned `SubmenuNavigation` component. Its direct
+links, submenu sections, supporting descriptions, and action are serializable
+configuration; the brand and the surrounding shell remain server-rendered.
+Reusable client controls can occupy typed navigation slots. The public search
+control uses that contract so it is the final main-navigation item before the
+account separator on both desktop and compact layouts.
+
+On desktop, Services and Studio share one floating surface rather than opening
+independent popovers. The surface:
+
+- measures the active panel and transitions its width and height in place;
+- shifts outgoing and incoming content by only a few pixels to preserve
+  direction without turning navigation into a carousel;
+- stays open across a quick pointer move between submenu triggers, while a
+  short grace period closes it when the user settles on a direct link;
+- opens by hover, click, Enter, or Arrow Down and closes by Escape, outside
+  interaction, or focus leaving the navigation; and
+- removes animation under `prefers-reduced-motion` and preserves structure in
+  forced-colors mode.
+
+Every desktop navigation link and submenu trigger uses the shared small-button
+visual height of `32px`, including the primary navigation action. Text links
+and ghost triggers extend an invisible vertical interaction area to `44px` so
+the compact header does not reduce usability.
+
+On compact screens, the same typed destinations become a button-controlled
+drawer with one expandable submenu at a time. Closed content is both
+`aria-hidden` and inert. The public client boundary contains only this
+interaction controller; opening navigation must not trigger a CMS, database,
+or third-party request.
+
+Navigation motion is functional and restrained: approximately 150–240 ms,
+small translation, no bounce, no automatic loop, and no focus trap for the
+non-modal desktop surface.
 
 ## Page composition
 

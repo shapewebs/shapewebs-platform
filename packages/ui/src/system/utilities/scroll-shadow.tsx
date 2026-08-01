@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const ScrollShadow = createStyledComponent(
   "div",
-  styles["sw-scrollshadow-root-p663g1"],
+  styles["scrollshadow-root-njooj8"],
 );

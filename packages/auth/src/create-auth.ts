@@ -5,10 +5,17 @@ import {
   enqueueAdminAuthEmail,
   provisionAdminSession,
 } from "@shapewebs/database/admin-auth";
+import {
+  acceptCustomerGoogleInvitation,
+  customerHasActiveMembership,
+  customerRegistrationGrantMatches,
+  provisionCustomerSessionSecurity,
+} from "@shapewebs/database/customer-auth";
 import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { emailAddressSchema } from "@shapewebs/validation";
 import { eq } from "drizzle-orm";
+import type { GenericEndpointContext } from "better-auth";
 import {
   APIError,
   createAuthMiddleware,
@@ -22,6 +29,11 @@ import {
   hashAdminEmailToken,
 } from "./admin-email-token";
 import { verifyAdminMethodAuthorization } from "./admin-method-authorization";
+import { readCustomerRegistrationGrant } from "./customer-cookie";
+import {
+  hashCustomerBearerToken,
+  isCustomerBearerToken,
+} from "./customer-tokens";
 import { createVerifiedGoogleUserInfo } from "./google-user-info";
 import { getAdminCookiePolicy } from "./cookie-policy";
 import { generateAdminSessionToken } from "./session-cookie";
@@ -52,6 +64,7 @@ export type GoogleOAuthCredentials = {
 
 export type ShapewebsAuthOptions = {
   baseUrl: string;
+  customerDatabaseUrl?: string;
   databaseUrl: string;
   editorEmails?: string[];
   emailEncryptionSecret: string;
@@ -63,6 +76,20 @@ export type ShapewebsAuthOptions = {
   secret: string;
   trustedOrigins: string[];
 };
+
+function isGoogleCallback(context: GenericEndpointContext | null): boolean {
+  if (!context?.request) {
+    return false;
+  }
+
+  try {
+    return (
+      new URL(context.request.url).pathname === "/api/auth/callback/google"
+    );
+  } catch {
+    return false;
+  }
+}
 
 function assertOrigin(
   value: string,
@@ -148,15 +175,73 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
 
   const database = createDatabase(options.databaseUrl);
   const cookiePolicy = getAdminCookiePolicy(options.production);
-  const assertAllowedEmail = (email: string): "editor" | "owner" => {
+  const getStaffRole = (email: string): "editor" | "owner" | null => {
     const normalized = email.trim().toLowerCase();
     if (!ownerEmails.has(normalized) && !editorEmails.has(normalized)) {
-      throw new APIError("FORBIDDEN", {
-        message: "This account is not authorized for Shapewebs Admin.",
-      });
+      return null;
     }
 
     return ownerEmails.has(normalized) ? "owner" : "editor";
+  };
+  const hasCustomerMembership = async (userId: string): Promise<boolean> =>
+    options.customerDatabaseUrl
+      ? customerHasActiveMembership(options.customerDatabaseUrl, {
+          organizationId: options.organizationId,
+          userId,
+        })
+      : false;
+  const requireAuthorizedIdentity = async (user: {
+    email: string;
+    id: string;
+  }): Promise<{ customer: boolean; staffRole: "editor" | "owner" | null }> => {
+    const staffRole = getStaffRole(user.email);
+    const customer = await hasCustomerMembership(user.id);
+
+    if (!staffRole && !customer) {
+      throw new APIError("FORBIDDEN", {
+        message: "This account does not have active Shapewebs access.",
+      });
+    }
+
+    return { customer, staffRole };
+  };
+  const requireCustomerRegistrationGrant = async (
+    context: GenericEndpointContext | null,
+    email: string,
+  ): Promise<string> => {
+    if (!options.customerDatabaseUrl) {
+      throw new APIError("FORBIDDEN", {
+        message: "A valid customer invitation is required.",
+      });
+    }
+
+    const grant = readCustomerRegistrationGrant(
+      context?.request,
+      options.production,
+    );
+
+    if (!grant || !isCustomerBearerToken(grant)) {
+      throw new APIError("FORBIDDEN", {
+        message: "A valid customer invitation is required.",
+      });
+    }
+
+    const registrationGrantHash = await hashCustomerBearerToken(grant);
+    const allowed = await customerRegistrationGrantMatches(
+      options.customerDatabaseUrl,
+      {
+        email,
+        registrationGrantHash,
+      },
+    );
+
+    if (!allowed) {
+      throw new APIError("FORBIDDEN", {
+        message: "The customer invitation is invalid or expired.",
+      });
+    }
+
+    return registrationGrantHash;
   };
 
   return betterAuth({
@@ -188,7 +273,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       resetPasswordTokenExpiresIn: 60 * 60,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ token, user }) => {
-        assertAllowedEmail(user.email);
+        await requireAuthorizedIdentity(user);
         const tokenHash = await hashAdminEmailToken(token);
         await enqueueAdminAuthEmail(options.databaseUrl, {
           encryptedToken: await encryptAdminEmailToken(
@@ -211,7 +296,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       expiresIn: 60 * 60,
       sendOnSignUp: true,
       sendVerificationEmail: async ({ token, user }) => {
-        assertAllowedEmail(user.email);
+        await requireAuthorizedIdentity(user);
         const tokenHash = await hashAdminEmailToken(token);
         await enqueueAdminAuthEmail(options.databaseUrl, {
           encryptedToken: await encryptAdminEmailToken(
@@ -264,7 +349,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
             )
           ) {
             throw new APIError("FORBIDDEN", {
-              message: "Recent administrative reauthentication is required.",
+              message: "Recent account reauthentication is required.",
             });
           }
           return;
@@ -287,13 +372,17 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     databaseHooks: {
       user: {
         create: {
-          before: async (newUser) => {
-            assertAllowedEmail(newUser.email);
+          before: async (newUser, context) => {
+            const normalizedEmail = newUser.email.trim().toLowerCase();
+
+            if (!getStaffRole(normalizedEmail)) {
+              await requireCustomerRegistrationGrant(context, normalizedEmail);
+            }
 
             return {
               data: {
                 ...newUser,
-                email: newUser.email.trim().toLowerCase(),
+                email: normalizedEmail,
               },
             };
           },
@@ -301,9 +390,12 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       },
       session: {
         create: {
-          before: async (newSession) => {
+          before: async (newSession, context) => {
             const [sessionUser] = await database
-              .select({ email: authSchema.user.email })
+              .select({
+                email: authSchema.user.email,
+                id: authSchema.user.id,
+              })
               .from(authSchema.user)
               .where(eq(authSchema.user.id, newSession.userId))
               .limit(1);
@@ -312,7 +404,40 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
               throw new APIError("UNAUTHORIZED");
             }
 
-            assertAllowedEmail(sessionUser.email);
+            const staffRole = getStaffRole(sessionUser.email);
+            let customer = await hasCustomerMembership(sessionUser.id);
+
+            if (!customer && isGoogleCallback(context)) {
+              const registrationGrant = readCustomerRegistrationGrant(
+                context?.request,
+                options.production,
+              );
+
+              if (registrationGrant) {
+                const registrationGrantHash =
+                  await requireCustomerRegistrationGrant(
+                    context,
+                    sessionUser.email,
+                  );
+                const accepted =
+                  options.customerDatabaseUrl &&
+                  (await acceptCustomerGoogleInvitation(
+                    options.customerDatabaseUrl,
+                    {
+                      registrationGrantHash,
+                      userId: sessionUser.id,
+                    },
+                  ));
+
+                customer = Boolean(accepted);
+              }
+            }
+
+            if (!staffRole && !customer) {
+              throw new APIError("FORBIDDEN", {
+                message: "This account does not have active Shapewebs access.",
+              });
+            }
 
             return {
               data: {
@@ -323,7 +448,10 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
           },
           after: async (newSession) => {
             const [sessionUser] = await database
-              .select({ email: authSchema.user.email })
+              .select({
+                email: authSchema.user.email,
+                id: authSchema.user.id,
+              })
               .from(authSchema.user)
               .where(eq(authSchema.user.id, newSession.userId))
               .limit(1);
@@ -332,26 +460,56 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
               throw new APIError("UNAUTHORIZED");
             }
 
-            await provisionAdminSession(options.databaseUrl, {
-              organizationId: options.organizationId,
-              role: assertAllowedEmail(sessionUser.email),
-              sessionId: newSession.id,
-              userId: newSession.userId,
-            });
+            const staffRole = getStaffRole(sessionUser.email);
+            const customer = await hasCustomerMembership(sessionUser.id);
+
+            await Promise.all([
+              staffRole
+                ? provisionAdminSession(options.databaseUrl, {
+                    organizationId: options.organizationId,
+                    role: staffRole,
+                    sessionId: newSession.id,
+                    userId: newSession.userId,
+                  })
+                : Promise.resolve(),
+              customer
+                ? provisionCustomerSessionSecurity(options.databaseUrl, {
+                    sessionId: newSession.id,
+                    userId: newSession.userId,
+                  })
+                : Promise.resolve(),
+            ]);
           },
         },
         delete: {
           before: async (deletedSession) => {
-            await appendAdminAuditEvent(options.databaseUrl, {
-              action: "auth.session_deleted",
-              organizationId: options.organizationId,
-              result: "success",
-              role: "owner",
-              sessionId: deletedSession.id,
-              targetId: deletedSession.id,
-              targetType: "session",
-              userId: deletedSession.userId,
-            });
+            const [sessionUser] = await database
+              .select({ email: authSchema.user.email })
+              .from(authSchema.user)
+              .where(eq(authSchema.user.id, deletedSession.userId))
+              .limit(1);
+            const staffRole = sessionUser
+              ? getStaffRole(sessionUser.email)
+              : null;
+
+            await (staffRole
+              ? appendAdminAuditEvent(options.databaseUrl, {
+                  action: "auth.session_deleted",
+                  organizationId: options.organizationId,
+                  result: "success",
+                  role: staffRole,
+                  sessionId: deletedSession.id,
+                  targetId: deletedSession.id,
+                  targetType: "session",
+                  userId: deletedSession.userId,
+                })
+              : appendSystemAuditEvent(options.databaseUrl, {
+                  action: "auth.session_deleted",
+                  organizationId: options.organizationId,
+                  result: "success",
+                  targetId: deletedSession.id,
+                  targetType: "session",
+                }));
           },
         },
       },

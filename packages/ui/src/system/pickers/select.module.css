@@ -1,2 +1,31 @@
-.sw-select-root-3u4yoi {
+.select-root-cjfzcb {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.select-control-w190oc {
+  cursor: pointer;
+}
+
+.select-control-w190oc:disabled {
+  cursor: not-allowed;
+}
+
+.select-icon-04c36z {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  width: 16px;
+  height: 16px;
+  color: rgb(var(--color-text-tertiary) / 1);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.select-icon-04c36z path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
 }

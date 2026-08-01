@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const RangeCalendar = createStyledComponent(
   "div",
-  styles["sw-rangecalendar-root-iy657l"],
+  styles["rangecalendar-root-4a2n72"],
 );

@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Avatar = createStyledComponent(
   "div",
-  styles["sw-avatar-root-bpktsu"],
+  styles["avatar-root-dhg9as"],
 );

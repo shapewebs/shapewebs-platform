@@ -11,12 +11,15 @@
 flowchart LR
   Visitor["Untrusted visitor browser"] --> Web["Public Next.js app"]
   Administrator["Administrator browser"] --> Admin["Admin Next.js app"]
+  Customer["Customer browser"] --> Admin
   Web --> Turnstile["Cloudflare Turnstile"]
+  Admin --> AccountTurnstile["Account Turnstile"]
   Web --> NeonWeb["Neon web runtime role"]
-  Admin --> BetterAuth["Better Auth"]
+  Admin --> BetterAuth["Canonical Better Auth"]
   BetterAuth --> Google["Google OAuth"]
-  BetterAuth --> AdminAuthOutbox["Durable employee auth-email outbox"]
+  BetterAuth --> AuthOutbox["Durable authentication-email outbox"]
   Admin --> NeonAdmin["Neon admin runtime role"]
+  Admin --> NeonCustomer["Neon customer runtime role"]
   Admin --> Blob["Private Vercel Blob"]
   Admin --> Sanity["Sanity public content and media"]
   Sanity --> SanityWebhook["Signed Sanity webhook handler"]
@@ -27,6 +30,7 @@ flowchart LR
   GitHub --> NeonControl["Protected Neon lifecycle"]
   NeonWeb --> Database["Neon Postgres with forced RLS"]
   NeonAdmin --> Database
+  NeonCustomer --> Database
 ```
 
 The browser, provider callbacks, form input, headers, cookies, webhooks, file
@@ -35,50 +39,49 @@ Auth sessions are identity evidence, not authorization evidence. Memberships,
 roles, tenant assignment, resource ownership, and step-up freshness are
 re-read from trusted server-side sources.
 
-## Accepted future customer identity boundary
+## Unified customer and employee identity boundary
 
-ADR 0004 defines a third, separately deployed customer portal. Its fail-closed
-repository, CSP, environment, telemetry, health and CI boundaries are now
-implemented. The separate customer identity schema, membership foreign keys,
-portal SQL role, and forced-RLS tenant policies are implemented and verified
-on disposable Neon branches. Migration `0014`, the server-only libraries and
-fail-closed portal routes now implement one-time invitation exchange,
-provisional credential registration, mailbox-owned final-password activation,
-Google invitation acceptance, durable auth-email delivery, customer-only
-cookies, session inactivity, explicit same-account method linking and password
-recovery. The complete provider namespace and persistent-staging application
-are not yet provisioned, so this code is not counted as live staging evidence.
+ADR 0006 supersedes the earlier separate-portal model. `apps/admin` is the one
+authenticated application and `auth.user` is the one account identity. Google
+and password are attachable login methods on that identity; future passkeys
+must attach to the same identity. Staff/customer memberships and separate
+least-privilege database repositories remain authorization boundaries, not
+alternative authentication realms. Migration `0019` performs fail-closed
+legacy reconciliation and must pass disposable conflict, rollback, restore and
+RLS verification before staging.
 
 ```mermaid
 flowchart LR
-  Customer["Untrusted customer browser"] --> Portal["Customer portal Next.js app"]
-  Portal --> CustomerAuth["Customer Better Auth instance"]
-  CustomerAuth --> GoogleCustomer["Dedicated customer Google OAuth client"]
-  CustomerAuth --> CustomerAuthDb["customer_auth schema"]
-  Portal --> PortalRuntime["Least-privilege portal runtime role"]
-  PortalRuntime --> CustomerData["Customer memberships and project access with forced RLS"]
-  Portal --> TurnstileCustomer["Cloudflare Turnstile"]
-  Portal --> AuthOutbox["Durable authentication-email outbox"]
+  Customer["Untrusted customer browser"] --> AccountApp["admin.shapewebs.com"]
+  Employee["Employee browser"] --> AccountApp
+  AccountApp --> CanonicalAuth["Canonical Better Auth and auth.user"]
+  CanonicalAuth --> GoogleAccount["One exact Google OAuth client"]
+  AccountApp --> StaffAuthorization["Staff membership plus TOTP"]
+  AccountApp --> CustomerAuthorization["Customer/project membership"]
+  CustomerAuthorization --> CustomerRuntime["Least-privilege customer runtime role"]
+  CustomerRuntime --> CustomerData["Customer data with forced RLS"]
+  AccountApp --> TurnstileCustomer["Account Turnstile"]
+  AccountApp --> AuthOutbox["Durable authentication-email outbox"]
   AuthOutbox --> ResendCustomer["Resend"]
 ```
 
-The portal has a distinct origin, cookie namespace, Better Auth secret, OAuth
-client, schema, and runtime role. No customer session is accepted by the admin
-application, and no provider account, matching email, browser role, or
-customer membership grants administrative access.
+The account surface has one origin, host-only cookie, Better Auth secret,
+Google callback and recovery path. No provider account, matching email,
+browser input or customer membership grants staff authorization; every studio
+entry point re-reads active staff membership and required TOTP freshness.
 
 Planned customer-specific threats and controls are:
 
-| Scenario                              | Required prevention/detection                                                                               | Verification                                                      |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Duplicate or implicit account linking | Disable implicit linking; require a signed-in, recently reauthenticated explicit link                       | Same/different-email, provider-subject and concurrent-link tests  |
-| Credential stuffing/password spraying | Uniform responses, database/account/IP throttles, firewall controls, conditional Turnstile                  | Distributed spray, shared-IP and lockout-denial tests             |
-| Email or account enumeration          | Verified-email signup without automatic session, indistinguishable responses and bounded time               | Existing/non-existing signup and reset timing tests               |
-| Invitation theft/replay               | One-time URL exchange, mailbox-owned final password, exact verified email, tenant/project binding and audit | Forwarded, expired, reused, mismatched and raced invitation tests |
-| Last-method removal/account lockout   | Recent reauthentication and refusal to unlink the final verified usable method                              | Google-only, credential-only and dual-method unlink tests         |
-| Customer-to-admin privilege crossing  | Separate app, cookies, auth config/schema/runtime role; independent staff authorization                     | Copied-cookie, same-email and customer-role admin denial tests    |
-| Cross-customer IDOR                   | Server-owned membership/project context, minimal DTOs and forced RLS                                        | Wrong-tenant/project and direct-object misuse tests               |
-| Auth-email loss or duplication        | Durable outbox, stable command IDs, retries, webhook deduplication and backlog alerts                       | Provider timeout, worker crash, replay and delayed-delivery tests |
+| Scenario                              | Required prevention/detection                                                                                | Verification                                                      |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Duplicate or implicit account linking | Disable implicit linking; require a signed-in, recently reauthenticated explicit link                        | Same/different-email, provider-subject and concurrent-link tests  |
+| Credential stuffing/password spraying | Uniform responses, database/account/IP throttles, firewall controls, conditional Turnstile                   | Distributed spray, shared-IP and lockout-denial tests             |
+| Email or account enumeration          | Verified-email signup without automatic session, indistinguishable responses and bounded time                | Existing/non-existing signup and reset timing tests               |
+| Invitation theft/replay               | One-time URL exchange, mailbox-owned final password, exact verified email, tenant/project binding and audit  | Forwarded, expired, reused, mismatched and raced invitation tests |
+| Last-method removal/account lockout   | Recent reauthentication and refusal to unlink the final verified usable method                               | Google-only, credential-only and dual-method unlink tests         |
+| Customer-to-admin privilege crossing  | Independent staff authorization plus TOTP on every studio entry point; separate least-privilege repositories | Same-account customer-only and suspended-staff denial tests       |
+| Cross-customer IDOR                   | Server-owned membership/project context, minimal DTOs and forced RLS                                         | Wrong-tenant/project and direct-object misuse tests               |
+| Auth-email loss or duplication        | Durable outbox, stable command IDs, retries, webhook deduplication and backlog alerts                        | Provider timeout, worker crash, replay and delayed-delivery tests |
 
 ## Protected assets
 

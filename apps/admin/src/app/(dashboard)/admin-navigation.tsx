@@ -41,22 +41,19 @@ export function AdminNavigation() {
   return (
     <nav
       aria-label="Admin navigation"
-      className={styles["sw-adminnav-root-a4m9q2"]}
+      className={styles["adminnav-root-nrcm2n"]}
     >
       {navigationGroups.map((group) => (
-        <section
-          className={styles["sw-adminnav-group-b5n1r3"]}
-          key={group.label}
-        >
-          <h2 className={styles["sw-adminnav-label-c6p2s4"]}>{group.label}</h2>
-          <div className={styles["sw-adminnav-links-d7q3t5"]}>
+        <section className={styles["adminnav-group-hihuqw"]} key={group.label}>
+          <h2 className={styles["adminnav-label-rbq4ib"]}>{group.label}</h2>
+          <div className={styles["adminnav-links-q7gwv2"]}>
             {group.links.map((link) => {
               const active = routeIsActive(pathname, link.href);
 
               return (
                 <Link
                   aria-current={active ? "page" : undefined}
-                  className={styles["sw-adminnav-link-e8r4v6"]}
+                  className={styles["adminnav-link-a5odh6"]}
                   href={link.href}
                   key={link.href}
                   prefetch={false}

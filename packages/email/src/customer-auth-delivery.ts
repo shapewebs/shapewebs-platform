@@ -39,7 +39,7 @@ export async function sendCustomerAuthNotification(
           html: renderCustomerAuthEmailHtml(input),
           subject: getCustomerAuthEmailSubject(input.kind),
           tags: [
-            { name: "source", value: "shapewebs-customer-auth" },
+            { name: "source", value: "shapewebs-account-auth" },
             { name: "kind", value: input.kind },
           ],
           text: renderCustomerAuthEmailText(input),

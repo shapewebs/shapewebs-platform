@@ -41,17 +41,23 @@ function listFiles(directory, predicate = () => true) {
 
 const themeFile = "packages/ui/src/styles/system-theme.css";
 const requiredThemeTokens = [
-  "--ui-font-sans",
-  "--ui-space-1",
-  "--ui-space-10",
-  "--ui-radius-xs",
-  "--ui-radius-xl",
-  "--ui-content-copy",
-  "--ui-content-width",
-  "--ui-color-bg-primary",
-  "--ui-color-text-primary",
-  "--ui-color-focus-ring",
-  "--ui-shadow-raised",
+  "--font-sans",
+  "--space-1",
+  "--space-10",
+  "--radius-xs",
+  "--radius-xl",
+  "--content-copy",
+  "--content-width",
+  "--color-bg-primary",
+  "--color-bg-brand",
+  "--color-bg-brand-hover",
+  "--color-bg-brand-active",
+  "--color-text-primary",
+  "--color-focus-ring",
+  "--shadow-button-default",
+  "--shadow-button-secondary",
+  "--shadow-button-secondary-hover",
+  "--shadow-raised",
 ];
 
 assertIncludes(
@@ -75,8 +81,191 @@ for (const token of requiredThemeTokens) {
 
 assertIncludes(
   themeFile,
-  "--ui-content-width: 1344px;",
+  "--content-width: 1344px;",
   "The shared content width must remain 1344px",
+);
+assertIncludes(
+  themeFile,
+  "--shadow-button-default: 0px 3px 6px -2px #00000005, 0px 1px 1px #0000000a;",
+  "Default, primary, and brand buttons must retain the approved shadow value",
+);
+assertIncludes(
+  themeFile,
+  "0 0 0 0.5px #00000016, 0px 3px 6px -2px #00000005, 0px 1px 1px #0000000a;",
+  "Secondary buttons must retain the approved shadow value",
+);
+assertIncludes(
+  themeFile,
+  "0 0 0 0.5px #00000026, 0px 3px 6px -2px #00000005, 0px 1px 1px #0000000a;",
+  "Secondary buttons must retain the approved hover shadow value",
+);
+
+const sharedButtonStyles = read(
+  "packages/ui/src/system/buttons/button.module.css",
+);
+const sharedButtonStyleFiles = listFiles(
+  "packages/ui/src/system/buttons",
+  (pathname) => pathname.endsWith(".module.css"),
+);
+assert(
+  sharedButtonStyles.includes("border-radius: var(--radius-rounded);"),
+  "Shared buttons must retain the approved pill radius",
+);
+assert(
+  !sharedButtonStyles.includes("transform:"),
+  "Shared buttons must not move or scale during interaction",
+);
+assert(
+  sharedButtonStyles.includes("border: 0;") &&
+    !/^\s*border-(?:color|style|width):/gm.test(sharedButtonStyles),
+  "Shared buttons must use shadows rather than physical borders",
+);
+assert(
+  sharedButtonStyles.includes("font-weight: var(--font-weight-normal);") &&
+    !sharedButtonStyles.includes("font-weight: var(--font-weight-medium);"),
+  "Shared buttons must retain normal font weight",
+);
+assert(
+  sharedButtonStyles.includes("color: rgb(var(--color-bg-primary) / 1);"),
+  "Brand buttons must use the primary surface color for their label",
+);
+for (const pathname of sharedButtonStyleFiles) {
+  const styles = read(pathname);
+  const borderDeclarations =
+    styles.match(/^\s*border(?:-(?:color|style|width))?:[^\n]+/gm) ?? [];
+  assert(
+    borderDeclarations.every((declaration) =>
+      /^\s*border:\s*(?:0|none);?\s*$/.test(declaration),
+    ),
+    `Shared button controls must not use physical borders (${pathname})`,
+  );
+}
+assert(
+  sharedButtonStyles.includes("box-shadow: var(--shadow-button-default);"),
+  "Primary and brand buttons must retain the approved quiet shadow",
+);
+assert(
+  sharedButtonStyles.includes("box-shadow: var(--shadow-button-secondary);"),
+  "Secondary buttons must retain the approved outlined shadow",
+);
+assert(
+  sharedButtonStyles.includes(
+    "box-shadow: var(--shadow-button-secondary-hover);",
+  ),
+  "Secondary buttons must retain the approved hover shadow",
+);
+for (const height of ["32px", "38px", "44px"]) {
+  assert(
+    sharedButtonStyles.includes(`--button-height: ${height};`),
+    `Shared buttons must retain the approved ${height} size`,
+  );
+}
+assert(
+  sharedButtonStyles.includes("--button-hit-area-offset: -6px;"),
+  "Compact buttons must preserve a 44px interaction area",
+);
+assert(
+  /\.button-ghost-[a-z0-9]{6}\s*\{[^}]*border-radius:\s*var\(--radius-rounded\);/s.test(
+    sharedButtonStyles,
+  ),
+  "Ghost buttons must explicitly retain the shared pill radius",
+);
+
+const sharedControlStyles = read(
+  "packages/ui/src/system/forms/control.module.css",
+);
+assert(
+  sharedControlStyles.includes("border-radius: var(--radius-sm);"),
+  "Shared form controls must retain the approved field radius",
+);
+assert(
+  !sharedControlStyles.includes("transform:"),
+  "Shared form controls must not move or scale during interaction",
+);
+for (const height of ["32px", "38px", "44px"]) {
+  assert(
+    sharedControlStyles.includes(`--control-height: ${height};`),
+    `Shared form controls must retain the approved ${height} size`,
+  );
+}
+
+assertIncludes(
+  "packages/ui/src/system/authentication/auth-layout.tsx",
+  'data-sw-theme="studio"',
+  "Signed-out authentication surfaces must use the shared studio theme",
+);
+assertIncludes(
+  "packages/ui/src/system/authentication/auth-layout.tsx",
+  "<ShapewebsBrand />",
+  "Signed-out authentication surfaces must use the shared brand component",
+);
+assertIncludes(
+  "packages/ui/src/system/authentication/auth-stage-transition.module.css",
+  "transition: opacity 140ms var(--ease-out-quad);",
+  "Authentication method changes must use the approved opacity-only transition",
+);
+assert(
+  !read(
+    "packages/ui/src/system/authentication/auth-stage-transition.module.css",
+  ).includes("transform:"),
+  "Authentication method changes must not translate or scale content",
+);
+assertIncludes(
+  "packages/ui/src/system/authentication/auth-layout.module.css",
+  "max-width: 320px;",
+  "Compact authentication forms must retain the approved 320px width",
+);
+assert(
+  read(themeFile).match(/--color-bg-brand: 102 121 221;/g)?.length === 5,
+  "Every theme must retain the approved Shapewebs brand color",
+);
+assert(
+  read(themeFile).match(/--color-bg-brand-hover: 89 108 208;/g)?.length === 5,
+  "Every theme must retain the approved darker brand hover color",
+);
+assert(
+  !read(
+    "packages/ui/src/system/navigation/submenu-navigation.module.css",
+  ).includes("font-weight: var(--font-weight-medium);"),
+  "Public navigation items must use normal font weight",
+);
+assertIncludes(
+  "apps/admin/src/components/admin-auth-shell.tsx",
+  "<Authentication.AuthLayout",
+  "Employee authentication pages must use the shared authentication layout",
+);
+assertIncludes(
+  "apps/admin/src/app/(auth)/login/login-form.tsx",
+  "<Authentication.AuthStageTransition",
+  "The unified account login must use the shared staged method transition",
+);
+
+const submenuNavigationStyles = read(
+  "packages/ui/src/system/navigation/submenu-navigation.module.css",
+);
+assert(
+  /\.subnav-trigger-[a-z0-9]{6},\s*\.subnav-direct-[a-z0-9]{6}\s*\{[^}]*border-radius:\s*var\(--radius-rounded\);/s.test(
+    submenuNavigationStyles,
+  ),
+  "Desktop navigation ghost controls must retain the shared pill radius",
+);
+assert(
+  /\.subnav-trigger-[a-z0-9]{6},\s*\.subnav-direct-[a-z0-9]{6}\s*\{[^}]*height:\s*32px;[^}]*min-height:\s*32px;/s.test(
+    submenuNavigationStyles,
+  ),
+  "Desktop navigation controls must match the shared small-button height",
+);
+assert(
+  /\.subnav-trigger-[a-z0-9]{6}::before,\s*\.subnav-direct-[a-z0-9]{6}::before\s*\{[^}]*inset:\s*-6px 0;/s.test(
+    submenuNavigationStyles,
+  ),
+  "Compact desktop navigation controls must preserve a 44px interaction area",
+);
+assert(
+  /\.subnav-mobilelink-[a-z0-9]{6},\s*\.subnav-mobiletrigger-[a-z0-9]{6}\s*\{[^}]*border-radius:\s*var\(--radius-rounded\);/s.test(
+    submenuNavigationStyles,
+  ),
+  "Mobile navigation ghost controls must retain the shared pill radius",
 );
 
 assertIncludes(
@@ -129,8 +318,8 @@ assertIncludes(
 );
 assertIncludes(
   "apps/web/src/components/site/site-header.tsx",
-  "<Buttons.ButtonAnchor",
-  "The header action must use the shared button system",
+  "<Navigation.SubmenuNavigation",
+  "The header must use the shared submenu navigation system",
 );
 assertIncludes(
   "apps/web/src/components/site/site-footer.tsx",
@@ -178,22 +367,8 @@ const applicationSourceFiles = [
     [".css", ".tsx"].includes(extname(pathname)),
   ),
 ];
-const prohibitedCompatibilityReferences = [
-  /var\(--color-/,
-  /var\(--font-(?!family)/,
-  /var\(--system-/,
-  /rgba\(var\(--color-/,
-];
-
 for (const pathname of applicationSourceFiles) {
   const source = read(pathname);
-
-  for (const pattern of prohibitedCompatibilityReferences) {
-    assert(
-      !pattern.test(source),
-      `Application source must use semantic --ui-* tokens directly (${pathname})`,
-    );
-  }
 
   if (pathname.endsWith(".tsx")) {
     assert(
@@ -212,26 +387,17 @@ const applicationCss = applicationSourceFiles.filter((pathname) =>
 const tokenCss = [
   ...listFiles("apps/web/src", (pathname) => pathname.endsWith(".css")),
   ...listFiles("apps/admin/src", (pathname) => pathname.endsWith(".css")),
-  ...listFiles("apps/portal/src", (pathname) => pathname.endsWith(".css")),
   ...listFiles("packages/ui/src", (pathname) => pathname.endsWith(".css")),
 ];
-const customClassPattern = /\.([A-Za-z_][A-Za-z0-9_-]*)/g;
-const shapewebsClassPattern = /^sw-[a-z0-9]+-[a-z0-9]+-[a-z0-9]{6}$/;
+const removedTokenPrefixes = [["--", "sw-"].join(""), ["--", "ui-"].join("")];
 
 for (const pathname of tokenCss) {
-  assert(
-    !read(pathname).includes(["--", "sw-"].join("")),
-    `CSS custom properties must not use the removed Shapewebs prefix (${pathname})`,
-  );
-}
-
-for (const pathname of [...applicationCss, ...sharedUiCss]) {
   const source = read(pathname);
 
-  for (const match of source.matchAll(customClassPattern)) {
+  for (const prefix of removedTokenPrefixes) {
     assert(
-      shapewebsClassPattern.test(match[1]),
-      `Invalid custom class "${match[1]}" in ${pathname}`,
+      !source.includes(prefix),
+      `CSS custom properties must not use removed namespace ${prefix} (${pathname})`,
     );
   }
 }

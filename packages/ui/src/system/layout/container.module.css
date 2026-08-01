@@ -1,21 +1,21 @@
-.sw-container-root-z4k1p7 {
+.container-root-y2z36l {
   width: 100%;
   margin-inline: auto;
-  padding-inline: clamp(var(--ui-space-4), 4vw, var(--ui-system-padding));
+  padding-inline: clamp(var(--space-4), 4vw, var(--system-padding));
 }
 
-.sw-container-copy-a5m2q8 {
-  max-width: calc(var(--ui-content-copy) + (2 * var(--ui-system-padding)));
+.container-copy-2zwjkw {
+  max-width: calc(var(--content-copy) + (2 * var(--system-padding)));
 }
 
-.sw-container-default-b6n3r9 {
-  max-width: calc(var(--ui-content-default) + (2 * var(--ui-system-padding)));
+.container-default-glz8z0 {
+  max-width: calc(var(--content-default) + (2 * var(--system-padding)));
 }
 
-.sw-container-wide-c7p4s1 {
-  max-width: calc(var(--ui-content-width) + (2 * var(--ui-system-padding)));
+.container-wide-ksrwtj {
+  max-width: calc(var(--content-width) + (2 * var(--system-padding)));
 }
 
-.sw-container-full-d8q5t2 {
+.container-full-ns4ftp {
   max-width: none;
 }

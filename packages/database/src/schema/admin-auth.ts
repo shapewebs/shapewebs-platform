@@ -13,11 +13,12 @@ import {
 
 import { authSchema, session, user } from "./auth";
 import { organizations } from "./application";
-import { adminRuntimeRole } from "./roles";
+import { adminRuntimeRole, migratorRole } from "./roles";
 
 const currentOrganizationId = sql`nullif(current_setting('app.organization_id', true), '')::uuid`;
 
 export const adminAuthEmailKind = authSchema.enum("auth_email_kind", [
+  "invitation",
   "email_verification",
   "password_reset",
 ]);
@@ -36,9 +37,10 @@ export const adminAuthEmailOutbox = authSchema.table(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    invitationId: uuid("invitation_id"),
+    userId: text("user_id").references(() => user.id, {
+      onDelete: "cascade",
+    }),
     kind: adminAuthEmailKind("kind").notNull(),
     recipient: text("recipient").notNull(),
     tokenHash: text("token_hash").notNull(),
@@ -55,6 +57,7 @@ export const adminAuthEmailOutbox = authSchema.table(
     lastErrorCode: text("last_error_code"),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -91,6 +94,12 @@ export const adminAuthEmailOutbox = authSchema.table(
       using: sql`${table.organizationId} = ${currentOrganizationId}`,
       withCheck: sql`${table.organizationId} = ${currentOrganizationId}`,
     }),
+    pgPolicy("migrator manages canonical auth email", {
+      for: "all",
+      to: migratorRole,
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ],
 );
 
@@ -115,6 +124,47 @@ export const adminSessionSecurity = authSchema.table(
     index("admin_session_security_user_idx").on(table.userId),
     index("admin_session_security_last_seen_idx").on(table.lastSeenAt),
   ],
+);
+
+export const unifiedCustomerSessionSecurity = authSchema.table(
+  "customer_session_security",
+  {
+    sessionId: text("session_id")
+      .primaryKey()
+      .references(() => session.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("customer_session_security_user_idx").on(table.userId),
+    index("customer_session_security_last_seen_idx").on(table.lastSeenAt),
+  ],
+);
+
+export const legacyCustomerIdentityMap = authSchema.table(
+  "legacy_customer_identity_map",
+  {
+    legacyCustomerUserId: text("legacy_customer_user_id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    migratedAt: timestamp("migrated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("legacy_customer_identity_map_user_idx").on(table.userId)],
 );
 
 export const adminTotpSecurity = authSchema.table(
@@ -144,6 +194,20 @@ export const adminSessionSecurityRelations = relations(
     }),
     user: one(user, {
       fields: [adminSessionSecurity.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const unifiedCustomerSessionSecurityRelations = relations(
+  unifiedCustomerSessionSecurity,
+  ({ one }) => ({
+    session: one(session, {
+      fields: [unifiedCustomerSessionSecurity.sessionId],
+      references: [session.id],
+    }),
+    user: one(user, {
+      fields: [unifiedCustomerSessionSecurity.userId],
       references: [user.id],
     }),
   }),

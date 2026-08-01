@@ -15,10 +15,10 @@ export function ButtonGroup({
   return (
     <div
       className={mergeClassNames(
-        styles["sw-buttongroup-root-a2m7q4"],
+        styles["buttongroup-root-hg59sr"],
         align === "end"
-          ? styles["sw-buttongroup-end-b3n8r5"]
-          : styles["sw-buttongroup-start-c4p9s6"],
+          ? styles["buttongroup-end-ix8dho"]
+          : styles["buttongroup-start-yeub3j"],
         className,
       )}
       data-component-status="styled"

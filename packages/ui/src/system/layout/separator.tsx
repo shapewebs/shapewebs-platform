@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Separator = createStyledComponent(
   "hr",
-  styles["sw-separator-root-8thbjk"],
+  styles["separator-root-30vaz6"],
 );

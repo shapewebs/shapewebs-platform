@@ -1,4 +1,4 @@
-.sw-spinner-root-d9q5t2 {
+.spinner-root-19eyax {
   --spinner-size: 24px;
   display: inline-flex;
   position: relative;
@@ -10,7 +10,7 @@
   color: currentColor;
 }
 
-.sw-spinner-icon-e1r6v3 {
+.spinner-icon-qgt7pw {
   width: 100%;
   height: 100%;
   animation: sw-spinner-rotate 720ms linear infinite;
@@ -18,55 +18,55 @@
   transform-origin: center;
 }
 
-.sw-spinner-small-z5k1p7 {
+.spinner-small-c2t9ko {
   --spinner-size: 16px;
 }
 
-.sw-spinner-medium-c8p4s1 {
+.spinner-medium-3z6qhn {
   --spinner-size: 24px;
 }
 
-.sw-spinner-large-a6m2q8 {
+.spinner-large-dl73u5 {
   --spinner-size: 32px;
 }
 
-.sw-spinner-xlarge-b7n3r9 {
+.spinner-xlarge-mhuugu {
   --spinner-size: 44px;
 }
 
-.sw-spinner-current-t9e5h2 {
+.spinner-current-8scmdu {
   color: currentColor;
 }
 
-.sw-spinner-accent-v1f6j3 {
-  color: rgb(var(--ui-color-feedback-accent) / 1);
+.spinner-accent-zvu555 {
+  color: rgb(var(--color-feedback-accent) / 1);
 }
 
-.sw-spinner-success-w2g7k4 {
-  color: rgb(var(--ui-color-feedback-success) / 1);
+.spinner-success-qdeuli {
+  color: rgb(var(--color-feedback-success) / 1);
 }
 
-.sw-spinner-warning-x3h8m5 {
-  color: rgb(var(--ui-color-feedback-warning) / 1);
+.spinner-warning-v18gah {
+  color: rgb(var(--color-feedback-warning) / 1);
 }
 
-.sw-spinner-danger-y4j9n6 {
-  color: rgb(var(--ui-color-feedback-danger) / 1);
+.spinner-danger-gbnwo3 {
+  color: rgb(var(--color-feedback-danger) / 1);
 }
 
-.sw-spinner-track-f2s7w4 {
+.spinner-track-ic069b {
   stroke: currentColor;
   stroke-width: 2;
   opacity: 0.2;
 }
 
-.sw-spinner-arc-g3t8x5 {
+.spinner-arc-hah2od {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-width: 2;
 }
 
-.sw-spinner-label-h4v9y6 {
+.spinner-label-l5zn1u {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -89,17 +89,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sw-spinner-icon-e1r6v3 {
+  .spinner-icon-qgt7pw {
     animation: none;
   }
 }
 
 @media (forced-colors: active) {
-  .sw-spinner-track-f2s7w4 {
+  .spinner-track-ic069b {
     stroke: GrayText;
   }
 
-  .sw-spinner-arc-g3t8x5 {
+  .spinner-arc-hah2od {
     stroke: CanvasText;
   }
 }

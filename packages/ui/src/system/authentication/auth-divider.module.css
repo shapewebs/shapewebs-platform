@@ -1,0 +1,19 @@
+.authdivider-root-vaugpe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+}
+
+.authdivider-root-vaugpe::before,
+.authdivider-root-vaugpe::after {
+  height: 1px;
+  background: rgb(var(--color-border-primary) / 1);
+  content: "";
+}
+
+.authdivider-label-25lhmn {
+  line-height: 1;
+}

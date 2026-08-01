@@ -10,19 +10,19 @@ export type StackProps = HTMLAttributes<HTMLDivElement> & {
 function getGapClass(gap: NonNullable<StackProps["gap"]>) {
   switch (gap) {
     case 2:
-      return styles["sw-stack-gap2-f1s7w4"];
+      return styles["stack-gap2-p7k7s0"];
     case 3:
-      return styles["sw-stack-gap3-g2t8x5"];
+      return styles["stack-gap3-7jajgv"];
     case 5:
-      return styles["sw-stack-gap5-j4w1z7"];
+      return styles["stack-gap5-a8wi33"];
     case 6:
-      return styles["sw-stack-gap6-k5x2a8"];
+      return styles["stack-gap6-j4m2d3"];
     case 7:
-      return styles["sw-stack-gap7-m6y3b9"];
+      return styles["stack-gap7-acbvhb"];
     case 8:
-      return styles["sw-stack-gap8-n7z4c1"];
+      return styles["stack-gap8-j6xydf"];
     default:
-      return styles["sw-stack-gap4-h3v9y6"];
+      return styles["stack-gap4-46we4c"];
   }
 }
 
@@ -30,7 +30,7 @@ export function Stack({ className, gap = 4, ...props }: StackProps) {
   return (
     <div
       className={mergeClassNames(
-        styles["sw-stack-root-e9r6v3"],
+        styles["stack-root-obiaf3"],
         getGapClass(gap),
         className,
       )}

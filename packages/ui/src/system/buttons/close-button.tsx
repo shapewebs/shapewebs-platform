@@ -19,17 +19,14 @@ export function CloseButton({
   return (
     <button
       aria-label={label}
-      className={mergeClassNames(
-        styles["sw-closebutton-root-d5q1t7"],
-        className,
-      )}
+      className={mergeClassNames(styles["closebutton-root-pjkubp"], className)}
       data-component-status="styled"
       type={type}
       {...props}
     >
       <svg
         aria-hidden="true"
-        className={styles["sw-closebutton-icon-e6r2v8"]}
+        className={styles["closebutton-icon-g5oyjx"]}
         viewBox="0 0 20 20"
       >
         <path d="m5 5 10 10M15 5 5 15" />

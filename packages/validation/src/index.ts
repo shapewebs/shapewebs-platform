@@ -172,12 +172,16 @@ const notificationMailboxSchema = z
   }, "Must be one valid email mailbox.");
 
 const sharedEnvSchema = z.object({
+  ACCOUNT_TURNSTILE_EXPECTED_HOSTNAME: z.string().min(1).optional(),
+  ACCOUNT_TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  ACCOUNT_TURNSTILE_TEST_MODE: z.enum(["true", "false"]).optional(),
   ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET: z.string().min(32).optional(),
   ADMIN_EDITOR_EMAILS: z.string().min(3).optional(),
   ADMIN_OWNER_EMAILS: z.string().min(3).optional(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.url().optional(),
   CRON_SECRET: z.string().min(32).optional(),
+  CUSTOMER_DATABASE_URL: z.string().min(1).optional(),
   DATABASE_URL: z.string().min(1).optional(),
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
@@ -193,27 +197,13 @@ const sharedEnvSchema = z.object({
     .optional(),
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
   NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
+  NEXT_PUBLIC_ACCOUNT_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   SYNTHETIC_RETENTION_SECRET: z.string().min(32).optional(),
   PREVIEW_TOKEN_SECRET: z.string().min(32).optional(),
-  PORTAL_BETTER_AUTH_SECRET: z.string().min(32).optional(),
-  PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET: z.string().min(32).optional(),
-  PORTAL_AUTH_EMAIL_FROM: notificationMailboxSchema.optional(),
-  PORTAL_BETTER_AUTH_TRUSTED_ORIGINS: z.string().min(1).optional(),
-  PORTAL_BETTER_AUTH_URL: z.url().optional(),
-  PORTAL_DATABASE_URL: z.string().min(1).optional(),
-  PORTAL_CRON_SECRET: z.string().min(32).optional(),
-  PORTAL_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  PORTAL_GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-  PORTAL_RESEND_API_KEY: z.string().min(1).optional(),
-  PORTAL_TURNSTILE_EXPECTED_HOSTNAME: z.string().min(1).optional(),
-  PORTAL_TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
-  PORTAL_TURNSTILE_TEST_MODE: z.enum(["true", "false"]).optional(),
-  NEXT_PUBLIC_PORTAL_URL: z.url().optional(),
-  NEXT_PUBLIC_PORTAL_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   REVALIDATION_WEBHOOK_SECRET: z.string().min(32).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
@@ -241,12 +231,16 @@ export const webEnvSchema = sharedEnvSchema.pick({
 });
 
 export const adminEnvSchema = sharedEnvSchema.pick({
+  ACCOUNT_TURNSTILE_EXPECTED_HOSTNAME: true,
+  ACCOUNT_TURNSTILE_SECRET_KEY: true,
+  ACCOUNT_TURNSTILE_TEST_MODE: true,
   ADMIN_AUTH_EMAIL_ENCRYPTION_SECRET: true,
   ADMIN_EDITOR_EMAILS: true,
   ADMIN_OWNER_EMAILS: true,
   BETTER_AUTH_SECRET: true,
   BETTER_AUTH_URL: true,
   CRON_SECRET: true,
+  CUSTOMER_DATABASE_URL: true,
   DATABASE_URL: true,
   GOOGLE_CLIENT_ID: true,
   GOOGLE_CLIENT_SECRET: true,
@@ -254,36 +248,16 @@ export const adminEnvSchema = sharedEnvSchema.pick({
   LEAD_NOTIFICATION_TO_EMAIL: true,
   MEDIA_PRIVATE_BLOB_STORE_ID: true,
   NEXT_PUBLIC_ADMIN_URL: true,
+  NEXT_PUBLIC_ACCOUNT_TURNSTILE_SITE_KEY: true,
   NEXT_PUBLIC_SITE_URL: true,
   NEXT_PUBLIC_SUPABASE_URL: true,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: true,
   SUPABASE_SERVICE_ROLE_KEY: true,
   SYNTHETIC_RETENTION_SECRET: true,
   PREVIEW_TOKEN_SECRET: true,
-  PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET: true,
   REVALIDATION_WEBHOOK_SECRET: true,
   RESEND_API_KEY: true,
   RESEND_WEBHOOK_SECRET: true,
-  SHAPEWEBS_ORGANIZATION_ID: true,
-  SENTRY_DSN: true,
-});
-
-export const portalEnvSchema = sharedEnvSchema.pick({
-  NEXT_PUBLIC_PORTAL_URL: true,
-  NEXT_PUBLIC_PORTAL_TURNSTILE_SITE_KEY: true,
-  PORTAL_AUTH_EMAIL_ENCRYPTION_SECRET: true,
-  PORTAL_AUTH_EMAIL_FROM: true,
-  PORTAL_BETTER_AUTH_SECRET: true,
-  PORTAL_BETTER_AUTH_TRUSTED_ORIGINS: true,
-  PORTAL_BETTER_AUTH_URL: true,
-  PORTAL_DATABASE_URL: true,
-  PORTAL_CRON_SECRET: true,
-  PORTAL_GOOGLE_CLIENT_ID: true,
-  PORTAL_GOOGLE_CLIENT_SECRET: true,
-  PORTAL_RESEND_API_KEY: true,
-  PORTAL_TURNSTILE_EXPECTED_HOSTNAME: true,
-  PORTAL_TURNSTILE_SECRET_KEY: true,
-  PORTAL_TURNSTILE_TEST_MODE: true,
   SHAPEWEBS_ORGANIZATION_ID: true,
   SENTRY_DSN: true,
 });
@@ -308,12 +282,6 @@ export function parseAdminEnv(
   env: Record<string, string | undefined> = process.env,
 ) {
   return adminEnvSchema.parse(stripEmptyValues(env));
-}
-
-export function parsePortalEnv(
-  env: Record<string, string | undefined> = process.env,
-) {
-  return portalEnvSchema.parse(stripEmptyValues(env));
 }
 
 export function parseServerEnv(

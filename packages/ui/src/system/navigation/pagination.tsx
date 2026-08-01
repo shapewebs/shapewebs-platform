@@ -3,5 +3,5 @@ import { createStyledComponent } from "../_internal/create-styled-component";
 
 export const Pagination = createStyledComponent(
   "nav",
-  styles["sw-pagination-root-yfin0h"],
+  styles["pagination-root-gp8ppa"],
 );

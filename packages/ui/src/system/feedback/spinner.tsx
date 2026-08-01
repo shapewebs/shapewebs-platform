@@ -7,6 +7,7 @@ export type SpinnerProps = Omit<
   HTMLAttributes<HTMLDivElement>,
   "children" | "color"
 > & {
+  announce?: boolean;
   color?: "current" | "accent" | "success" | "warning" | "danger";
   label?: string;
   size?: "sm" | "md" | "lg" | "xl";
@@ -15,71 +16,75 @@ export type SpinnerProps = Omit<
 function getColorClass(color: NonNullable<SpinnerProps["color"]>) {
   switch (color) {
     case "accent":
-      return styles["sw-spinner-accent-v1f6j3"];
+      return styles["spinner-accent-zvu555"];
     case "success":
-      return styles["sw-spinner-success-w2g7k4"];
+      return styles["spinner-success-qdeuli"];
     case "warning":
-      return styles["sw-spinner-warning-x3h8m5"];
+      return styles["spinner-warning-v18gah"];
     case "danger":
-      return styles["sw-spinner-danger-y4j9n6"];
+      return styles["spinner-danger-gbnwo3"];
     default:
-      return styles["sw-spinner-current-t9e5h2"];
+      return styles["spinner-current-8scmdu"];
   }
 }
 
 function getSizeClass(size: NonNullable<SpinnerProps["size"]>) {
   switch (size) {
     case "sm":
-      return styles["sw-spinner-small-z5k1p7"];
+      return styles["spinner-small-c2t9ko"];
     case "lg":
-      return styles["sw-spinner-large-a6m2q8"];
+      return styles["spinner-large-dl73u5"];
     case "xl":
-      return styles["sw-spinner-xlarge-b7n3r9"];
+      return styles["spinner-xlarge-mhuugu"];
     default:
-      return styles["sw-spinner-medium-c8p4s1"];
+      return styles["spinner-medium-3z6qhn"];
   }
 }
 
 export function Spinner({
+  announce = true,
   className,
   color = "current",
   label = "Loading",
-  role = "status",
+  role,
   size = "md",
   ...props
 }: SpinnerProps) {
   return (
     <div
-      aria-live="polite"
+      aria-hidden={announce ? undefined : true}
+      aria-live={announce ? "polite" : undefined}
       className={mergeClassNames(
-        styles["sw-spinner-root-d9q5t2"],
+        styles["spinner-root-19eyax"],
         getColorClass(color),
         getSizeClass(size),
         className,
       )}
       data-component-status="styled"
       data-slot="spinner"
-      role={role}
+      role={role ?? (announce ? "status" : undefined)}
       {...props}
     >
       <svg
         aria-hidden="true"
-        className={styles["sw-spinner-icon-e1r6v3"]}
+        className={styles["spinner-icon-qgt7pw"]}
         data-slot="spinner-icon"
         viewBox="0 0 24 24"
       >
         <circle
-          className={styles["sw-spinner-track-f2s7w4"]}
+          className={styles["spinner-track-ic069b"]}
           cx="12"
           cy="12"
           r="9"
         />
         <path
-          className={styles["sw-spinner-arc-g3t8x5"]}
+          className={styles["spinner-arc-hah2od"]}
           d="M12 3a9 9 0 0 1 9 9"
         />
       </svg>
-      <span className={styles["sw-spinner-label-h4v9y6"]}>{label}</span>
+      {announce ? (
+        <span className={styles["spinner-label-l5zn1u"]}>{label}</span>
+      ) : null}
     </div>
   );
 }
