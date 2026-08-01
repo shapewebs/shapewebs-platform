@@ -1,5 +1,7 @@
 import type { ContentBlock, ContentDocument } from "@shapewebs/content-schema";
-import { Buttons, Layout } from "@shapewebs/ui";
+import { ButtonLink } from "@shapewebs/ui/button-link";
+import { Card } from "@shapewebs/ui/card";
+import { Surface } from "@shapewebs/ui/surface";
 
 import styles from "./content-renderer.module.css";
 
@@ -70,12 +72,9 @@ export function ContentRenderer({ document }: ContentRendererProps) {
                 <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
               ) : null}
               {block.primaryCtaHref && block.primaryCtaLabel ? (
-                <Buttons.ButtonLink
-                  href={block.primaryCtaHref}
-                  kind="secondary"
-                >
+                <ButtonLink href={block.primaryCtaHref} kind="secondary">
                   {block.primaryCtaLabel}
-                </Buttons.ButtonLink>
+                </ButtonLink>
               ) : null}
             </section>
           );
@@ -98,15 +97,13 @@ export function ContentRenderer({ document }: ContentRendererProps) {
               className={styles["renderer-section-smy3lo"]}
               key={`cta-${index}`}
             >
-              <Layout.Surface className={styles["renderer-ctapanel-ph5l63"]}>
+              <Surface className={styles["renderer-ctapanel-ph5l63"]}>
                 <h2>{block.heading}</h2>
                 {block.body ? (
                   <p className={styles["renderer-body-xcdqqj"]}>{block.body}</p>
                 ) : null}
-                <Buttons.ButtonLink href={block.href}>
-                  {block.label}
-                </Buttons.ButtonLink>
-              </Layout.Surface>
+                <ButtonLink href={block.href}>{block.label}</ButtonLink>
+              </Surface>
             </section>
           );
         }
@@ -120,7 +117,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
               {block.heading ? <h2>{block.heading}</h2> : null}
               <div className={styles["renderer-faqlist-hkpmio"]}>
                 {block.items.map((item, itemIndex) => (
-                  <Layout.Card
+                  <Card
                     className={styles["renderer-faqitem-vjwww2"]}
                     key={`faq-item-${itemIndex}`}
                   >
@@ -140,7 +137,7 @@ export function ContentRenderer({ document }: ContentRendererProps) {
                         ) : null}
                       </div>
                     ))}
-                  </Layout.Card>
+                  </Card>
                 ))}
               </div>
             </section>
@@ -153,12 +150,12 @@ export function ContentRenderer({ document }: ContentRendererProps) {
               className={styles["renderer-section-smy3lo"]}
               key={`image-${index}`}
             >
-              <Layout.Surface
+              <Surface
                 className={styles["renderer-image-xq8c66"]}
                 level="sunken"
               >
                 Media pipeline pending for asset <code>{block.assetId}</code>.
-              </Layout.Surface>
+              </Surface>
               {block.caption ? (
                 <p className={styles["renderer-caption-sr5qta"]}>
                   {block.caption}

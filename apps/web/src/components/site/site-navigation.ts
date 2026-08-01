@@ -1,5 +1,5 @@
 import { siteConfig } from "@shapewebs/config";
-import type { Navigation } from "@shapewebs/ui";
+import type { SubmenuNavigationItem } from "@shapewebs/ui/submenu-navigation";
 
 export type FooterLink = Readonly<{
   href: string;
@@ -165,7 +165,7 @@ export const primaryNavigation = [
     label: "Book a call",
     presentation: "action",
   },
-] as const satisfies readonly Navigation.SubmenuNavigationItem[];
+] as const satisfies readonly SubmenuNavigationItem[];
 
 export const footerColumns = [
   {

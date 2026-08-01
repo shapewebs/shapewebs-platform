@@ -70,7 +70,7 @@ source, and lifecycle restore—were deleted after the successful run.
 
 After the account applications were consolidated, the current branch passed:
 
-- canonical `pnpm verify`, including 229 unit tests, 95.23% function coverage,
+- canonical `pnpm verify`, including 231 unit tests, 95.23% function coverage,
   lint, strict TypeScript, dependency/cycle analysis, audit, client/server
   boundary enforcement and deterministic Better Auth/Drizzle generation;
 - the 404 globally unique class-name contracts across 105 CSS Modules and the
@@ -81,8 +81,16 @@ After the account applications were consolidated, the current branch passed:
   runtime-artifact verification;
 - all 32 Playwright interaction, fail-closed security, responsive-layout and
   automated WCAG A/AA scenarios; and
-- three Lighthouse runs against the production build plus the 253-control ASVS
-  launch gate.
+- three Lighthouse runs against the production build, each scoring 98 for
+  performance and 100 for accessibility, best practices, and SEO, with
+  164,579 bytes of initial script and 202,611 bytes of total transfer; and
+- the 253-control ASVS launch gate.
+
+The public bundle uses explicit per-component UI entry points. The search
+dialog and its destination index cross a first-interaction loading boundary,
+while the immediately visible Search control stays in the initial render. This
+prevents the empty homepage from downloading unrelated design-system families
+or dormant search behavior.
 
 The exact staging-only k6 and ZAP checks remain pending until the reviewed
 commit has deployed to the allowlisted fixed staging origins. Their credentials

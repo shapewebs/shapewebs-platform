@@ -11,8 +11,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { Button } from "../buttons/button";
 import { ButtonLink } from "../buttons/button-link";
+import { ButtonControl } from "../buttons/button-control";
 import { mergeClassNames } from "../_internal/merge-class-names";
 import { Link } from "./link";
 import styles from "./submenu-navigation.module.css";
@@ -573,7 +573,7 @@ export function SubmenuNavigation({
       </nav>
 
       <div className={styles["subnav-mobile-7ksb9f"]}>
-        <Button
+        <ButtonControl
           aria-controls={mobilePanelId}
           aria-expanded={mobileOpen}
           className={styles["subnav-toggle-vh8hvw"]}
@@ -591,7 +591,7 @@ export function SubmenuNavigation({
           }
         >
           {mobileMenuLabel}
-        </Button>
+        </ButtonControl>
         <div
           aria-hidden={!mobileOpen}
           className={styles["subnav-drawer-u0d8ch"]}
@@ -673,7 +673,7 @@ export function SubmenuNavigation({
                     className={styles["subnav-mobileitem-4mrier"]}
                     key={item.id}
                   >
-                    <Button
+                    <ButtonControl
                       aria-controls={disclosureId}
                       aria-expanded={expanded}
                       className={styles["subnav-mobiletrigger-w0uib0"]}
@@ -687,7 +687,7 @@ export function SubmenuNavigation({
                       }
                     >
                       {item.label}
-                    </Button>
+                    </ButtonControl>
                     <div
                       aria-hidden={!expanded}
                       className={styles["subnav-mobilecontent-tm314e"]}

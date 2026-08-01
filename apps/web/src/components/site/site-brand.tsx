@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { Brand, mergeClassNames } from "@shapewebs/ui";
+import { mergeClassNames } from "@shapewebs/ui/merge-class-names";
+import { ShapewebsBrand } from "@shapewebs/ui/shapewebs-brand";
 
 import styles from "./site-brand.module.css";
 
@@ -21,7 +22,7 @@ export function SiteBrand({ className, compact = false }: SiteBrandProps) {
       href="/"
       prefetch={false}
     >
-      <Brand.ShapewebsBrand compact={compact} />
+      <ShapewebsBrand compact={compact} />
     </Link>
   );
 }

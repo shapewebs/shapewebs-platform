@@ -1,61 +1,22 @@
 "use client";
 
-import { Buttons, Navigation } from "@shapewebs/ui";
-import { useEffect, useId, useRef, useState } from "react";
+import { ButtonControl } from "@shapewebs/ui/button-control";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 
 import styles from "./site-search.module.css";
 
-const searchDestinations = [
-  {
-    category: "Services",
-    href: "/services/website-design",
-    label: "Website design",
-  },
-  {
-    category: "Services",
-    href: "/services/nextjs-development",
-    label: "Next.js development",
-  },
-  { category: "Work", href: "/projects", label: "Selected work" },
-  { category: "Studio", href: "/journal", label: "Journal" },
-  { category: "Studio", href: "/process", label: "Process" },
-  { category: "Connect", href: "/contact", label: "Contact" },
-] as const;
-
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <circle cx="7" cy="7" fill="none" r="4.25" stroke="currentColor" />
-      <path
-        d="m10.25 10.25 3 3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+const SiteSearchPanel = lazy(() => import("./site-search-panel"));
 
 export function SiteSearch() {
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
+  const [hasOpened, setHasOpened] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const results = normalizedQuery
-    ? searchDestinations.filter(({ category, label }) =>
-        `${category} ${label}`.toLocaleLowerCase().includes(normalizedQuery),
-      )
-    : searchDestinations;
 
   useEffect(() => {
     if (!searchOpen) {
       return;
     }
-
-    const focusFrame = requestAnimationFrame(() => inputRef.current?.focus());
 
     function handleOutsidePointerDown(event: PointerEvent) {
       if (
@@ -68,11 +29,17 @@ export function SiteSearch() {
 
     document.addEventListener("pointerdown", handleOutsidePointerDown);
 
-    return () => {
-      cancelAnimationFrame(focusFrame);
+    return () =>
       document.removeEventListener("pointerdown", handleOutsidePointerDown);
-    };
   }, [searchOpen]);
+
+  function toggleSearch() {
+    if (!searchOpen) {
+      setHasOpened(true);
+    }
+
+    setSearchOpen(!searchOpen);
+  }
 
   return (
     <div
@@ -85,79 +52,27 @@ export function SiteSearch() {
       }}
       ref={rootRef}
     >
-      <Buttons.Button
+      <ButtonControl
         aria-controls={panelId}
         aria-expanded={searchOpen}
         aria-haspopup="dialog"
         className={styles["sitesearch-trigger-64yddp"]}
         kind="ghost"
-        onClick={() => setSearchOpen((open) => !open)}
+        onClick={toggleSearch}
         size="small"
       >
         Search
-      </Buttons.Button>
+      </ButtonControl>
 
-      <div
-        aria-hidden={!searchOpen}
-        aria-label="Site search"
-        className={styles["sitesearch-panel-zlfxw1"]}
-        data-state={searchOpen ? "open" : "closed"}
-        id={panelId}
-        inert={!searchOpen}
-        role="dialog"
-      >
-        <form
-          className={styles["sitesearch-form-pyra1q"]}
-          onSubmit={(event) => event.preventDefault()}
-          role="search"
-        >
-          <div className={styles["sitesearch-inputrow-agw24s"]}>
-            <span className={styles["sitesearch-icon-6qt758"]}>
-              <SearchIcon />
-            </span>
-            <input
-              aria-label="Search Shapewebs"
-              className={styles["sitesearch-input-8pz354"]}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search Shapewebs"
-              ref={inputRef}
-              type="search"
-              value={query}
-            />
-          </div>
-        </form>
-
-        <p className={styles["sitesearch-eyebrow-0yyd2h"]}>
-          {query ? "Results" : "Quick access"}
-        </p>
-        {results.length > 0 ? (
-          <ul className={styles["sitesearch-results-syg9p2"]} role="list">
-            {results.map((result) => (
-              <li key={result.href}>
-                <Navigation.Link
-                  className={styles["sitesearch-result-ngs0gq"]}
-                  href={result.href}
-                  onClick={() => setSearchOpen(false)}
-                  underline="none"
-                >
-                  <span className={styles["sitesearch-resultcopy-v8j6x2"]}>
-                    <strong className={styles["sitesearch-resultlabel-f2orbc"]}>
-                      {result.label}
-                    </strong>
-                    <small className={styles["sitesearch-resultmeta-s0jxu1"]}>
-                      {result.category}
-                    </small>
-                  </span>
-                </Navigation.Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className={styles["sitesearch-empty-5k78v4"]}>
-            No matching pages yet.
-          </p>
-        )}
-      </div>
+      {hasOpened ? (
+        <Suspense fallback={null}>
+          <SiteSearchPanel
+            onClose={() => setSearchOpen(false)}
+            open={searchOpen}
+            panelId={panelId}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

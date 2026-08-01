@@ -1,4 +1,5 @@
-import { Layout, Navigation } from "@shapewebs/ui";
+import { Container } from "@shapewebs/ui/container";
+import { Link } from "@shapewebs/ui/link";
 
 import { SiteBrand } from "./site-brand";
 import styles from "./site-footer.module.css";
@@ -15,19 +16,16 @@ function FooterNavigationLink({ href, label }: FooterLink) {
   }
 
   return (
-    <Navigation.Link href={href} underline="none">
+    <Link href={href} underline="none">
       {label}
-    </Navigation.Link>
+    </Link>
   );
 }
 
 export function SiteFooter() {
   return (
     <footer className={styles["footer-shell-zgc15z"]}>
-      <Layout.Container
-        className={styles["footer-container-qb1175"]}
-        size="wide"
-      >
+      <Container className={styles["footer-container-qb1175"]} size="wide">
         <div className={styles["footer-grid-9417rb"]}>
           <div className={styles["footer-brand-1td1xu"]}>
             <SiteBrand />
@@ -73,7 +71,7 @@ export function SiteFooter() {
             ))}
           </ul>
         </div>
-      </Layout.Container>
+      </Container>
     </footer>
   );
 }

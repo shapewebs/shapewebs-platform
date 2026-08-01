@@ -223,6 +223,7 @@ describe("visual foundation components", () => {
     expect(componentRegistry.buttons).toMatchObject({
       Button: "styled",
       ButtonAnchor: "styled",
+      ButtonControl: "styled",
       ButtonGroup: "styled",
       ButtonLink: "styled",
       CloseButton: "styled",

@@ -1,19 +1,11 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Spinner } from "../feedback/spinner";
-import {
-  buttonContentClassName,
-  getButtonClassName,
-  type ButtonKind,
-  type ButtonSize,
-} from "./button-styles";
+import { ButtonControl, type ButtonControlProps } from "./button-control";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  kind?: ButtonKind;
+export type ButtonProps = ButtonControlProps & {
   leadingIcon?: ReactNode;
   pending?: boolean;
   pendingLabel?: string;
-  size?: ButtonSize;
-  trailingIcon?: ReactNode;
 };
 
 export function Button({
@@ -21,30 +13,23 @@ export function Button({
   children,
   className,
   disabled,
-  kind = "primary",
   leadingIcon,
   pending = false,
   pendingLabel = "Processing",
-  size = "medium",
-  trailingIcon,
-  type = "button",
   ...props
 }: ButtonProps) {
   return (
-    <button
+    <ButtonControl
       aria-busy={pending || undefined}
       aria-label={pending ? pendingLabel : ariaLabel}
-      className={getButtonClassName(kind, size, className)}
-      data-component-status="styled"
+      className={className}
       disabled={disabled || pending}
-      type={type}
+      leadingIcon={
+        pending ? <Spinner announce={false} size="sm" /> : leadingIcon
+      }
       {...props}
     >
-      <span className={buttonContentClassName}>
-        {pending ? <Spinner announce={false} size="sm" /> : leadingIcon}
-        {children}
-        {trailingIcon}
-      </span>
-    </button>
+      {children}
+    </ButtonControl>
   );
 }

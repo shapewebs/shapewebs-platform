@@ -313,22 +313,22 @@ assertIncludes(
 );
 assertIncludes(
   "apps/web/src/components/site/site-header.tsx",
-  "<Layout.Container",
+  'from "@shapewebs/ui/container"',
   "The header must use shared layout primitives",
 );
 assertIncludes(
   "apps/web/src/components/site/site-header.tsx",
-  "<Navigation.SubmenuNavigation",
+  'from "@shapewebs/ui/submenu-navigation"',
   "The header must use the shared submenu navigation system",
 );
 assertIncludes(
   "apps/web/src/components/site/site-footer.tsx",
-  "<Layout.Container",
+  'from "@shapewebs/ui/container"',
   "The footer must use shared layout primitives",
 );
 assertIncludes(
   "apps/web/src/components/site/site-brand.tsx",
-  "<Brand.ShapewebsBrand",
+  'from "@shapewebs/ui/shapewebs-brand"',
   "Header and footer branding must use the shared brand component",
 );
 

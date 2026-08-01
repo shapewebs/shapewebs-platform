@@ -1,7 +1,7 @@
 "use client";
 
-import { Buttons } from "@shapewebs/ui";
-import { useEffect, useSyncExternalStore } from "react";
+import { ButtonControl } from "@shapewebs/ui/button-control";
+import { useEffect, useState } from "react";
 
 import styles from "./site-theme-selector.module.css";
 
@@ -10,7 +10,6 @@ type ThemePreference = ColorScheme | "system";
 
 const themeStorageKey = "shapewebs-theme-preference";
 const legacyThemeStorageKey = "shapewebs-color-scheme";
-const themeChangeEvent = "shapewebs-theme-preference-change";
 const systemThemeQuery = "(prefers-color-scheme: dark)";
 
 const themeOptions = [
@@ -71,7 +70,7 @@ function MoonIcon() {
   );
 }
 
-function getThemePreferenceSnapshot(): ThemePreference {
+function readThemePreference(): ThemePreference {
   const storedPreference = window.localStorage.getItem(themeStorageKey);
 
   if (
@@ -87,34 +86,6 @@ function getThemePreferenceSnapshot(): ThemePreference {
   return legacyPreference === "light" || legacyPreference === "dark"
     ? legacyPreference
     : "dark";
-}
-
-function subscribeToThemePreference(onStoreChange: () => void) {
-  function handleStorage(event: StorageEvent) {
-    if (event.key === themeStorageKey || event.key === legacyThemeStorageKey) {
-      onStoreChange();
-    }
-  }
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(themeChangeEvent, onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(themeChangeEvent, onStoreChange);
-  };
-}
-
-function getSystemColorSchemeSnapshot(): ColorScheme {
-  return window.matchMedia(systemThemeQuery).matches ? "dark" : "light";
-}
-
-function subscribeToSystemColorScheme(onStoreChange: () => void) {
-  const mediaQuery = window.matchMedia(systemThemeQuery);
-
-  mediaQuery.addEventListener("change", onStoreChange);
-
-  return () => mediaQuery.removeEventListener("change", onStoreChange);
 }
 
 function applyThemePreference(
@@ -143,26 +114,46 @@ function ThemeOptionIcon({
 }
 
 export function SiteThemeSelector() {
-  const preference = useSyncExternalStore<ThemePreference>(
-    subscribeToThemePreference,
-    getThemePreferenceSnapshot,
-    (): ThemePreference => "dark",
-  );
-  const systemColorScheme = useSyncExternalStore<ColorScheme>(
-    subscribeToSystemColorScheme,
-    getSystemColorSchemeSnapshot,
-    (): ColorScheme => "dark",
-  );
+  const [preference, setPreference] = useState<ThemePreference>("dark");
 
   useEffect(() => {
-    applyThemePreference(preference, systemColorScheme);
-  }, [preference, systemColorScheme]);
+    const mediaQuery = window.matchMedia(systemThemeQuery);
+
+    function syncTheme() {
+      const nextPreference = readThemePreference();
+      const systemColorScheme = mediaQuery.matches ? "dark" : "light";
+
+      setPreference(nextPreference);
+      applyThemePreference(nextPreference, systemColorScheme);
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (
+        event.key === themeStorageKey ||
+        event.key === legacyThemeStorageKey
+      ) {
+        syncTheme();
+      }
+    }
+
+    syncTheme();
+    mediaQuery.addEventListener("change", syncTheme);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncTheme);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   function selectTheme(nextPreference: ThemePreference) {
-    applyThemePreference(nextPreference, systemColorScheme);
+    setPreference(nextPreference);
+    applyThemePreference(
+      nextPreference,
+      window.matchMedia(systemThemeQuery).matches ? "dark" : "light",
+    );
     window.localStorage.setItem(themeStorageKey, nextPreference);
     window.localStorage.removeItem(legacyThemeStorageKey);
-    window.dispatchEvent(new Event(themeChangeEvent));
   }
 
   return (
@@ -174,7 +165,7 @@ export function SiteThemeSelector() {
         role="radiogroup"
       >
         {themeOptions.map((option) => (
-          <Buttons.Button
+          <ButtonControl
             aria-checked={preference === option.value}
             aria-label={option.label}
             className={styles["themeselector-option-yy1zba"]}
@@ -191,7 +182,7 @@ export function SiteThemeSelector() {
             <span className={styles["themeselector-optionlabel-devnhd"]}>
               {option.label}
             </span>
-          </Buttons.Button>
+          </ButtonControl>
         ))}
       </div>
     </div>

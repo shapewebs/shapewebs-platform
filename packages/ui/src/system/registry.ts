@@ -17,6 +17,7 @@ export const componentRegistry = {
   buttons: {
     Button: "styled",
     ButtonAnchor: "styled",
+    ButtonControl: "styled",
     ButtonLink: "styled",
     ButtonGroup: "styled",
     CloseButton: "styled",

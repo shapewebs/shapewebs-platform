@@ -1,4 +1,4 @@
-import { Buttons } from "@shapewebs/ui";
+import { Button } from "@shapewebs/ui/button";
 
 import styles from "./preview-shell.module.css";
 
@@ -15,9 +15,9 @@ export function PreviewShell({ children }: PreviewShellProps) {
       >
         <span>Private CMS preview</span>
         <form action="/api/preview/exit" method="post">
-          <Buttons.Button kind="secondary" size="small" type="submit">
+          <Button kind="secondary" size="small" type="submit">
             Exit preview
-          </Buttons.Button>
+          </Button>
         </form>
       </aside>
       <main className={styles["preview-main-l19ng4"]}>{children}</main>

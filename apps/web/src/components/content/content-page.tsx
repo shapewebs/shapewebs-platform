@@ -1,5 +1,6 @@
 import type { PublishedDocument } from "@shapewebs/database/server";
-import { Layout, Navigation } from "@shapewebs/ui";
+import { Container } from "@shapewebs/ui/container";
+import { Link } from "@shapewebs/ui/link";
 
 import { ContentRenderer } from "./content-renderer";
 import styles from "./content-page.module.css";
@@ -11,7 +12,7 @@ type ContentPageProps = {
 export function ContentPage({ document }: ContentPageProps) {
   return (
     <section className={styles["contentpage-root-c7j9r7"]}>
-      <Layout.Container className={styles["contentpage-container-2ao08t"]}>
+      <Container className={styles["contentpage-container-2ao08t"]}>
         <header className={styles["contentpage-header-49kq95"]}>
           <p className={styles["contentpage-kicker-5fiwhj"]}>
             {document.contentType}
@@ -27,9 +28,9 @@ export function ContentPage({ document }: ContentPageProps) {
         <ContentRenderer document={document.content} />
 
         <footer className={styles["contentpage-footer-hg1pri"]}>
-          <Navigation.Link href="/">Return to homepage</Navigation.Link>
+          <Link href="/">Return to homepage</Link>
         </footer>
-      </Layout.Container>
+      </Container>
     </section>
   );
 }
