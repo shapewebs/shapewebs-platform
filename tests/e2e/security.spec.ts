@@ -61,6 +61,31 @@ test("admin API responses deny browser rendering contexts", async ({
   expect(csp).toContain("frame-ancestors 'none'");
 });
 
+test("admin entry and metadata misses keep hardened minimal responses", async ({
+  request,
+}) => {
+  const entryResponse = await request.get(`${adminOrigin}/`, {
+    maxRedirects: 0,
+  });
+
+  expect(entryResponse.status()).toBe(307);
+  expect(entryResponse.headers().location).toBe("/login");
+  expect(entryResponse.headers()["cache-control"]).toBe("no-store");
+  expect((await entryResponse.body()).byteLength).toBeLessThanOrEqual(256);
+
+  for (const path of ["/robots.txt", "/sitemap.xml"]) {
+    const response = await request.get(`${adminOrigin}${path}`);
+    const headers = response.headers();
+
+    expect(response.status()).toBe(404);
+    expect(headers["cache-control"]).toContain("no-store");
+    expect(headers["content-security-policy"]).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
+  }
+});
+
 test("placeholder inventory route returns a real 404", async ({ request }) => {
   const response = await request.get("/readme");
 
