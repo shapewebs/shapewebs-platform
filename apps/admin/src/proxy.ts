@@ -60,6 +60,14 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   const protectedPath = isProtectedPath(request.nextUrl.pathname);
   const setupMode = isLocalAdminSetupMode();
+  const sessionCookie = setupMode
+    ? null
+    : getSessionCookie(request, {
+        production: process.env.NODE_ENV === "production",
+      });
+  const anonymousEntryRequest =
+    request.nextUrl.pathname === "/" &&
+    (request.method === "GET" || request.method === "HEAD");
 
   requestHeaders.set("Content-Security-Policy", csp);
   requestHeaders.set("x-nonce", nonce);
@@ -77,14 +85,16 @@ export function proxy(request: NextRequest) {
   }
 
   if (
-    protectedPath &&
     !setupMode &&
-    !getSessionCookie(request, {
-      production: process.env.NODE_ENV === "production",
-    })
+    !sessionCookie &&
+    (protectedPath || anonymousEntryRequest)
   ) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+
+    if (protectedPath) {
+      loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    }
+
     return withSecurityHeaders(NextResponse.redirect(loginUrl), csp);
   }
 
@@ -101,8 +111,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source:
-        "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
