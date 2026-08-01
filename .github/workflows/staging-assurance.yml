@@ -25,7 +25,6 @@ jobs:
       ADMIN_STAGING_URL: ${{ vars.SHAPEWEBS_ADMIN_STAGING_URL }}
       PUBLIC_STAGING_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
       SHAPEWEBS_STAGING_HOSTS: ${{ vars.SHAPEWEBS_STAGING_HOSTS }}
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
     steps:
       - name: Check out repository
@@ -47,12 +46,16 @@ jobs:
         run: node tooling/scripts/wait-for-github-statuses.mjs
 
       - name: Require an exact staging target
+        env:
+          ADMIN_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_ADMIN_AUTOMATION_BYPASS_SECRET }}
+          PUBLIC_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           set -euo pipefail
+          [[ -n "$ADMIN_VERCEL_AUTOMATION_BYPASS_SECRET" ]]
           [[ -n "$ADMIN_STAGING_URL" ]]
+          [[ -n "$PUBLIC_VERCEL_AUTOMATION_BYPASS_SECRET" ]]
           [[ -n "$PUBLIC_STAGING_URL" ]]
           [[ -n "$SHAPEWEBS_STAGING_HOSTS" ]]
-          [[ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]]
 
       - name: Install checksum-verified k6
         env:
@@ -77,20 +80,24 @@ jobs:
       - name: Run k6 public staging smoke thresholds
         env:
           K6_TARGET_URL: ${{ env.PUBLIC_STAGING_URL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: node tooling/scripts/run-k6-smoke.mjs
 
       - name: Run k6 admin staging smoke thresholds
         env:
           K6_TARGET_URL: ${{ env.ADMIN_STAGING_URL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_ADMIN_AUTOMATION_BYPASS_SECRET }}
         run: node tooling/scripts/run-k6-smoke.mjs
 
       - name: Run passive ZAP baseline against public staging
         env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           ZAP_TARGET_URL: ${{ env.PUBLIC_STAGING_URL }}
         run: node tooling/scripts/run-zap-baseline.mjs
 
       - name: Run passive ZAP baseline against admin staging
         env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_ADMIN_AUTOMATION_BYPASS_SECRET }}
           ZAP_TARGET_URL: ${{ env.ADMIN_STAGING_URL }}
         run: node tooling/scripts/run-zap-baseline.mjs
 
