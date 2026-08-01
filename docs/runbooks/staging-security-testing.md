@@ -8,29 +8,31 @@ test against production or an unrelated host.
 ## Required environment
 
 ```text
-SHAPEWEBS_STAGING_HOSTS=staging.example.com
+SHAPEWEBS_STAGING_HOSTS=staging.example.com,admin-staging.example.com
+SHAPEWEBS_STAGING_URL=https://staging.example.com
+SHAPEWEBS_ADMIN_STAGING_URL=https://admin-staging.example.com
 K6_TARGET_URL=https://staging.example.com/
 ZAP_TARGET_URL=https://staging.example.com/
 VERCEL_AUTOMATION_BYPASS_SECRET=<protected-staging-secret>
 CHECKLY_STAGING_WEB_BASE_URL=https://staging.example.com
 ```
 
-Use comma-separated exact hostnames when more than one protected staging
-deployment is in scope. Credentials, URL queries, and URL fragments are
-rejected. Store the automation bypass as a secret, never as a repository
-variable. k6 sends it only in the `x-vercel-protection-bypass` request header.
-ZAP receives it through a randomly named, traversal-only temporary directory.
-The configuration file is mounted read-only and removed when the container
-exits; it never appears in the container command line or uploaded report
-directory.
+Use comma-separated exact hostnames for the public and authenticated staging
+deployments. Credentials, URL queries, and URL fragments are rejected. Store
+the automation bypass as a secret, never as a repository variable. k6 sends it
+only in the `x-vercel-protection-bypass` request header. ZAP receives it through
+a randomly named, traversal-only temporary directory. The configuration file
+is mounted read-only and removed when the container exits; it never appears in
+the container command line or uploaded report directory.
 
 The GitHub workflow runs after protected `staging` updates and on its regular
-schedule. It reads `SHAPEWEBS_STAGING_HOSTS`, `K6_TARGET_URL`, and
-`ZAP_TARGET_URL` from repository variables, and
-`VERCEL_AUTOMATION_BYPASS_SECRET` from an Actions secret. If any value is
-absent, the workflow refuses to scan. Rotate or revoke the bypass immediately
-if it appears in logs or reports. Checkly reads its separate exact origin only
-when the synthetic lead check is deliberately enabled.
+schedule. It reads `SHAPEWEBS_STAGING_HOSTS`, `SHAPEWEBS_STAGING_URL`, and
+`SHAPEWEBS_ADMIN_STAGING_URL` from repository variables, and
+`VERCEL_AUTOMATION_BYPASS_SECRET` from an Actions secret. It runs k6 and ZAP
+independently against both fixed origins. If any value is absent, the workflow
+refuses to scan. Rotate or revoke the bypass immediately if it appears in logs
+or reports. Checkly reads its separate exact origin only when the synthetic lead
+check is deliberately enabled.
 
 For push-triggered runs, the workflow first polls the current commit's exact
 `Vercel – shapewebs-web` and `Vercel – shapewebs-admin` status contexts. Both
@@ -55,7 +57,8 @@ without this commit-status wait.
   and compensating controls have been verified and documented; the same rule
   must remain enforced for every application-controlled URL.
 - Generated JSON, Markdown, HTML, and k6 summary output stays under
-  `test-results` and is removed by `pnpm clean:artifacts`.
+  `test-results/{k6,zap}/<exact-hostname>` so evidence from one origin cannot
+  overwrite the other. It is removed by `pnpm clean:artifacts`.
 
 ## Commands
 

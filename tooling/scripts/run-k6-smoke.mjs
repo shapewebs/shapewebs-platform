@@ -9,14 +9,14 @@ import {
 
 const target = requireStagingTarget("K6_TARGET_URL");
 requireAutomationBypassSecret();
-const reportDirectory = path.resolve("test-results/k6");
+const reportDirectory = path.resolve("test-results/k6", target.hostname);
 const summaryPath = path.join(reportDirectory, "summary.json");
 
 mkdirSync(reportDirectory, { recursive: true });
 
 const result = spawnSync(
   "k6",
-  ["run", "--summary-export", summaryPath, "tests/load/public-smoke.js"],
+  ["run", "--summary-export", summaryPath, "tests/load/staging-smoke.js"],
   {
     env: {
       ...process.env,

@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      K6_TARGET_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
+      ADMIN_STAGING_URL: ${{ vars.SHAPEWEBS_ADMIN_STAGING_URL }}
+      PUBLIC_STAGING_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
       SHAPEWEBS_STAGING_HOSTS: ${{ vars.SHAPEWEBS_STAGING_HOSTS }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-      ZAP_TARGET_URL: ${{ vars.SHAPEWEBS_STAGING_URL }}
 
     steps:
       - name: Check out repository
@@ -49,7 +49,8 @@ jobs:
       - name: Require an exact staging target
         run: |
           set -euo pipefail
-          [[ -n "$K6_TARGET_URL" ]]
+          [[ -n "$ADMIN_STAGING_URL" ]]
+          [[ -n "$PUBLIC_STAGING_URL" ]]
           [[ -n "$SHAPEWEBS_STAGING_HOSTS" ]]
           [[ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]]
 
@@ -73,10 +74,24 @@ jobs:
           tar --extract --gzip --file "$archive" --directory /tmp
           echo "/tmp/k6-${K6_VERSION}-linux-amd64" >> "$GITHUB_PATH"
 
-      - name: Run k6 staging smoke thresholds
+      - name: Run k6 public staging smoke thresholds
+        env:
+          K6_TARGET_URL: ${{ env.PUBLIC_STAGING_URL }}
         run: node tooling/scripts/run-k6-smoke.mjs
 
-      - name: Run passive ZAP baseline
+      - name: Run k6 admin staging smoke thresholds
+        env:
+          K6_TARGET_URL: ${{ env.ADMIN_STAGING_URL }}
+        run: node tooling/scripts/run-k6-smoke.mjs
+
+      - name: Run passive ZAP baseline against public staging
+        env:
+          ZAP_TARGET_URL: ${{ env.PUBLIC_STAGING_URL }}
+        run: node tooling/scripts/run-zap-baseline.mjs
+
+      - name: Run passive ZAP baseline against admin staging
+        env:
+          ZAP_TARGET_URL: ${{ env.ADMIN_STAGING_URL }}
         run: node tooling/scripts/run-zap-baseline.mjs
 
       - name: Upload redacted staging reports
