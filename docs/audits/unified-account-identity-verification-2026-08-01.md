@@ -92,18 +92,46 @@ while the immediately visible Search control stays in the initial render. This
 prevents the empty homepage from downloading unrelated design-system families
 or dormant search behavior.
 
-The exact staging-only k6 and ZAP checks remain pending until the reviewed
-commit has deployed to the allowlisted fixed staging origins. Their credentials
-are intentionally unavailable to an ordinary local shell.
+## Persistent staging verification
+
+Pull request `#56` passed Quality, OSV, dependency review, CodeQL, both Vercel
+previews, and the complete disposable Neon lifecycle before it was
+squash-merged into protected `staging` at `2594c8a`.
+
+Before persistent staging changed, Neon branch
+`codex-staging-pre-0019-20260801` (`br-lingering-cell-as57nyu3`) captured the
+exact pre-migration state at LSN `0/31F48B0`. It has no compute and expires
+automatically on 8 August 2026. The aggregate preflight found 19 journaled
+migrations, one canonical user, no legacy customer identities or active legacy
+auth-email commands, and zero identity, provider, or outbox conflicts.
+
+The dedicated direct `shapewebs_migrator` applied migration `0019` atomically.
+Post-migration checks found 20 journaled migrations, one canonical identity
+store, the customer-session security table, the unified authentication-email
+kinds, no residual legacy sessions, and all customer identity foreign keys
+targeting `auth.user`.
+
+The complete live security verifier then passed through the distinct provider
+owner, migrator, admin runtime, customer runtime, web runtime, and public reader
+identities. It repeated forced-RLS, tenant/project isolation, invitation and
+mailbox proof, Google/password unification, session/TOTP, CMS/media,
+lead/outbox, retention, webhook-ordering, and audit-immutability assertions and
+removed its uniquely identified synthetic fixtures afterward.
+
+Both exact Vercel staging deployments reached `READY` on `2594c8a`. Protected
+Actions run `30702668877` passed the public-origin gate with 9/9 k6 checks,
+zero request failures, 631.13 ms p95 request duration, and a passive ZAP scan of
+55 URLs with 63 passing rules, zero warnings/failures, and the three reviewed
+informational findings. The workflow is being extended to preserve separate
+evidence and repeat the same checks against the unified admin origin.
 
 ## Remaining gates
 
-- Run the same lifecycle in protected GitHub Actions with the renamed customer
-  runtime secret.
-- Apply `0019` to persistent synthetic staging only after a reviewed pull
-  request and a pre-migration snapshot.
-- Verify the fixed `admin-staging.shapewebs.com` deployment against the shared
-  Google callback, customer database, Turnstile, and recovery flow before the
-  canonical production origin moves to `admin.shapewebs.com`.
+- Pass the protected dual-origin k6/ZAP workflow against both
+  `staging.shapewebs.com` and `admin-staging.shapewebs.com`.
+- Complete an authenticated owner/customer browser journey through the shared
+  Google callback, recovery flow, customer workspace, and employee TOTP gate.
+- Reconcile and retire obsolete portal provider/deployment configuration only
+  after those staging journeys pass.
 - Keep production unchanged until staging migration, rollback, monitoring, and
   full release verification are green.

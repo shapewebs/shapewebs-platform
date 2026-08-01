@@ -21,7 +21,7 @@ const zapImage =
   "zaproxy/zap-stable@sha256:8d387b1a63e3425beef4846e39719f5af2a787753af2d8b6558c6257d7a577a2";
 const target = requireStagingTarget("ZAP_TARGET_URL");
 const automationBypassSecret = requireAutomationBypassSecret();
-const reportDirectory = path.resolve("test-results/zap");
+const reportDirectory = path.resolve("test-results/zap", target.hostname);
 const baselineConfigPath = path.resolve("tooling/zap/baseline.conf");
 const reportNames = ["report.json", "report.md", "report.html"];
 const internalLogNames = ["zap.log", "zap.out"];

@@ -39,7 +39,7 @@ const automationBypassSecret = getAutomationBypassSecret();
 
 export const options = {
   scenarios: {
-    publicSmoke: {
+    stagingSmoke: {
       executor: "shared-iterations",
       vus: 1,
       iterations: 3,
@@ -53,12 +53,12 @@ export const options = {
   },
 };
 
-export default function publicSmoke() {
+export default function stagingSmoke() {
   const home = http.get(`${stagingBaseUrl}/`, {
     headers: {
       "x-vercel-protection-bypass": automationBypassSecret,
     },
-    tags: { journey: "public-home" },
+    tags: { journey: "staging-home" },
     timeout: "5s",
   });
 
@@ -70,7 +70,7 @@ export default function publicSmoke() {
     headers: {
       "x-vercel-protection-bypass": automationBypassSecret,
     },
-    tags: { journey: "public-readiness" },
+    tags: { journey: "staging-readiness" },
     timeout: "5s",
   });
 
