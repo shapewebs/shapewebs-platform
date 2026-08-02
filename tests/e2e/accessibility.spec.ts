@@ -155,37 +155,31 @@ for (const authUrl of [
   `${adminOrigin}/login`,
   `${configuredAdminPreviewOrigin}/login`,
 ]) {
-  test(`auth method picker at ${authUrl} reveals staged email and passkey views`, async ({
+  test(`auth method picker at ${authUrl} exposes passkey and stages credentials safely`, async ({
     page,
   }) => {
     const response = await page.goto(authUrl);
 
     expect(response?.status()).toBe(200);
     await expect(
-      page.getByRole("link", { name: "Continue with email" }),
+      page.getByRole("button", { name: "Continue with email" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Continue with passkey" }),
+      page.getByRole("button", { name: "Continue with passkey" }),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: "Continue with email" }).click();
+    await page.getByRole("button", { name: "Continue with email" }).click();
     await expect(
-      page.getByRole("heading", { name: "Sign in with email" }),
+      page.getByRole("heading", { name: "What’s your email address?" }),
     ).toBeVisible();
     await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
 
     await page.getByRole("link", { name: "Back to login" }).click();
     await expect(
-      page.getByRole("link", { name: "Continue with passkey" }),
+      page.getByRole("button", { name: "Continue with passkey" }),
     ).toBeVisible();
-
-    await page.getByRole("link", { name: "Continue with passkey" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Continue with passkey" }),
-    ).toBeVisible();
-    await expect(page.getByText("Passkeys are coming later")).toBeVisible();
 
     const results = await new AxeBuilder({ page }).withTags(wcagTags).analyze();
 

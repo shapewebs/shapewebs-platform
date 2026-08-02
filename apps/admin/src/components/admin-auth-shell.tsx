@@ -9,6 +9,7 @@ type AdminAuthShellProps = Readonly<{
   title: string;
   expanded?: boolean;
   minimal?: boolean;
+  overlay?: ReactNode;
 }>;
 
 export function AdminAuthShell({
@@ -18,6 +19,7 @@ export function AdminAuthShell({
   title,
   expanded = false,
   minimal = false,
+  overlay,
 }: AdminAuthShellProps) {
   return (
     <Authentication.AuthLayout
@@ -25,7 +27,7 @@ export function AdminAuthShell({
       brandLabel="Shapewebs account sign in"
       description={minimal ? undefined : description}
       eyebrow={minimal ? undefined : eyebrow}
-      footer={minimal ? undefined : <p>Private account access</p>}
+      overlay={overlay}
       size={expanded ? "expanded" : "compact"}
       title={minimal ? undefined : title}
     >

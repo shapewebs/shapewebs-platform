@@ -9,10 +9,9 @@ import { getSafeAdminRedirectTarget } from "@/lib/redirect";
 
 type LoginFormProps = {
   isConfigured: boolean;
-  isLocalSetupMode: boolean;
 };
 
-type LoginStage = "email" | "methods" | "passkey";
+type LoginStage = "email" | "methods";
 
 function getRouteErrorMessage(errorCode: string | null) {
   switch (errorCode) {
@@ -27,14 +26,14 @@ function getRouteErrorMessage(errorCode: string | null) {
 }
 
 function getInitialStage(method: string | null): LoginStage {
-  return method === "email" || method === "passkey" ? method : "methods";
+  return method === "email" ? method : "methods";
 }
 
-export function LoginForm({ isConfigured, isLocalSetupMode }: LoginFormProps) {
+export function LoginForm({ isConfigured }: LoginFormProps) {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [pendingMethod, setPendingMethod] = useState<
-    "google" | "password" | null
+    "google" | "passkey" | "password" | null
   >(null);
   const [stage, setStage] = useState<LoginStage>(() =>
     getInitialStage(searchParams.get("method")),
@@ -146,6 +145,54 @@ export function LoginForm({ isConfigured, isLocalSetupMode }: LoginFormProps) {
     });
   }
 
+  function signInWithPasskey() {
+    if (!isConfigured) {
+      setErrorMessage("Authentication is not configured in this environment.");
+      return;
+    }
+
+    if (
+      typeof window.PublicKeyCredential === "undefined" ||
+      typeof navigator.credentials === "undefined"
+    ) {
+      setErrorMessage("Passkeys are not supported by this browser or device.");
+      return;
+    }
+
+    setPendingMethod("passkey");
+    startTransition(async () => {
+      setErrorMessage(null);
+
+      try {
+        const { data, error } = await adminAuthClient.signIn.passkey({
+          autoFill: false,
+        });
+
+        if (error || !data) {
+          const errorCode =
+            error && "code" in error && typeof error.code === "string"
+              ? error.code
+              : null;
+          setPendingMethod(null);
+          setErrorMessage(
+            errorCode === "AUTH_CANCELLED" ||
+              errorCode === "ERROR_CEREMONY_ABORTED"
+              ? "Passkey sign-in was cancelled."
+              : "Passkey sign-in could not be completed. Please try again.",
+          );
+          return;
+        }
+
+        window.location.assign(completionPath);
+      } catch {
+        setPendingMethod(null);
+        setErrorMessage(
+          "Passkey sign-in is temporarily unavailable. Please try again.",
+        );
+      }
+    });
+  }
+
   function renderMessage() {
     if (statusMessage) {
       return (
@@ -168,156 +215,133 @@ export function LoginForm({ isConfigured, isLocalSetupMode }: LoginFormProps) {
         </Authentication.AuthMessage>
       );
     }
-    if (isLocalSetupMode) {
-      return (
-        <Authentication.AuthMessage>
-          Local setup mode is active for interface work.
-        </Authentication.AuthMessage>
-      );
-    }
-    if (!isConfigured) {
-      return (
-        <Authentication.AuthMessage tone="error">
-          Authentication is unavailable in this environment.
-        </Authentication.AuthMessage>
-      );
-    }
-
     return null;
   }
 
   return (
-    <Authentication.AuthStageTransition stage={stage}>
-      {(displayedStage) => {
-        if (displayedStage === "email") {
-          return (
-            <>
-              <Authentication.AuthStageHeader title="Sign in with email" />
-              <Authentication.AuthStack>
-                {renderMessage()}
-                <Forms.Form onSubmit={signInWithPassword}>
-                  <Forms.Field>
-                    <Forms.Label htmlFor="employee-email">Email</Forms.Label>
-                    <Forms.Input
-                      autoComplete="email"
-                      autoFocus
-                      controlSize="large"
+    <>
+      <Authentication.AuthStageTransition stage={stage}>
+        {(displayedStage) => {
+          if (displayedStage === "email") {
+            return (
+              <>
+                <Authentication.AuthStageHeader title="What’s your email address?" />
+                <Authentication.AuthStack>
+                  <Forms.Form onSubmit={signInWithPassword}>
+                    <Forms.Field>
+                      <Forms.Label htmlFor="employee-email">Email</Forms.Label>
+                      <Forms.Input
+                        autoComplete="email"
+                        autoFocus
+                        controlSize="large"
+                        disabled={isPending}
+                        id="employee-email"
+                        maxLength={320}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="Enter email address..."
+                        required
+                        type="email"
+                        value={email}
+                      />
+                    </Forms.Field>
+                    <Forms.PasswordField
+                      autoComplete="current-password"
                       disabled={isPending}
-                      id="employee-email"
-                      maxLength={320}
-                      onChange={(event) => setEmail(event.target.value)}
+                      label="Password"
+                      maxLength={128}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Enter password..."
                       required
-                      type="email"
-                      value={email}
+                      value={password}
                     />
-                  </Forms.Field>
-                  <Forms.PasswordField
-                    autoComplete="current-password"
-                    disabled={isPending}
-                    label="Password"
-                    maxLength={128}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    value={password}
-                  />
-                  <Authentication.AuthActions>
-                    <Buttons.Button
-                      disabled={!isConfigured}
-                      kind="secondary"
-                      pending={isPending && pendingMethod === "password"}
-                      pendingLabel="Signing in"
-                      size="large"
-                      type="submit"
+                    <Authentication.AuthActions>
+                      <Buttons.Button
+                        disabled={!isConfigured}
+                        kind="secondary"
+                        pending={isPending && pendingMethod === "password"}
+                        pendingLabel="Signing in"
+                        size="large"
+                        type="submit"
+                      >
+                        Continue
+                      </Buttons.Button>
+                    </Authentication.AuthActions>
+                    {renderMessage()}
+                  </Forms.Form>
+                  <Authentication.AuthLinks layout="stacked">
+                    <Navigation.Link href="/forgot-password">
+                      Forgot your password?
+                    </Navigation.Link>
+                    <Navigation.Link
+                      href={getLoginHref()}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        showStage("methods");
+                      }}
                     >
-                      Log in
-                    </Buttons.Button>
-                  </Authentication.AuthActions>
-                </Forms.Form>
-                <Authentication.AuthLinks>
-                  <Navigation.Link href="/forgot-password">
-                    Forgot your password?
-                  </Navigation.Link>
-                  <Navigation.Link
-                    href={getLoginHref()}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      showStage("methods");
-                    }}
-                  >
-                    Back to login
-                  </Navigation.Link>
-                </Authentication.AuthLinks>
-              </Authentication.AuthStack>
-            </>
-          );
-        }
+                      Back to login
+                    </Navigation.Link>
+                  </Authentication.AuthLinks>
+                </Authentication.AuthStack>
+              </>
+            );
+          }
 
-        if (displayedStage === "passkey") {
           return (
             <>
-              <Authentication.AuthStageHeader title="Continue with passkey" />
+              <Authentication.AuthStageHeader title="Log in to Shapewebs" />
               <Authentication.AuthStack>
-                <Authentication.PasskeyFrame status="unavailable" />
-                <Authentication.AuthLinks>
-                  <Navigation.Link
-                    href={getLoginHref()}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      showStage("methods");
-                    }}
+                <Authentication.AuthActions>
+                  <Buttons.Button
+                    disabled={!isConfigured || pendingMethod !== null}
+                    kind="brand"
+                    onClick={signInWithGoogle}
+                    pending={isPending && pendingMethod === "google"}
+                    pendingLabel="Opening Google"
+                    size="large"
+                    type="button"
                   >
-                    Back to login
+                    Continue with Google
+                  </Buttons.Button>
+                  <Buttons.Button
+                    disabled={pendingMethod !== null}
+                    kind="secondary"
+                    onClick={() => showStage("email")}
+                    size="large"
+                    type="button"
+                  >
+                    Continue with email
+                  </Buttons.Button>
+                  <Buttons.Button
+                    disabled={!isConfigured || pendingMethod !== null}
+                    kind="secondary"
+                    onClick={signInWithPasskey}
+                    pending={pendingMethod === "passkey"}
+                    pendingLabel="Waiting for passkey..."
+                    size="large"
+                    type="button"
+                  >
+                    {pendingMethod === "passkey"
+                      ? "Waiting for passkey..."
+                      : "Continue with passkey"}
+                  </Buttons.Button>
+                </Authentication.AuthActions>
+                {renderMessage()}
+                <Authentication.AuthLinks>
+                  Don’t have an account?{" "}
+                  <Navigation.Link href="/forgot-password">
+                    Recover user
+                  </Navigation.Link>{" "}
+                  or{" "}
+                  <Navigation.Link href="mailto:support@shapewebs.com?subject=Shapewebs%20account%20access">
+                    learn more
                   </Navigation.Link>
                 </Authentication.AuthLinks>
               </Authentication.AuthStack>
             </>
           );
-        }
-
-        return (
-          <>
-            <Authentication.AuthStageHeader title="Sign in" />
-            <Authentication.AuthStack>
-              {renderMessage()}
-              <Authentication.AuthActions>
-                <Buttons.Button
-                  disabled={!isConfigured}
-                  kind="brand"
-                  onClick={signInWithGoogle}
-                  pending={isPending && pendingMethod === "google"}
-                  pendingLabel="Opening Google"
-                  size="large"
-                  type="button"
-                >
-                  Continue with Google
-                </Buttons.Button>
-                <Buttons.ButtonLink
-                  href={getLoginHref("email")}
-                  kind="secondary"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    showStage("email");
-                  }}
-                  size="large"
-                >
-                  Continue with email
-                </Buttons.ButtonLink>
-                <Buttons.ButtonLink
-                  href={getLoginHref("passkey")}
-                  kind="secondary"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    showStage("passkey");
-                  }}
-                  size="large"
-                >
-                  Continue with passkey
-                </Buttons.ButtonLink>
-              </Authentication.AuthActions>
-            </Authentication.AuthStack>
-          </>
-        );
-      }}
-    </Authentication.AuthStageTransition>
+        }}
+      </Authentication.AuthStageTransition>
+    </>
   );
 }

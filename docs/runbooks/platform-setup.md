@@ -171,8 +171,10 @@ attachable methods on that account, not separate user types. Invitation-gated
 customers and allowlisted employees use the same login and cookie; customer and
 staff memberships determine the available workspaces. Do not silently merge
 unverified matching signed-out emails, allow different-email linking, or expose
-raw signup/set-password routes. Staff workspace entry after either first factor
-must still complete the local TOTP gate.
+raw signup/set-password routes. Staff workspace entry after Google or password
+must still complete the local TOTP gate. A passkey assertion with verified
+authenticator user verification is the complete strong sign-in and must not be
+followed by another TOTP prompt.
 
 Use fixed callback hosts:
 
@@ -193,7 +195,9 @@ flows are complete.
 Google or password sign-in alone is not sufficient for CMS access. Better
 Auth's normal 2FA gate does not automatically cover social sign-in, so both
 first-factor paths must converge on the custom server-enforced TOTP step-up
-before entering or mutating admin routes.
+before entering admin routes. Passkey sign-in instead establishes fresh
+assurance on the exact session created by the verified WebAuthn assertion.
+Sensitive mutations still enforce their own freshness policy.
 
 Test at minimum:
 
@@ -201,6 +205,8 @@ Test at minimum:
 - an unassigned Google user cannot self-assign a role;
 - an unassigned email cannot activate a credential;
 - a valid Google or password owner without TOTP step-up is denied;
+- a verified passkey owner enters the staff workspace without a second TOTP
+  prompt, while a missing-UV or replayed assertion is denied;
 - Google-first and password-first accounts can deliberately attach the other
   method and thereafter reach the same user/role through either method;
 - signed-out matching emails, mismatched provider emails and grants copied

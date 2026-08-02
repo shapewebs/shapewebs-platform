@@ -16,12 +16,8 @@ export default async function ForgotPasswordPage() {
 
   return (
     <AdminAuthShell
-      description={
-        <p>
-          This works both for password recovery and for adding a password to an
-          account originally created with Google.
-        </p>
-      }
+      description={null}
+      minimal
       title="Set or recover a password"
     >
       <ForgotPasswordForm

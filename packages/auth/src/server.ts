@@ -56,6 +56,7 @@ export {
   serializeAdminSessionCookie,
   serializeAdminSessionDeletionCookie,
 } from "./session-cookie";
+export { readSignedSessionFromResponse } from "./response-session";
 export { toNextJsHandler } from "better-auth/next-js";
 export type {
   GoogleOAuthCredentials,

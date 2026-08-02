@@ -71,7 +71,36 @@ export function PasswordField({
           size="small"
           type="button"
         >
-          {revealed ? "Hide" : "Show"}
+          {revealed ? (
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path
+                d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 5.2 9 5.2a16 16 0 0 1-2.1 2.7M6.6 6.6A16 16 0 0 0 3 9.2S6.5 14.4 12 14.4c1 0 1.9-.2 2.7-.5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.7"
+              />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path
+                d="M3 9.2S6.5 4 12 4s9 5.2 9 5.2-3.5 5.2-9 5.2S3 9.2 3 9.2Z"
+                fill="none"
+                stroke="currentColor"
+                strokeLinejoin="round"
+                strokeWidth="1.7"
+              />
+              <circle
+                cx="12"
+                cy="9.2"
+                fill="none"
+                r="2.4"
+                stroke="currentColor"
+                strokeWidth="1.7"
+              />
+            </svg>
+          )}
         </Button>
       </InputGroup>
       {error ? <FieldError id={errorId}>{error}</FieldError> : null}

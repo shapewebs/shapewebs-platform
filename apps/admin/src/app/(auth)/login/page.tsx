@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import type { Metadata } from "next";
+import { Feedback } from "@shapewebs/ui";
 import { AdminAuthShell } from "@/components/admin-auth-shell";
-import { hasAdminAuthConfig, isLocalAdminSetupMode } from "@/lib/better-auth";
+import { hasAdminAuthConfig } from "@/lib/better-auth";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -13,7 +14,6 @@ export default async function LoginPage() {
   await connection();
 
   const isConfigured = hasAdminAuthConfig();
-  const isLocalSetupMode = isLocalAdminSetupMode();
 
   return (
     <AdminAuthShell
@@ -24,13 +24,19 @@ export default async function LoginPage() {
         </p>
       }
       minimal
+      overlay={
+        !isConfigured ? (
+          <Feedback.NotificationViewport>
+            <Feedback.Notification delay="initial" tone="error">
+              Authentication is unavailable in this environment.
+            </Feedback.Notification>
+          </Feedback.NotificationViewport>
+        ) : undefined
+      }
       title="Sign in"
     >
       <Suspense fallback={null}>
-        <LoginForm
-          isConfigured={isConfigured}
-          isLocalSetupMode={isLocalSetupMode}
-        />
+        <LoginForm isConfigured={isConfigured} />
       </Suspense>
     </AdminAuthShell>
   );

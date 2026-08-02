@@ -141,6 +141,13 @@
       "when": 1785444774325,
       "tag": "0019_unified-account-identity",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785660029816,
+      "tag": "0020_secure-passkey-authentication",
+      "breakpoints": true
     }
   ]
 }

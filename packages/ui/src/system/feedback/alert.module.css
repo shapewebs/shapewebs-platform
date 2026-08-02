@@ -1,2 +1,30 @@
-.alert-root-ed0tc8 {
+.alert-root-0vn0nu {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: rgb(var(--color-text-secondary) / 1);
+  background: transparent;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.alert-root-0vn0nu[data-tone="success"] {
+  color: rgb(var(--color-feedback-success) / 1);
+}
+
+.alert-root-0vn0nu[data-tone="warning"] {
+  color: rgb(var(--color-feedback-warning) / 1);
+}
+
+.alert-root-0vn0nu[data-tone="error"] {
+  color: rgb(var(--color-feedback-danger) / 1);
+}
+
+@media (forced-colors: active) {
+  .alert-root-0vn0nu {
+    color: CanvasText;
+  }
 }

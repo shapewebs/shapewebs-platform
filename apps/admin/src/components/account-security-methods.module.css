@@ -51,6 +51,39 @@
   gap: var(--space-3);
 }
 
+.accountsecurity-passkeys-b7m2qk {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accountsecurity-passkeys-b7m2qk li {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid rgb(var(--color-border-primary) / 1);
+}
+
+.accountsecurity-passkeys-b7m2qk span {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.accountsecurity-passkeys-b7m2qk strong {
+  color: rgb(var(--color-text-primary) / 1);
+  font-weight: var(--font-weight-medium);
+}
+
+.accountsecurity-passkeys-b7m2qk small {
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+}
+
 @media (forced-colors: active) {
   .accountsecurity-card-4m2k8p,
   .accountsecurity-message-y7q1dc {

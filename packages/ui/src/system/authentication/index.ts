@@ -1,5 +1,5 @@
 export { AuthActions, AuthLayout, AuthLinks, AuthStack } from "./auth-layout";
-export type { AuthLayoutProps } from "./auth-layout";
+export type { AuthLayoutProps, AuthLinksProps } from "./auth-layout";
 export { AuthStageHeader } from "./auth-stage";
 export type { AuthStageHeaderProps } from "./auth-stage";
 export { AuthStageTransition } from "./auth-stage-transition";

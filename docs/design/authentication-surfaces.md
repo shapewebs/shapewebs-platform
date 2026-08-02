@@ -3,10 +3,10 @@
 ## Purpose
 
 Shapewebs has one account model and one authenticated application at
-`admin.shapewebs.com`. Every account may use Google, password, or both. Future
-passkeys attach to that same identity. Customer registration is invitation-only;
-employee access is membership-controlled and requires TOTP before entering the
-studio.
+`admin.shapewebs.com`. Every account may use Google, password, passkeys, or a
+combination of those methods on the same identity. Customer registration is
+invitation-only; employee access is membership-controlled and requires either
+Google/password plus TOTP or a user-verified passkey before entering the studio.
 
 The public application remains a separate unauthenticated boundary. Inside the
 account application, cookies, endpoints, sessions and account records are
@@ -17,7 +17,7 @@ roles remain separate.
 
 | Audience | Route                   | Purpose                                        | Required states                                                       |
 | -------- | ----------------------- | ---------------------------------------------- | --------------------------------------------------------------------- |
-| Account  | `/login`                | Google or password primary sign-in             | Ready, pending, verified, password updated, unauthorized, unavailable |
+| Account  | `/login`                | Google, password, or passkey sign-in           | Ready, pending, verified, password updated, unauthorized, unavailable |
 | Employee | `/login/mfa`            | TOTP enrollment and step-up                    | Enrollment, QR setup, code entry, pending, invalid code, unavailable  |
 | Employee | `/activate`             | Allowlisted employee password activation       | Ready, pending, generic submitted, validation error, unavailable      |
 | Account  | `/forgot-password`      | Add or recover a password                      | Ready, pending, generic submitted, unavailable                        |
@@ -57,27 +57,29 @@ Login begins with three explicit methods: Google as the brand action, email as
 a secondary action, and passkey as a secondary action. The Shapewebs mark stays
 fixed while the remaining panel crossfades. Email reveals the email and password
 fields, a secondary login action, password recovery, and a link back to the
-method picker. Passkey reveals the safe unavailable frame and a link back; it
-does not start a credential ceremony. The transition is opacity-only, preserves
-fallback URLs, and is removed when reduced motion is requested.
+method picker. Passkey starts the native WebAuthn chooser immediately and the
+button changes to the shared spinner with `Waiting for passkey...`. Cancellation,
+unsupported-device, and generic failure copy appears inline without revealing
+credential details. The page transition preserves fallback URLs and is removed
+when reduced motion is requested.
 
 ## Passkey boundary
 
-Passkeys are not an enabled authentication method in this phase. The shared
-passkey frame is presentation-only and supports these explicit states:
+Passkeys are an active strong sign-in method on the canonical account. Better Auth
+and the WebAuthn platform API own registration and authentication ceremonies.
+Shapewebs binds every ceremony to the exact configured origin and hostname,
+requires a discoverable credential and authenticator user verification, and
+uses one-time five-minute challenges. Raw public keys and credential identifiers
+never enter page DTOs or application logs.
 
-- `unavailable`: the method is clearly labelled as planned and cannot be
-  activated;
-- `waiting`: generic spinner and waiting copy for a future WebAuthn ceremony;
-- `cancelled`: user-safe cancellation copy;
-- `unsupported`: browser or device capability copy;
-- `error`: generic failure copy without credential details.
-
-The frame does not call `navigator.credentials`, register authenticators,
-create challenges, alter Better Auth configuration, or submit a form. Enabling
-passkeys later requires origin and relying-party configuration, challenge
-persistence, attestation and assertion verification, recovery policy, audit
-events, rate limits, and security tests.
+Enrollment, listing, naming, and removal require an active session and an active
+Shapewebs membership. Employee mutation additionally requires fresh local
+strong-auth assurance from the preceding five minutes. Initial enrollment is
+bootstrapped through TOTP; a freshly passkey-authenticated session already has
+that assurance. A passkey can be removed only when another Google, password, or
+passkey method remains. Passkey authentication creates the same Shapewebs
+session as the other methods and, after verified authenticator user verification,
+enters the employee studio without a second TOTP prompt.
 
 ## Security invariants
 
@@ -85,6 +87,8 @@ events, rate limits, and security tests.
 - Customer registration remains bound to a valid invitation context.
 - Google and password remain methods on one account rather than separate account
   types.
+- Passkeys attach only to the currently authenticated canonical account and
+  cannot be registered through a signed-out identity lookup.
 - Every request keeps its existing CSRF, Turnstile, token-format, redirect,
   rate-limit, session, and authorization checks.
 - Recovery and activation responses remain generic so account existence is not
@@ -100,5 +104,7 @@ Before release, the unified surface must pass the canonical repository and
 release gates, both Next.js build engines, route-level accessibility/security
 checks, the disposable Neon migration lifecycle, identity-migration conflict
 fixtures, customer/staff/dual-member journeys, and browser verification at the
-compact and desktop breakpoints. Passkeys remain deliberately unavailable and
-presentation-only until their server contract is separately reviewed.
+compact and desktop breakpoints. Passkey release additionally requires real
+enrollment, sign-in, cancellation, removal, final-method denial, and employee
+Google/password-to-TOTP and passkey-to-direct-workspace evidence on the exact
+target origin.

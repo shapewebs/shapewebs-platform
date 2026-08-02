@@ -1,8 +1,11 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { getAuthenticatorName, passkey } from "@better-auth/passkey";
 import {
   appendAdminAuditEvent,
   appendSystemAuditEvent,
   enqueueAdminAuthEmail,
+  getAdminAuthenticationMethods,
+  hasFreshAdminSessionStepUp,
   provisionAdminSession,
 } from "@shapewebs/database/admin-auth";
 import {
@@ -36,6 +39,12 @@ import {
 } from "./customer-tokens";
 import { createVerifiedGoogleUserInfo } from "./google-user-info";
 import { getAdminCookiePolicy } from "./cookie-policy";
+import {
+  getPasskeyRelyingParty,
+  isPasskeyVerifiedSessionCreation,
+  requireRemovablePasskey,
+  requirePasskeyUserVerification,
+} from "./passkey-policy";
 import { generateAdminSessionToken } from "./session-cookie";
 
 const disabledAuthPaths = [
@@ -175,6 +184,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
 
   const database = createDatabase(options.databaseUrl);
   const cookiePolicy = getAdminCookiePolicy(options.production);
+  const passkeyRelyingParty = getPasskeyRelyingParty(options.baseUrl);
   const getStaffRole = (email: string): "editor" | "owner" | null => {
     const normalized = email.trim().toLowerCase();
     if (!ownerEmails.has(normalized) && !editorEmails.has(normalized)) {
@@ -330,6 +340,57 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     },
     hooks: {
       before: createAuthMiddleware(async (context) => {
+        if (
+          [
+            "/passkey/delete-passkey",
+            "/passkey/generate-register-options",
+            "/passkey/list-user-passkeys",
+            "/passkey/update-passkey",
+            "/passkey/verify-registration",
+          ].includes(context.path)
+        ) {
+          const activeSession = await getSessionFromCtx(context);
+
+          if (!activeSession) {
+            throw new APIError("UNAUTHORIZED");
+          }
+
+          const authorization = await requireAuthorizedIdentity(
+            activeSession.user,
+          );
+
+          if (
+            authorization.staffRole &&
+            !(await hasFreshAdminSessionStepUp(
+              options.databaseUrl,
+              {
+                sessionId: activeSession.session.id,
+                userId: activeSession.user.id,
+              },
+              5 * 60,
+            ))
+          ) {
+            throw new APIError("FORBIDDEN", {
+              message: "step_up_required",
+            });
+          }
+
+          if (context.path === "/passkey/delete-passkey") {
+            const methods = await getAdminAuthenticationMethods(
+              options.databaseUrl,
+              activeSession.user.id,
+            );
+
+            requireRemovablePasskey({
+              google: methods.google,
+              passkeyCount: methods.passkeys.length,
+              password: methods.password,
+            });
+          }
+
+          return;
+        }
+
         if (context.path === "/link-social") {
           const activeSession = await getSessionFromCtx(context);
           const authorization =
@@ -446,7 +507,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
               },
             };
           },
-          after: async (newSession) => {
+          after: async (newSession, context) => {
             const [sessionUser] = await database
               .select({
                 email: authSchema.user.email,
@@ -462,6 +523,14 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
 
             const staffRole = getStaffRole(sessionUser.email);
             const customer = await hasCustomerMembership(sessionUser.id);
+            // Better Auth creates this session only after the passkey plugin
+            // has completed its signed challenge verification. Shapewebs'
+            // afterVerification callback additionally requires authenticator
+            // user verification, so this exact request is phishing-resistant
+            // strong authentication and can satisfy the employee step-up.
+            const passkeyVerifiedAt = isPasskeyVerifiedSessionCreation(context)
+              ? new Date()
+              : undefined;
 
             await Promise.all([
               staffRole
@@ -469,6 +538,7 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
                     organizationId: options.organizationId,
                     role: staffRole,
                     sessionId: newSession.id,
+                    stepUpVerifiedAt: passkeyVerifiedAt,
                     userId: newSession.userId,
                   })
                 : Promise.resolve(),
@@ -520,6 +590,22 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
       storage: "database",
       window: 60,
       customRules: {
+        "/passkey/generate-authenticate-options": {
+          max: 10,
+          window: 60,
+        },
+        "/passkey/generate-register-options": {
+          max: 5,
+          window: 60,
+        },
+        "/passkey/verify-authentication": {
+          max: 5,
+          window: 60,
+        },
+        "/passkey/verify-registration": {
+          max: 5,
+          window: 60,
+        },
         "/request-password-reset": {
           max: 3,
           window: 60,
@@ -569,6 +655,50 @@ export function createShapewebsAuth(options: ShapewebsAuthOptions) {
     plugins: [
       haveIBeenPwned({
         paths: ["/reset-password", "/sign-up/email"],
+      }),
+      passkey({
+        advanced: {
+          webAuthnChallengeCookie: "passkey_challenge",
+        },
+        authentication: {
+          afterVerification: ({ verification }) => {
+            requirePasskeyUserVerification(
+              verification.authenticationInfo.userVerified,
+            );
+          },
+        },
+        authenticatorSelection: {
+          residentKey: "required",
+          userVerification: "required",
+        },
+        origin: passkeyRelyingParty.origin,
+        registration: {
+          afterVerification: ({ verification }) => {
+            requirePasskeyUserVerification(
+              verification.registrationInfo?.userVerified,
+            );
+
+            return {
+              name:
+                getAuthenticatorName(verification.registrationInfo?.aaguid) ??
+                "Passkey",
+            };
+          },
+          // Shapewebs owns the stronger management gate above: every passkey
+          // mutation requires an active authorized session, and staff must
+          // have fresh local strong-auth assurance from the preceding five
+          // minutes (TOTP or a user-verified passkey). Enabling the plugin's
+          // generic freshness middleware here would replace that policy with
+          // Better Auth's unrelated session-age definition.
+          requireSession: false,
+          resolveUser: () => {
+            throw new APIError("UNAUTHORIZED", {
+              message: "An active Shapewebs session is required.",
+            });
+          },
+        },
+        rpID: passkeyRelyingParty.rpID,
+        rpName: "Shapewebs",
       }),
       twoFactor({
         allowPasswordless: true,

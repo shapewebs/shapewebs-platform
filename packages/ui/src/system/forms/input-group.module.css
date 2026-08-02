@@ -3,10 +3,10 @@
   width: 100%;
   min-width: 0;
   align-items: center;
-  border: 1px solid rgb(var(--color-border-secondary) / 1);
+  border: 0.5px solid rgb(var(--color-border-secondary) / 1);
   border-radius: var(--radius-sm);
-  background: rgb(var(--color-bg-secondary) / 1);
-  box-shadow: var(--shadow-stack-low);
+  background: rgb(var(--color-bg-primary) / 1);
+  box-shadow: none;
   transition:
     border-color 140ms var(--ease-out-quad),
     box-shadow 140ms var(--ease-out-quad);
@@ -17,8 +17,9 @@
 }
 
 .inputgroup-root-ip0v6o:focus-within {
-  border-color: rgb(var(--color-focus-ring) / 0.82);
-  box-shadow: 0 0 0 3px rgb(var(--color-focus-ring) / 0.16);
+  border-color: rgb(var(--color-focus-ring) / 1);
+  outline: 1px solid rgb(var(--color-focus-ring) / 1);
+  outline-offset: -1px;
 }
 
 .inputgroup-root-ip0v6o[data-invalid="true"] {
@@ -27,14 +28,25 @@
 
 .inputgroup-root-ip0v6o > :where(input, textarea, select) {
   flex: 1 1 auto;
-  border-color: transparent;
+  border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
+  outline: 0;
 }
 
+.inputgroup-root-ip0v6o > :where(input, textarea, select):hover,
 .inputgroup-root-ip0v6o > :where(input, textarea, select):focus-visible {
-  border-color: transparent;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
+  outline: 0;
+}
+
+.inputgroup-root-ip0v6o > :where(input, textarea, select)[aria-invalid="true"] {
+  border: 0;
+  box-shadow: none;
+  outline: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AccountTurnstileAction } from "@/lib/account-turnstile-contract";
 
@@ -31,16 +31,27 @@ declare global {
 export function AccountTurnstileField({
   action,
   nonce,
+  onTokenChange,
+  showStatus = true,
   siteKey,
 }: {
   action: AccountTurnstileAction;
   nonce: string;
+  onTokenChange?: (token: string) => void;
+  showStatus?: boolean;
   siteKey: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const [token, setToken] = useState("");
+  const updateToken = useCallback(
+    (nextToken: string) => {
+      setToken(nextToken);
+      onTokenChange?.(nextToken);
+    },
+    [onTokenChange],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -52,9 +63,9 @@ export function AccountTurnstileField({
 
     widgetIdRef.current = turnstile.render(container, {
       action,
-      callback: setToken,
-      "error-callback": () => setToken(""),
-      "expired-callback": () => setToken(""),
+      callback: updateToken,
+      "error-callback": () => updateToken(""),
+      "expired-callback": () => updateToken(""),
       sitekey: siteKey,
       theme: "auto",
     });
@@ -65,7 +76,7 @@ export function AccountTurnstileField({
         widgetIdRef.current = null;
       }
     };
-  }, [action, ready, siteKey]);
+  }, [action, ready, siteKey, updateToken]);
 
   return (
     <div className={styles["accountturnstile-root-h7m2qk"]}>
@@ -78,12 +89,14 @@ export function AccountTurnstileField({
       />
       <div ref={containerRef} />
       <input name="turnstileToken" type="hidden" value={token} />
-      <p
-        aria-live="polite"
-        className={styles["accountturnstile-status-v4n9pc"]}
-      >
-        {token ? "Security check complete." : "Complete the security check."}
-      </p>
+      {showStatus ? (
+        <p
+          aria-live="polite"
+          className={styles["accountturnstile-status-v4n9pc"]}
+        >
+          {token ? "Security check complete." : "Complete the security check."}
+        </p>
+      ) : null}
     </div>
   );
 }

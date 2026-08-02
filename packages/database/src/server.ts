@@ -60,6 +60,7 @@ export {
   getAdminAuthenticationMethods,
   getAdminAuthEmailRequestCooldown,
   getAdminCredentialPasswordHash,
+  hasFreshAdminSessionStepUp,
   isAdminTotpLocked,
   listOrganizationAdminSessions,
   provisionAdminSession,
@@ -69,7 +70,9 @@ export {
   rotateAdminSessionToken,
   setAdminSessionStepUp,
   type AdminAuthorizationContext,
+  type AdminAuthenticationMethods,
   type AdminAuthEmailRequestCooldown,
+  type AccountPasskeySummary,
   type AdminSessionSummary,
   type ClaimedAdminAuthEmail,
 } from "./admin-auth";

@@ -318,7 +318,7 @@ describe.sequential("Neon administrative TOTP repository", () => {
 
     await expect(
       getAdminAuthenticationMethods(databaseUrl, userId),
-    ).resolves.toEqual({ google: true, password: true });
+    ).resolves.toEqual({ google: true, passkeys: [], password: true });
     await expect(
       getAdminCredentialPasswordHash(databaseUrl, userId),
     ).resolves.toBe("stored-lifecycle-password-hash");

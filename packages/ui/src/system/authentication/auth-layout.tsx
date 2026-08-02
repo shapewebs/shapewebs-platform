@@ -12,9 +12,14 @@ export type AuthLayoutProps = Readonly<{
   description?: ReactNode;
   eyebrow?: ReactNode;
   footer?: ReactNode;
+  overlay?: ReactNode;
   size?: "compact" | "expanded";
   title?: ReactNode;
 }>;
+
+export type AuthLinksProps = HTMLAttributes<HTMLDivElement> & {
+  layout?: "inline" | "stacked";
+};
 
 export function AuthLayout({
   brandHref,
@@ -23,6 +28,7 @@ export function AuthLayout({
   description,
   eyebrow,
   footer,
+  overlay,
   size = "compact",
   title,
 }: AuthLayoutProps) {
@@ -33,6 +39,8 @@ export function AuthLayout({
       data-slot="auth-layout"
       data-sw-theme="studio"
     >
+      {overlay}
+
       <div
         className={mergeClassNames(
           styles["authlayout-container-ggeec5"],
@@ -47,7 +55,7 @@ export function AuthLayout({
           href={brandHref}
           prefetch={false}
         >
-          <ShapewebsBrand />
+          <ShapewebsBrand compact />
         </Link>
 
         {title ? (
@@ -106,13 +114,15 @@ export function AuthActions({
 
 export function AuthLinks({
   className,
+  layout = "inline",
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: AuthLinksProps) {
   return (
     <div
       {...props}
       className={mergeClassNames(styles["authlinks-root-scjviz"], className)}
       data-component-status="styled"
+      data-layout={layout}
       data-slot="auth-links"
     />
   );

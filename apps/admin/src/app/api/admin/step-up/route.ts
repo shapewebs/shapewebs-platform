@@ -2,6 +2,7 @@ import { createHmac, randomUUID } from "node:crypto";
 
 import {
   generateAdminSessionToken,
+  readSignedSessionFromResponse,
   serializeAdminSessionCookie,
   serializeAdminSessionDeletionCookie,
   verifyAdminTotpCode,
@@ -79,6 +80,7 @@ function withoutSessionCookie(setCookies: string[]): string[] {
 }
 
 async function readVerifiedSession(
+  auth: NonNullable<ReturnType<typeof getAdminAuth>>,
   databaseUrl: string,
   response: Response,
 ): Promise<{
@@ -95,21 +97,54 @@ async function readVerifiedSession(
     user?: { id?: unknown };
   } | null;
 
-  if (
-    !response.ok ||
-    typeof payload?.token !== "string" ||
-    typeof payload.user?.id !== "string"
-  ) {
+  if (!response.ok) {
     return null;
   }
 
-  const session = await findAdminSessionByToken(databaseUrl, payload.token);
+  if (
+    typeof payload?.token === "string" &&
+    typeof payload.user?.id === "string"
+  ) {
+    const session = await findAdminSessionByToken(databaseUrl, payload.token);
 
-  return session && session.userId === payload.user.id
-    ? {
+    if (session && session.userId === payload.user.id) {
+      return {
         expiresAt: session.expiresAt,
         sessionId: session.id,
         token: payload.token,
+        userId: session.userId,
+      };
+    }
+  }
+
+  const signedCookieSession = await readSignedSessionFromResponse(
+    response,
+    (headers) =>
+      auth.api.getSession({
+        headers,
+        query: {
+          disableCookieCache: true,
+          disableRefresh: true,
+        },
+      }),
+  );
+
+  if (!signedCookieSession) {
+    return null;
+  }
+
+  const session = await findAdminSessionByToken(
+    databaseUrl,
+    signedCookieSession.session.token,
+  );
+
+  return session &&
+    session.id === signedCookieSession.session.id &&
+    session.userId === signedCookieSession.user.id
+    ? {
+        expiresAt: session.expiresAt,
+        sessionId: session.id,
+        token: signedCookieSession.session.token,
         userId: session.userId,
       }
     : null;
@@ -234,6 +269,7 @@ export async function POST(request: Request) {
       });
       const challengeCookies = readSetCookies(challengeResponse.headers);
       const challengeSession = await readVerifiedSession(
+        auth,
         databaseUrl,
         challengeResponse,
       );
@@ -355,6 +391,7 @@ export async function POST(request: Request) {
       });
       const enrollmentCookies = readSetCookies(enrollmentResponse.headers);
       const replacementSession = await readVerifiedSession(
+        auth,
         databaseUrl,
         enrollmentResponse,
       );
