@@ -27,7 +27,6 @@ export function AdminAuthShell({
       brandLabel="Shapewebs account sign in"
       description={minimal ? undefined : description}
       eyebrow={minimal ? undefined : eyebrow}
-      footer={minimal ? undefined : <p>Private account access</p>}
       overlay={overlay}
       size={expanded ? "expanded" : "compact"}
       title={minimal ? undefined : title}

@@ -101,23 +101,11 @@
 
 @keyframes sw-notification-enter-v4q8s2 {
   from {
-    opacity: 0;
     transform: translateX(var(--notification-enter-offset));
   }
 
   to {
-    opacity: 1;
     transform: translateX(0);
-  }
-}
-
-@keyframes sw-notification-reveal-5zn2td {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
   }
 }
 
@@ -140,9 +128,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .notification-root-xmx3ts {
-    animation-name: sw-notification-reveal-5zn2td;
-    animation-duration: 1ms;
-    animation-timing-function: linear;
+    animation: none;
   }
 }
 
