@@ -2,12 +2,13 @@
 
 ## Scope and ownership
 
-This contract covers the Shapewebs administrative application. The public
-application has no login path. Customer authentication is isolated in the
-portal realm defined by ADR 0005 and may never share an identity store, cookie
-or authorization record with this realm. The Shapewebs owner owns this
-contract and must review it before every authentication-provider, Better Auth,
-session-policy or administrative-role change.
+This contract covers the unified Shapewebs account application at
+`admin.shapewebs.com`. The public application has no login path. Customers and
+employees share one canonical Better Auth identity and cookie, while membership,
+workspace authorization, strong-auth assurance, repository credentials, and forced RLS
+remain separate security boundaries under ADR 0006. The Shapewebs owner owns
+this contract and must review it before every authentication-provider, Better
+Auth, passkey, session-policy, or role change.
 
 The contract documents the current implementation. A control listed under
 launch gates is not treated as implemented in the exact-ID ASVS evidence
@@ -15,8 +16,8 @@ register.
 
 ## Supported authentication pathway
 
-Every allowlisted employee has one stable administrative user and may attach
-either or both supported first-factor methods:
+Every invited customer or authorized employee has one stable Shapewebs user and
+may attach any supported combination of these sign-in methods:
 
 1. Google OIDC. Better Auth completes the authorization-code flow on the
    server. Shapewebs verifies the Google ID Token against the fixed Google
@@ -27,32 +28,63 @@ either or both supported first-factor methods:
    15–128 characters, are stored with Better Auth's memory-hard password hash,
    are checked through HIBP's k-anonymity service when created or reset, and
    never produce an automatic session.
+3. Passkey. Better Auth performs the WebAuthn ceremony against the exact
+   configured origin and relying-party hostname. Shapewebs requires resident
+   credentials and authenticator user verification for registration and
+   authentication. Five-minute challenges are signed in an HttpOnly cookie,
+   persisted as one-time verification records, and consumed on success.
 
-The verified email must be in the exact owner/editor allowlist before a user,
-credential or session can be created. A Google-first employee can add a
-password from the authenticated security page after a fresh TOTP step-up. A
-password-first employee can connect Google only after both a fresh TOTP
-step-up and current-password verification. The provider callback must match
-the same verified canonical email. Once connected, either method enters the
-same user, membership, role, TOTP factor and audit history.
+An employee email must be in the exact owner/editor allowlist; a customer must
+hold a valid invitation or active membership. A Google-first user may add a
+password through verified mailbox recovery. A password-first user may connect
+Google only after authenticated reauthentication, and the provider callback
+must match the canonical verified email. A passkey may be enrolled only from an
+active, authorized account session. Employee method enrollment and removal
+require fresh local strong-auth assurance from the preceding five minutes. The
+initial passkey is therefore bootstrapped after TOTP; a freshly
+passkey-authenticated session can manage methods without entering a second
+TOTP. Once connected, every method enters the same user, memberships,
+assurance factors, and audit history.
 
 Email matching never silently merges signed-out identities. Implicit and
 different-email linking, open signup, browser-accessible set-password,
-privileged unlink, magic link, SMS, phone, email OTP, passkey, SAML, a second
+privileged unlink, magic link, SMS, phone, email OTP, SAML, a second
 identity provider, trusted-device bypass and public recovery-code endpoints
 remain disabled. All unused Better Auth factor-management endpoints are
 disabled. Enrollment generates no recovery codes because an identity-proofed
 TOTP recovery procedure has not yet been implemented.
 
-Google or password authentication is only the first factor. Shapewebs does not
-depend on Google `acr`, `amr` or `auth_time` claims for administrative
-assurance; the local TOTP is always required after either method.
+Google or password authentication establishes the primary session but does not
+establish employee-workspace assurance. Shapewebs does not depend on Google
+`acr`, `amr` or `auth_time` claims; a local TOTP is required after either
+method. A signed passkey assertion with positive authenticator user
+verification is the complete phishing-resistant strong sign-in. The exact new
+session created by that verification is marked freshly assured and enters the
+employee workspace without an additional TOTP prompt.
 
 ## Authentication attack resistance
 
 - Better Auth stores its rate-limit state in Postgres. Email sign-in is limited
   to 5 requests per 60 seconds, social sign-in to 10, password activation and
   recovery to 3, and the general authentication API to 60.
+- Passkey authentication options are limited to 10 requests per minute;
+  authentication verification and registration verification to 5; and
+  registration options to 5. Credential identifiers are unique in Postgres so
+  concurrent duplicate enrollment fails closed.
+- WebAuthn verification requires exact origin and relying-party ID, a one-time
+  unexpired challenge, a valid signature and counter, and positive authenticator
+  user verification. The application never accepts a browser assertion that
+  reports `userVerified=false`.
+- Passkey listing and mutation require the live canonical session and current
+  membership. Employee mutation additionally requires fresh local strong-auth
+  assurance. The server, not only the interface, rejects deletion of the final
+  usable method.
+- Only a `POST` that completes the exact passkey authentication-verification
+  route may write passkey assurance to the newly created session. Registration,
+  option generation, browser parameters and unrelated session creation cannot
+  set it. This happens only after Better Auth has consumed the challenge and
+  verified the origin, RP ID, signature and counter, and after Shapewebs has
+  required positive authenticator user verification.
 - The TOTP route requires either an authorized primary session or Better
   Auth's short-lived password second-factor challenge. An anonymous actor
   cannot lock an owner out by guessing codes.
@@ -110,7 +142,8 @@ are disabled. The owner settings view instead receives a minimal,
 organization-scoped session DTO containing a non-credential session ID, user
 identity, sanitized user-agent summary and timestamps. It never receives the
 session token or IP address. The owner may revoke another administrator's
-session only after a TOTP step-up completed within the preceding five minutes.
+session only after fresh local strong-auth assurance completed within the
+preceding five minutes.
 The current session is terminated through the always-visible logout control.
 Both paths invalidate the server-side reference session.
 
@@ -126,10 +159,12 @@ lifetime and local revocation are the bounding controls.
 
 ## Administrative step-up
 
-The local TOTP is required after Google or password authentication and again
-when the most recent step-up is older than the sensitive operation's policy.
-Publishing currently requires a code verified within the preceding 10
-minutes.
+Google and password authentication require local TOTP before employee-workspace
+access. A user-verified passkey assertion writes the equivalent fresh assurance
+to that exact newly created session, so it must not be followed by TOTP.
+Sensitive operations still fail closed when the stored assurance is older than
+their policy; publishing currently requires assurance from the preceding 10
+minutes. The current stale-assurance reauthentication surface remains TOTP.
 
 The first successful enrollment rotates the Better Auth session as part of
 factor activation. Every later successful TOTP step-up atomically replaces the
@@ -141,10 +176,17 @@ configured host-only, Secure, HttpOnly, SameSite=Lax policy.
 
 ## Recovery and factor lifecycle
 
-Shapewebs has password recovery through the verified employee mailbox, but no
+Shapewebs has password recovery through the verified account mailbox. A user
+can add multiple passkeys and remove them from account security; raw credential
+IDs and public keys are never returned by the page repository. Removing a
+passkey requires another usable Google, password, or passkey method to remain.
+
+Shapewebs has no
 self-service TOTP reset, TOTP replacement, recovery-code verification or
 administrative identity recovery. This is fail-closed: resetting a password or
-recovering Google access never bypasses the local TOTP factor.
+recovering Google access never bypasses the local TOTP factor, and passkey
+recovery never creates or replaces a credential without an already authorized,
+freshly assured session.
 
 Before commercial production, Shapewebs must define and test an
 identity-proofed owner recovery procedure, factor replacement with fresh
@@ -166,6 +208,10 @@ Automated evidence includes:
 - `tests/unit/admin-session-cookie.test.ts` for 256-bit token generation,
   rotation-cookie signing, remaining absolute lifetime and secure host-only
   attributes;
+- `tests/unit/passkey-policy.test.ts` and
+  `tests/unit/auth-surface-contract.test.ts` for exact origin/RP binding,
+  mandatory user verification, protected enrollment/removal, final-method
+  denial, the live client ceremony, and least-privilege migration grants;
 - `packages/database/scripts/verify-security.mjs` for session
   expiry/revocation/inactivity/role checks, globally one-time counters,
   lockout, recovery after expiry, exact-event token rotation,
@@ -184,11 +230,12 @@ counter-persistence defect discovered by the live test was repaired and
 reverified through the disposable Neon lifecycle before the successful
 attempt.
 
-The email/password and dual-method paths are implemented on the current branch
+The email/password, passkey, and mixed-method paths are implemented on the current branch
 but are not yet counted as fixed-staging evidence. Their launch gate requires a
 green disposable migration lifecycle followed by password-first,
-Google-first, linking, reset, revocation and TOTP browser journeys on the exact
-staging origin.
+Google-first, linking, reset, passkey enrollment/sign-in/removal, revocation,
+Google/password-to-TOTP, and passkey-to-direct-workspace browser journeys on the
+exact staging origin.
 
 ## Launch gates
 
@@ -200,5 +247,6 @@ staging origin.
 - Enable and verify MFA and recovery settings for the underlying Google
   Workspace owner account.
 - Prove employee activation, generic recovery, durable email delivery,
-  Google/password linking and mandatory TOTP after both first factors on fixed
+  Google/password/passkey linking, mandatory TOTP after Google or password, and
+  direct employee-workspace entry after a user-verified passkey on fixed
   staging.

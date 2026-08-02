@@ -55,8 +55,10 @@ export const componentRegistry = {
     TimeField: "scaffolded",
   },
   feedback: {
-    Alert: "scaffolded",
+    Alert: "styled",
     Meter: "scaffolded",
+    Notification: "styled",
+    NotificationViewport: "styled",
     ProgressBar: "scaffolded",
     ProgressCircle: "scaffolded",
     Skeleton: "scaffolded",

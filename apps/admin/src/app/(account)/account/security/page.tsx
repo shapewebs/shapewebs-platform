@@ -12,12 +12,19 @@ export default async function AccountSecurityPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    passkeyId?: string | string[];
     resume?: string | string[];
   }>;
 }) {
   await connection();
 
   const query = await searchParams;
+  const resume = typeof query.resume === "string" ? query.resume : null;
+  const passkeyId =
+    typeof query.passkeyId === "string" &&
+    /^[A-Za-z0-9_-]{1,128}$/.test(query.passkeyId)
+      ? query.passkeyId
+      : undefined;
   const runtime = await requireAccountSession("/account/security");
   const databaseUrl = getAdminDatabaseUrl();
   if (!databaseUrl) {
@@ -46,7 +53,11 @@ export default async function AccountSecurityPage({
           customerAccess={runtime.customerAuthorization !== null}
           email={runtime.primarySession.user.email}
           initialMethods={methods}
-          resumePasswordLink={query.resume === "password-link"}
+          resumePasskeyEnrollment={resume === "passkey-add"}
+          resumePasskeyRemovalId={
+            resume === "passkey-delete" ? passkeyId : undefined
+          }
+          resumePasswordLink={resume === "password-link"}
           staffAccess={runtime.authorization !== null}
         />
         <Authentication.AuthLinks>

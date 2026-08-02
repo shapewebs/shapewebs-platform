@@ -11,6 +11,7 @@ import {
   getAdminDatabaseUrl,
   isTrustedAdminOrigin,
 } from "@/lib/better-auth";
+import { scheduleLocalOutboxDelivery } from "@/lib/local-outbox-delivery";
 
 const maximumBodyBytes = 256;
 
@@ -99,6 +100,10 @@ export async function POST(request: Request) {
       },
       headers: request.headers,
     });
+
+    if (response.ok) {
+      scheduleLocalOutboxDelivery();
+    }
 
     return response.ok
       ? jsonNoStore({

@@ -107,6 +107,19 @@ const sharedButtonStyleFiles = listFiles(
   "packages/ui/src/system/buttons",
   (pathname) => pathname.endsWith(".module.css"),
 );
+const sharedNotificationStyles = read(
+  "packages/ui/src/system/feedback/notification.module.css",
+);
+assert(
+  sharedNotificationStyles.includes("--notification-enter-delay: 500ms;"),
+  "Initial notifications must wait 500ms before entering",
+);
+assert(
+  sharedNotificationStyles.includes(
+    "transform: translateX(var(--notification-enter-offset));",
+  ),
+  "Notifications must enter from beyond the right viewport edge",
+);
 assert(
   sharedButtonStyles.includes("border-radius: var(--radius-rounded);"),
   "Shared buttons must retain the approved pill radius",
@@ -147,6 +160,12 @@ assert(
 assert(
   sharedButtonStyles.includes("box-shadow: var(--shadow-button-secondary);"),
   "Secondary buttons must retain the approved outlined shadow",
+);
+assert(
+  /\.button-secondary-[a-z0-9]{6}\s*\{[^}]*background:\s*rgb\(var\(--color-bg-primary\) \/ 1\);/s.test(
+    sharedButtonStyles,
+  ),
+  "Secondary buttons must use the primary surface color",
 );
 assert(
   sharedButtonStyles.includes(
@@ -196,8 +215,8 @@ assertIncludes(
 );
 assertIncludes(
   "packages/ui/src/system/authentication/auth-layout.tsx",
-  "<ShapewebsBrand />",
-  "Signed-out authentication surfaces must use the shared brand component",
+  "<ShapewebsBrand compact />",
+  "Signed-out authentication surfaces must use the shared compact brand component",
 );
 assertIncludes(
   "packages/ui/src/system/authentication/auth-stage-transition.module.css",

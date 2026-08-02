@@ -105,7 +105,7 @@
 
 .button-secondary-p1w9wi {
   color: rgb(var(--color-text-primary) / 1);
-  background: rgb(var(--color-bg-secondary) / 1);
+  background: rgb(var(--color-bg-primary) / 1);
   box-shadow: var(--shadow-button-secondary);
 }
 

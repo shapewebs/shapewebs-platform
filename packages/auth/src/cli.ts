@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { passkey } from "@better-auth/passkey";
 import * as authSchema from "@shapewebs/database/auth-schema";
 import { createDatabase } from "@shapewebs/database/factory";
 import { betterAuth } from "better-auth/minimal";
@@ -28,6 +29,15 @@ export const auth = betterAuth({
     requireEmailVerification: true,
   },
   plugins: [
+    passkey({
+      authenticatorSelection: {
+        residentKey: "required",
+        userVerification: "required",
+      },
+      origin: "http://localhost:3001",
+      rpID: "localhost",
+      rpName: "Shapewebs",
+    }),
     twoFactor({
       backupCodeOptions: {
         amount: 0,

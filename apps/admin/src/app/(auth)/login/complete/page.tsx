@@ -44,6 +44,10 @@ export default async function LoginCompletionPage({
   }
 
   if (runtime.authorization) {
+    if (runtime.authorization.latestStepUpAt) {
+      redirect(redirectTo);
+    }
+
     redirect(`/login/mfa?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 

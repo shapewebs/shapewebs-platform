@@ -112,6 +112,52 @@ describe("visual foundation components", () => {
     expect(select).toContain("control-select-");
   });
 
+  it("renders reusable alerts with tone-appropriate live semantics", () => {
+    const errorAlert = renderToStaticMarkup(
+      createElement(Feedback.Alert, { tone: "error" }, "Access unavailable"),
+    );
+    const infoAlert = renderToStaticMarkup(
+      createElement(Feedback.Alert, null, "Account updated"),
+    );
+
+    expect(errorAlert).toContain('data-component-status="styled"');
+    expect(errorAlert).toContain('data-slot="alert"');
+    expect(errorAlert).toContain('data-tone="error"');
+    expect(errorAlert).toContain('role="alert"');
+    expect(errorAlert).toContain('aria-live="assertive"');
+    expect(infoAlert).toContain('role="status"');
+    expect(infoAlert).toContain('aria-live="polite"');
+    expect(errorAlert).not.toContain("<svg");
+  });
+
+  it("renders compact floating notifications with accessible status semantics", () => {
+    const notification = renderToStaticMarkup(
+      createElement(
+        Feedback.NotificationViewport,
+        null,
+        createElement(
+          Feedback.Notification,
+          {
+            delay: "initial",
+            heading: "Authentication unavailable",
+            tone: "error",
+          },
+          "Try again later.",
+        ),
+      ),
+    );
+
+    expect(notification).toContain('aria-label="Notifications"');
+    expect(notification).toContain('data-slot="notification-viewport"');
+    expect(notification).toContain('data-slot="notification"');
+    expect(notification).toContain('data-tone="error"');
+    expect(notification).toContain('data-delay="initial"');
+    expect(notification).toContain('role="alert"');
+    expect(notification).toContain('aria-live="assertive"');
+    expect(notification).toContain("Authentication unavailable");
+    expect(notification).toContain("Try again later.");
+  });
+
   it("associates password labels, descriptions, and a keyboard button", () => {
     const password = renderToStaticMarkup(
       createElement(Forms.PasswordField, {
@@ -130,9 +176,11 @@ describe("visual foundation components", () => {
     expect(password).toContain('aria-label="Show password"');
     expect(password).toContain('aria-pressed="false"');
     expect(password).toContain('type="button"');
+    expect(password).toContain('viewBox="0 0 24 24"');
+    expect(password).not.toContain(">Show<");
   });
 
-  it("keeps passkey states presentational until WebAuthn is approved", () => {
+  it("keeps the reusable passkey status frame presentational", () => {
     const unavailable = renderToStaticMarkup(
       createElement(Authentication.PasskeyFrame, {
         status: "unavailable",
@@ -247,6 +295,11 @@ describe("visual foundation components", () => {
       AuthStageTransition: "styled",
       PasskeyFrame: "styled",
     });
+    expect(componentRegistry.feedback).toMatchObject({
+      Alert: "styled",
+      Notification: "styled",
+      NotificationViewport: "styled",
+    });
     expect(componentRegistry.forms).toMatchObject({
       Field: "styled",
       Input: "styled",
@@ -271,6 +324,18 @@ describe("visual foundation components", () => {
     expect(brand).toContain("data-component-status");
     expect(brand).toContain('viewBox="0 5.625 180 169.087"');
     expect(brand).toContain("brand-mark-");
+    expect(brand).not.toContain("<img");
+  });
+
+  it("renders the compact brand as the mark without the wordmark", () => {
+    const brand = renderToStaticMarkup(
+      createElement(Brand.ShapewebsBrand, { compact: true }),
+    );
+
+    expect(brand).toContain('viewBox="0 5.625 180 169.087"');
+    expect(brand).toContain("brand-mark-");
+    expect(brand).not.toContain("brand-name-");
+    expect(brand).not.toContain(">Shapewebs<");
     expect(brand).not.toContain("<img");
   });
 });

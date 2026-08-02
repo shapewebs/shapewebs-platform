@@ -6,11 +6,11 @@
   height: var(--control-height);
   margin: 0;
   padding: 0 var(--control-padding-inline);
-  border: 1px solid rgb(var(--color-border-secondary) / 1);
+  border: 0.5px solid rgb(var(--color-border-secondary) / 1);
   border-radius: var(--radius-sm);
   color: rgb(var(--color-text-primary) / 1);
-  background: rgb(var(--color-bg-secondary) / 1);
-  box-shadow: var(--shadow-stack-low);
+  background: rgb(var(--color-bg-primary) / 1);
+  box-shadow: none;
   caret-color: rgb(var(--color-text-primary) / 1);
   outline: none;
   font: inherit;
@@ -35,8 +35,9 @@
 }
 
 .control-root-8imqbv:focus-visible {
-  border-color: rgb(var(--color-focus-ring) / 0.82);
-  box-shadow: 0 0 0 3px rgb(var(--color-focus-ring) / 0.16);
+  border-color: rgb(var(--color-focus-ring) / 1);
+  outline: 1px solid rgb(var(--color-focus-ring) / 1);
+  outline-offset: -1px;
 }
 
 .control-root-8imqbv:disabled {
@@ -54,9 +55,7 @@
 .control-root-8imqbv:-webkit-autofill:focus {
   border-color: rgb(var(--color-border-secondary) / 1);
   -webkit-text-fill-color: rgb(var(--color-text-primary) / 1);
-  box-shadow:
-    0 0 0 1000px rgb(var(--color-bg-secondary) / 1) inset,
-    var(--shadow-stack-low);
+  box-shadow: 0 0 0 1000px rgb(var(--color-bg-primary) / 1) inset;
   transition: background-color 9999s ease-out 0s;
 }
 
@@ -83,7 +82,7 @@
 
 .control-invalid-q39s57:focus-visible {
   border-color: rgb(var(--color-feedback-danger) / 0.9);
-  box-shadow: 0 0 0 3px rgb(var(--color-feedback-danger) / 0.14);
+  outline-color: rgb(var(--color-feedback-danger) / 0.9);
 }
 
 .control-loading-q80akn {

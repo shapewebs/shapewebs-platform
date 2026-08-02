@@ -16,17 +16,19 @@ The hardened foundation and isolated non-production Neon database are complete
 on protected `staging`; production has not been changed. Verified runtime paths
 use:
 
-- one Better Auth identity for Google, password, and future passkeys, with TOTP
-  required before employee-studio access
+- one Better Auth identity for Google, password, and passkeys; Google/password
+  employee sign-in requires TOTP, while a user-verified passkey is the complete
+  strong sign-in
 - Neon Postgres with isolated preview branches
 - Drizzle schemas and reviewed SQL migrations
 - Vercel Blob for public and private media
 
 The obsolete Supabase prototype has been removed after authentication,
 preview-isolation, publishing, restore, and release verification. Customers and
-employees share one canonical account and may attach Google, password, or both;
+employees share one canonical account and may attach Google, password, passkeys,
+or any supported combination;
 membership and forced-RLS policies still separate customer projects from the
-employee studio, where TOTP remains mandatory. Public leads use an atomic Neon
+employee studio, where strong-auth assurance remains mandatory. Public leads use an atomic Neon
 lead/outbox transaction. Production authentication and form persistence fail
 closed when required configuration is missing.
 

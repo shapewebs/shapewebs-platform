@@ -11,6 +11,7 @@
   --system-max-width: 1024px;
   --layer-max: 10000;
   --layer-tooltip: 20000;
+  --layer-notification: 15000;
   --layer-header: 1000;
   --layer-overlay: 900;
   --layer-dialog: 700;
@@ -37,7 +38,7 @@
   --space-9: 96px;
   --space-10: 128px;
   --radius-xs: 6px;
-  --radius-sm: 8px;
+  --radius-sm: 10px;
   --radius-md: 12px;
   --radius-lg: 14px;
   --radius-xl: 20px;
@@ -50,6 +51,7 @@
   --color-orange: #f4bf50;
   --mask-on: #000;
   --mask-off: transparent;
+  --font-size-xs: 0.75rem;
   --font-size-small: clamp(0.78125rem, calc(0.72917rem + 0.13021vw), 0.8125rem);
   --font-size-small-plus: clamp(
     0.78125rem,
@@ -175,8 +177,8 @@
   --color-bg-header: 255 255 255;
   --color-bg-header-active: 244 244 246;
   --color-border-header: 23 24 26 / 0.08;
-  --color-bg-primary: 247 247 248;
-  --color-bg-secondary: 255 255 255;
+  --color-bg-primary: 255 255 255;
+  --color-bg-secondary: 247 247 248;
   --color-bg-tertiary: 242 242 244;
   --color-bg-quaternary: 235 235 238;
   --color-bg-quinary: 226 226 230;

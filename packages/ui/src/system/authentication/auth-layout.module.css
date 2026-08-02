@@ -1,16 +1,18 @@
 .authlayout-root-6l61tg {
+  --auth-layout-anchor-y: clamp(128px, 26svh, 288px);
   display: grid;
   min-height: 100vh;
   min-height: 100svh;
-  padding: var(--space-6) var(--space-4);
-  background: rgb(var(--color-bg-primary) / 1);
-  place-items: center;
+  padding: var(--auth-layout-anchor-y) var(--space-4) var(--space-6);
+  background: rgb(var(--color-bg-secondary) / 1);
+  place-items: start center;
 }
 
 .authlayout-container-ggeec5 {
   display: grid;
   width: 100%;
   gap: var(--space-5);
+  animation: sw-authlayout-enter-5s2k8m 280ms var(--ease-out-quad) backwards;
 }
 
 .authlayout-compact-8krd5z {
@@ -23,14 +25,19 @@
 
 .authlayout-brand-y7iol3 {
   display: inline-flex;
-  width: fit-content;
-  min-height: 44px;
+  width: 48px;
+  height: 48px;
   margin-inline: auto;
   align-items: center;
   justify-content: center;
-  padding-inline: var(--space-2);
   border-radius: var(--radius-sm);
-  color: rgb(var(--color-text-primary) / 1);
+  color: rgb(var(--color-text-primary) / 0.92);
+}
+
+.authlayout-brand-y7iol3 > :where(span, svg),
+.authlayout-brand-y7iol3 svg {
+  width: 48px;
+  height: 48px;
 }
 
 .authlayout-brand-y7iol3:focus-visible {
@@ -89,7 +96,7 @@
 .authactions-root-n8vax6 {
   display: grid;
   width: 100%;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .authactions-root-n8vax6 > :where(button, a)[data-component-status="styled"] {
@@ -97,22 +104,46 @@
 }
 
 .authlinks-root-scjviz {
-  display: grid;
+  display: block;
   width: 100%;
-  justify-items: center;
-  gap: var(--space-1);
-  color: rgb(var(--color-text-secondary) / 1);
-  font-size: var(--font-size-regular);
+  margin-top: var(--space-3);
+  color: rgb(var(--color-text-tertiary) / 1);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
   text-align: center;
+}
+
+.authlinks-root-scjviz > a[data-component-status="styled"] {
+  min-height: 0;
+  color: rgb(var(--color-text-primary) / 1);
+}
+
+.authlinks-root-scjviz[data-layout="stacked"] {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
 }
 
 @media (max-width: 520px) {
   .authlayout-root-6l61tg {
-    align-items: start;
-    padding: var(--space-5) var(--space-4);
+    --auth-layout-anchor-y: clamp(96px, 20svh, 160px);
+  }
+}
+
+@keyframes sw-authlayout-enter-5s2k8m {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
   }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .authlayout-container-ggeec5 {
-    margin-top: min(10vh, var(--space-7));
+    animation: none;
   }
 }

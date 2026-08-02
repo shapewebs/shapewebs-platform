@@ -2,10 +2,11 @@
 
 ## Current milestone
 
-- Date: 1 August 2026
+- Date: 2 August 2026
 - Branch: protected `staging` at
-  `eea5f3abe12daf05f4ceddd82a7022ad9db630fc`; the visual-system reset is
-  isolated on `codex/visual-foundation`
+  `eea5f3abe12daf05f4ceddd82a7022ad9db630fc`; the consolidated visual,
+  unified-portal and passkey work is isolated on
+  `codex/unified-portal-evidence`
 - Pull requests: foundation and migration pull requests `#15` through `#45`
   are merged; the Sanity publishing foundation and its deployment corrections
   `#46` through `#51`, unpublish lifecycle repair `#52`, and public-route/ZAP
@@ -16,8 +17,10 @@
   operations, Sanity public content/media, private Vercel Blob, lead/email
   reliability, monitoring, and release assurance. The active branch now
   consolidates customer and employee accounts into `apps/admin`; migration
-  `0019` has passed its disposable lifecycle, while persistent staging,
-  provider configuration and the complete release gate remain pending
+  `0019` has passed its disposable lifecycle. Additive migration `0020` and
+  its passkey implementation are active only on the branch and non-production
+  Neon development resources; persistent staging, provider configuration and
+  the complete release gate remain pending
 - Production baseline: commit
   `33affde883340d9db1d53d89ffd0c49d73fb531f`
 
@@ -65,7 +68,7 @@ now a controlled design canvas:
   submissions, settings, security and audit surfaces share one composition
   model. The same application now also contains invitation-gated customer
   onboarding, a customer workspace, and shared account security without
-  weakening employee TOTP or customer RLS.
+  weakening employee strong-auth assurance or customer RLS.
 - `pnpm visual:foundation:check` protects the exact route reset, theme
   selection, required tokens, component use, application token boundary and
   all 404 globally unique application/shared CSS Module class contracts across
@@ -78,6 +81,28 @@ security/accessibility/interaction scenarios, three Lighthouse runs and the
 unchanged. The disposable migration rehearsal is also green. Protected GitHub,
 Neon and Vercel checks, the migrated fixed-staging provider journeys, and
 post-deployment k6/ZAP remain mandatory before merge or promotion.
+
+## Active passkey-assurance work
+
+The active branch adds exact-origin WebAuthn through Better Auth with resident
+credentials, mandatory authenticator user verification, one-time challenges,
+bounded endpoint rates and least-privilege `auth.passkey` storage from migration
+`0020`. Passkey enrollment, safe listing, naming and final-method-protected
+removal share the canonical account identity and require an active membership;
+employee mutation requires fresh local strong-auth assurance.
+
+Local browser evidence has completed TOTP-bootstrapped enrollment and a real
+Apple Passwords passkey assertion. The implementation now treats that
+user-verified assertion as the complete phishing-resistant employee sign-in:
+only the exact successful passkey verification request may write a fresh
+assurance timestamp to its newly created session. Google and password sessions
+still require local TOTP. On 2 August 2026, a real local passkey sign-in moved
+directly from `/login` to `/dashboard` without visiting `/login/mfa`, proving
+that no second authenticator-code step follows a user-verified passkey. The
+complete `pnpm verify` gate is green with 246 tests and 96.36% statement
+coverage. Authenticator cancellation, removal, final-method denial, the
+disposable migration lifecycle and the fixed-staging release gate remain
+release evidence; fixed staging is unchanged.
 
 ## Implemented on protected staging
 
@@ -117,7 +142,8 @@ post-deployment k6/ZAP remain mandatory before merge or promotion.
 - The authenticated app uses one exact origin, one host-only cookie namespace,
   one Google callback, one canonical `auth` schema and shared recovery. Customer
   repositories still use a separate least-privilege connection and forced RLS;
-  employee-studio access still requires active staff membership and TOTP.
+  employee-studio access requires active staff membership plus either local
+  TOTP after Google/password sign-in or a user-verified passkey assertion.
 - Authenticated responses use nonce CSP, private/no-store and noindex controls.
   Both Next.js build engines and Playwright cover the unified application.
 - The boundary gate now rejects direct source imports between applications and
@@ -772,12 +798,14 @@ plan.
 ## Next implementation slices
 
 1. Publish the active branch for protected GitHub, Neon and Vercel review.
-   Apply migration `0019` to persistent synthetic staging only after its
-   pre-migration snapshot and protected disposable lifecycle are green.
+   Apply migrations `0019` and `0020` to persistent synthetic staging only
+   after the pre-migration snapshot and protected disposable lifecycle are
+   green.
 2. Configure `admin-staging.shapewebs.com` as the single pre-production account
    surface with canonical staging database URLs, Turnstile hostname/action,
    one Google callback, the Resend worker, cookie behavior and monitoring.
-   Rerun the real customer/employee journeys plus k6 and ZAP. Keep
+   Rerun the real customer/employee journeys, including Google/password-to-TOTP
+   and passkey-to-direct-workspace, plus k6 and ZAP. Keep
    `admin.shapewebs.com` and all production data untouched until that evidence
    is green.
 3. Inventory real project evidence, screenshots, outcomes, testimonials,

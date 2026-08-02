@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { hasValidBearerSecret } from "../../apps/admin/src/lib/job-security";
+import { getLocalOutboxDeliveryConfig } from "../../apps/admin/src/lib/local-outbox-delivery";
 import { getOutboxEnvironment } from "../../apps/admin/src/lib/outbox-environment";
 import { getSyntheticRetentionEnvironment } from "../../apps/admin/src/lib/synthetic-retention-environment";
 import { getClientIp } from "../../apps/web/src/lib/request-identity";
@@ -82,6 +83,34 @@ describe("reliability and provider boundaries", () => {
     expect(hasValidBearerSecret(null, secret)).toBe(false);
     expect(hasValidBearerSecret(`Bearer ${secret}`, undefined)).toBe(false);
     expect(hasValidBearerSecret("Bearer short", "short")).toBe(false);
+  });
+
+  it("triggers local outbox delivery only for an exact loopback development origin", () => {
+    const completeEnvironment = {
+      BETTER_AUTH_URL: "http://localhost:3001",
+      CRON_SECRET: "a-local-cron-secret-with-at-least-32-characters",
+      NODE_ENV: "development",
+    };
+
+    expect(getLocalOutboxDeliveryConfig(completeEnvironment)).toEqual({
+      secret: completeEnvironment.CRON_SECRET,
+      targetUrl: "http://localhost:3001/api/jobs/outbox",
+    });
+
+    for (const environment of [
+      { ...completeEnvironment, NODE_ENV: "production" },
+      {
+        ...completeEnvironment,
+        BETTER_AUTH_URL: "https://admin.shapewebs.com",
+      },
+      {
+        ...completeEnvironment,
+        BETTER_AUTH_URL: "http://example.com:3001",
+      },
+      { ...completeEnvironment, CRON_SECRET: "short" },
+    ]) {
+      expect(getLocalOutboxDeliveryConfig(environment)).toBeNull();
+    }
   });
 
   it("fails the outbox configuration closed if one dependency is missing", () => {

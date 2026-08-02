@@ -43,7 +43,15 @@ try {
 
     const namespaced = generated
       .replace(/\bpgTable,\n/, "pgSchema,\n")
+      .replace(
+        '  index,\n} from "drizzle-orm/pg-core";',
+        '  index,\n  uniqueIndex,\n} from "drizzle-orm/pg-core";',
+      )
       .replace(/\bpgTable\(/g, "authSchema.table(")
+      .replace(
+        'index("passkey_credentialID_idx").on(table.credentialID)',
+        'uniqueIndex("passkey_credentialID_unique").on(table.credentialID)',
+      )
       .replace(
         importMarker,
         `${importMarker}\nexport const authSchema = pgSchema("auth");\n`,

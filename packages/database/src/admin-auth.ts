@@ -19,6 +19,7 @@ import {
   adminTotpSecurity,
   adminAuthEmailOutbox,
   account as authAccount,
+  passkey as authPasskey,
   auditEvents,
   staffMembershipRole,
   staffMemberships,
@@ -56,6 +57,20 @@ export type AdminSessionSummary = {
   userAgent: string;
   userEmail: string;
   userName: string;
+};
+
+export type AccountPasskeySummary = {
+  backedUp: boolean;
+  createdAt: string | null;
+  deviceType: string;
+  id: string;
+  name: string;
+};
+
+export type AdminAuthenticationMethods = {
+  google: boolean;
+  passkeys: AccountPasskeySummary[];
+  password: boolean;
 };
 
 export type ClaimedAdminAuthEmail = {
@@ -144,6 +159,9 @@ export async function provisionAdminSession(
       action: "auth.login",
       actorUserId: identity.userId,
       metadata: {
+        assurance: identity.stepUpVerifiedAt
+          ? "passkey_user_verification"
+          : "primary_authentication",
         result: "success",
       },
       organizationId: identity.organizationId,
@@ -156,18 +174,73 @@ export async function provisionAdminSession(
 export async function getAdminAuthenticationMethods(
   databaseUrl: string,
   userId: string,
-): Promise<{ google: boolean; password: boolean }> {
+): Promise<AdminAuthenticationMethods> {
   const database = createDatabase(databaseUrl);
-  const accounts = await database
-    .select({ providerId: authAccount.providerId })
-    .from(authAccount)
-    .where(eq(authAccount.userId, userId));
+  const [accounts, passkeys] = await Promise.all([
+    database
+      .select({ providerId: authAccount.providerId })
+      .from(authAccount)
+      .where(eq(authAccount.userId, userId)),
+    database
+      .select({
+        backedUp: authPasskey.backedUp,
+        createdAt: authPasskey.createdAt,
+        deviceType: authPasskey.deviceType,
+        id: authPasskey.id,
+        name: authPasskey.name,
+      })
+      .from(authPasskey)
+      .where(eq(authPasskey.userId, userId))
+      .orderBy(desc(authPasskey.createdAt)),
+  ]);
   const providers = new Set(accounts.map((account) => account.providerId));
 
   return {
     google: providers.has("google"),
+    passkeys: passkeys.map((passkey) => ({
+      backedUp: passkey.backedUp,
+      createdAt: passkey.createdAt?.toISOString() ?? null,
+      deviceType: passkey.deviceType,
+      id: passkey.id,
+      name: passkey.name?.trim() || "Passkey",
+    })),
     password: providers.has("credential"),
   };
+}
+
+export async function hasFreshAdminSessionStepUp(
+  databaseUrl: string,
+  identity: Pick<AdminSessionIdentity, "sessionId" | "userId">,
+  withinSeconds: number,
+  now = new Date(),
+): Promise<boolean> {
+  if (!Number.isSafeInteger(withinSeconds) || withinSeconds <= 0) {
+    throw new Error("The step-up freshness window must be a positive integer.");
+  }
+
+  const database = createDatabase(databaseUrl);
+  const cutoff = new Date(now.getTime() - withinSeconds * 1_000);
+  const [security] = await database
+    .select({ sessionId: adminSessionSecurity.sessionId })
+    .from(adminSessionSecurity)
+    .where(
+      and(
+        eq(adminSessionSecurity.sessionId, identity.sessionId),
+        eq(adminSessionSecurity.userId, identity.userId),
+        isNull(adminSessionSecurity.revokedAt),
+        gte(adminSessionSecurity.stepUpVerifiedAt, cutoff),
+        sql`exists (
+          select 1
+          from ${authSession}
+          where ${authSession.id} = ${identity.sessionId}
+            and ${authSession.userId} = ${identity.userId}
+            and ${authSession.expiresAt} > ${now}
+        )`,
+      ),
+    )
+    .limit(1);
+
+  return security !== undefined;
 }
 
 export async function getAdminCredentialPasswordHash(

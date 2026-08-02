@@ -9,6 +9,7 @@ import {
   getAccountRequestIp,
   verifyAccountTurnstile,
 } from "@/lib/account-turnstile";
+import { scheduleLocalOutboxDelivery } from "@/lib/local-outbox-delivery";
 
 const maximumBodyBytes = 4_096;
 
@@ -81,6 +82,8 @@ export async function POST(request: Request) {
   } catch {
     // Unknown, unauthorized, and provider-failure cases remain indistinguishable.
   }
+
+  scheduleLocalOutboxDelivery();
 
   return jsonNoStore({ status: "accepted" });
 }

@@ -38,7 +38,7 @@ person
 └── auth.user (stable Shapewebs identity)
     ├── auth.account(provider = "google")
     ├── auth.account(provider = "credential")
-    └── future auth.passkey records
+    └── auth.passkey (one or more WebAuthn credentials)
 ```
 
 Authentication methods are attached to the same user. They do not define the
@@ -67,15 +67,19 @@ organization or project assignment.
 The portal presents workspaces rather than account types:
 
 - a customer-only user enters the customer workspace;
-- a staff-only user enters the studio after completing TOTP;
+- a staff-only user enters the studio after Google/password plus TOTP or after
+  a user-verified passkey sign-in;
 - a dual-member user may enter the customer workspace immediately and may
-  enter the studio only after completing TOTP; and
+  enter the studio after the same employee assurance; and
 - a signed-in user with no active membership receives a fail-closed access
   state.
 
-TOTP is an assurance requirement for the employee workspace, not a second
-identity realm. CMS access, publishing, destructive changes, exports and
-security administration continue to require the applicable TOTP assurance.
+Strong authentication is an assurance requirement for the employee workspace,
+not a second identity realm. Google/password sessions establish it through
+local TOTP. A signed passkey assertion with authenticator user verification
+establishes it directly on the new session and must not trigger a second TOTP
+prompt. CMS access, publishing, destructive changes, exports and security
+administration continue to require the applicable freshness.
 The initial read-focused customer workspace does not require employee TOTP.
 
 ## Routes
@@ -111,9 +115,11 @@ There is no open self-service signup.
   security page after recent reauthentication.
 - Different-email linking, removing the final usable method and browser-driven
   role assignment remain prohibited.
-- Future passkeys attach to the same canonical user. The visual affordance may
-  be scaffolded before the provider is enabled, but it must not imply that
-  passkeys work.
+- Passkeys attach to the same canonical user only from an authenticated account
+  security page. Employee enrollment and removal require fresh local
+  strong-auth assurance; initial enrollment is bootstrapped with TOTP, while a
+  freshly passkey-authenticated session already satisfies that requirement.
+  Removal is denied when it would leave no usable sign-in method.
 
 ## Session and database boundaries
 
@@ -179,17 +185,23 @@ backup and restore rehearsal is not current.
 
 The release gate includes:
 
-- Google-first, password-first and dual-method login to the same user;
+- Google-first, password-first, passkey-first-after-enrollment, and mixed-method
+  login to the same user;
 - a Google-first account adding a password and a password-first account
   explicitly connecting Google;
 - invitation expiry, replay, forwarding, email mismatch and concurrent
   acceptance;
 - customer-only, staff-only, dual-member, suspended, wrong-tenant,
   wrong-project and no-membership authorization;
-- mandatory TOTP for every studio entry path and sensitive employee action;
+- mandatory TOTP after Google/password employee sign-in, direct studio entry
+  after user-verified passkey sign-in, and fresh assurance for sensitive
+  employee actions;
 - direct customer-to-studio and employee-to-unassigned-customer IDOR attempts;
 - reset expiry, replay, compromised-password rejection, session revocation and
   generic unknown-account responses;
+- passkey origin/RP mismatch, challenge replay, missing user verification,
+  duplicate credential, unauthorized enrollment, cancellation, and final-method
+  removal denial;
 - migration collision preflight, row-count reconciliation, rollback and
   restore;
 - no portal cookie or authentication JavaScript on `shapewebs.com`; and
